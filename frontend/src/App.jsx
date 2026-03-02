@@ -2,35 +2,22 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setAuthFromStorage } from './store/slices/authSlice';
-
-// Route Guards
 import ProtectedRoute from './routes/ProtectedRoute';
 import RoleRoute from './routes/RoleRoute';
-
-// Pages
 import Home from './pages/Home';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import AdminLogin from './pages/auth/AdminLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import AdminForgotPassword from './pages/auth/AdminForgotPassword';
-
-// Dashboards
 import StudentDashboard from './pages/student/StudentDashboard';
 import TutorDashboard from './pages/tutor/TutorDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
-
-// Constants
 import { ROUTES, ROLES } from './utils/constants';
 
-/**
- * Main App Component
- * Handles routing for entire application
- */
+
 function App() {
   const dispatch = useDispatch();
-
-  // Load auth state from localStorage on app init
   useEffect(() => {
     dispatch(setAuthFromStorage());
   }, [dispatch]);
@@ -170,8 +157,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-
-      {/* Catch All - Redirect to Home */}
       <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
     </Routes>
   );

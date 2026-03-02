@@ -8,39 +8,29 @@ import { validateEmail } from '../../utils/helpers';
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
-/**
- * Admin Login Page
- * Accessible via /admin/login
- * No role selection - admin only
- */
 const AdminLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // Form state
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
-  // Form errors
   const [formErrors, setFormErrors] = useState({});
 
-  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
     });
-    // Clear error for this field
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: '' });
     }
   };
 
-  // Validate form
   const validateForm = () => {
     const errors = {};
 
@@ -57,18 +47,15 @@ const AdminLogin = () => {
     return errors;
   };
 
-  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    // Dispatch login action
     const resultAction = await dispatch(
       loginUser({
         email: formData.email,
@@ -77,7 +64,6 @@ const AdminLogin = () => {
     );
 
     if (loginUser.fulfilled.match(resultAction)) {
-      // Check if user is admin
       const loggedInUser = resultAction.payload.user;
       if (loggedInUser.role !== ROLES.ADMIN) {
         toast.error('Unauthorized access. Admin only.');
@@ -90,13 +76,11 @@ const AdminLogin = () => {
     }
   };
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === ROLES.ADMIN) {
         navigate(ROUTES.ADMIN_DASHBOARD);
       } else {
-        // Not admin - redirect to appropriate dashboard
         toast.error('Unauthorized access');
         if (user.role === ROLES.STUDENT) {
           navigate(ROUTES.STUDENT_DASHBOARD);
@@ -107,7 +91,6 @@ const AdminLogin = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Clear error on unmount
   useEffect(() => {
     return () => {
       dispatch(clearError());
@@ -116,7 +99,6 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Admin Illustration */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-900 to-gray-700 items-center justify-center p-12">
         <div className="text-center text-white">
           <div className="mb-8">
@@ -126,7 +108,7 @@ const AdminLogin = () => {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Admin icon - person with briefcase */}
+              {/* Admin icon */}
               <circle cx="200" cy="100" r="50" fill="white" opacity="0.9" />
               <rect x="150" y="170" width="100" height="120" rx="8" fill="white" opacity="0.9" />
               <rect x="160" cy="240" width="80" height="60" rx="5" fill="#6d28d9" opacity="0.8" />
@@ -138,24 +120,20 @@ const AdminLogin = () => {
         </div>
       </div>
 
-      {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
-          {/* Logo - Mobile */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Cognon</h1>
             <p className="text-sm text-gray-600 mt-1">Admin Portal</p>
           </div>
 
-          {/* Welcome Text */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon..!</h2>
             <div className="inline-block px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-medium mt-2">
-              🔒 Admin Access Only
+              Admin Access Only
             </div>
           </div>
 
-          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
               label="User name"
@@ -179,7 +157,6 @@ const AdminLogin = () => {
               required
             />
 
-            {/* Forgot Password */}
             <div className="flex justify-end">
               <Link
                 to="/admin/forgot-password"
@@ -189,7 +166,6 @@ const AdminLogin = () => {
               </Link>
             </div>
 
-            {/* Submit Button */}
             <Button
               type="submit"
               variant="primary"
@@ -204,7 +180,7 @@ const AdminLogin = () => {
           {/* Warning */}
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800 text-center">
-              ⚠️ This is a restricted area. Unauthorized access attempts will be logged.
+              This is a restricted area!. Unauthorized access attempts will be logged!.
             </p>
           </div>
         </div>

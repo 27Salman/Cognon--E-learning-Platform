@@ -1,16 +1,4 @@
 import React from 'react';
-
-/**
- * Reusable Button Component
- * @param {string} variant - Button style (primary, secondary, danger)
- * @param {string} size - Button size (sm, md, lg)
- * @param {boolean} fullWidth - Full width button
- * @param {boolean} loading - Loading state
- * @param {boolean} disabled - Disabled state
- * @param {string} type - Button type (button, submit)
- * @param {function} onClick - Click handler
- * @param {ReactNode} children - Button content
- */
 const Button = ({
   variant = 'primary',
   size = 'md',

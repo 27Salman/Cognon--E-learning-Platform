@@ -6,27 +6,20 @@ import { validateEmail } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 import { FiArrowLeft } from 'react-icons/fi';
 
-/**
- * Forgot Password Page - Student/Tutor
- * Sends password reset link to email
- */
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Handle email change
   const handleChange = (e) => {
     setEmail(e.target.value);
     if (emailError) setEmailError('');
   };
 
-  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate email
     if (!email.trim()) {
       setEmailError('Email is required');
       return;
@@ -39,10 +32,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      // TODO: Call forgot password API
-      // await forgotPasswordAPI(email);
-      
-      // Simulate API call
+
       await new Promise((resolve) => setTimeout(resolve, 2000));
       
       setSuccess(true);
@@ -56,7 +46,6 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Illustration */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-100 to-primary-200 items-center justify-center p-12">
         <div className="text-center">
           <div className="mb-8">
@@ -66,17 +55,14 @@ const ForgotPassword = () => {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Illustration - Person with checklist and package */}
-              {/* Background gears */}
+              
               <circle cx="100" cy="100" r="40" fill="#93C5FD" opacity="0.5" />
               <circle cx="500" cy="150" r="60" fill="#7DD3FC" opacity="0.5" />
               <circle cx="150" cy="500" r="50" fill="#C4B5FD" opacity="0.5" />
               
-              {/* Person */}
               <ellipse cx="350" cy="200" rx="80" ry="60" fill="#FCA5A5" />
               <rect x="270" y="280" width="160" height="200" rx="20" fill="#FCA5A5" />
               
-              {/* Checklist */}
               <rect x="150" y="200" width="140" height="180" rx="8" fill="white" stroke="#6d28d9" strokeWidth="3" />
               <circle cx="180" cy="240" r="12" fill="white" stroke="#6d28d9" strokeWidth="2" />
               <path d="M 175 240 L 180 245 L 190 230" stroke="#6d28d9" strokeWidth="2" fill="none" />
@@ -89,10 +75,10 @@ const ForgotPassword = () => {
               <circle cx="180" cy="340" r="12" fill="white" stroke="#6d28d9" strokeWidth="2" />
               <line x1="210" y1="340" x2="270" y2="340" stroke="#D1D5DB" strokeWidth="2" />
               
-              {/* Package box */}
               <rect x="370" y="420" width="120" height="100" rx="8" fill="#FCD34D" />
               <line x1="430" y1="420" x2="430" y2="520" stroke="#92400E" strokeWidth="3" />
               <line x1="370" y1="470" x2="490" y2="470" stroke="#92400E" strokeWidth="3" />
+
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Forgot Your Password?</h1>
@@ -102,16 +88,13 @@ const ForgotPassword = () => {
         </div>
       </div>
 
-      {/* Right Side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
-          {/* Logo - Mobile */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
 
           {success ? (
-            // Success Message
             <div className="text-center">
               <div className="mb-6">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
@@ -144,7 +127,6 @@ const ForgotPassword = () => {
               </Link>
             </div>
           ) : (
-            // Reset Form
             <>
               <div className="mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-3">Reset Your Password</h2>

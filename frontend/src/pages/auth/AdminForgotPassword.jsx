@@ -6,27 +6,21 @@ import { validateEmail } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 import { FiArrowLeft } from 'react-icons/fi';
 
-/**
- * Admin Forgot Password Page
- * Accessible via /admin/forgot-password
- */
+
 const AdminForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Handle email change
   const handleChange = (e) => {
     setEmail(e.target.value);
     if (emailError) setEmailError('');
   };
 
-  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate email
     if (!email.trim()) {
       setEmailError('Email is required');
       return;
@@ -39,10 +33,6 @@ const AdminForgotPassword = () => {
     setLoading(true);
 
     try {
-      // TODO: Call admin forgot password API
-      // await adminForgotPasswordAPI(email);
-      
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
       
       setSuccess(true);
@@ -56,7 +46,6 @@ const AdminForgotPassword = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Admin Illustration */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-100 to-gray-200 items-center justify-center p-12">
         <div className="text-center">
           <div className="mb-8">
@@ -66,15 +55,14 @@ const AdminForgotPassword = () => {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Admin forgot password illustration */}
               <circle cx="100" cy="100" r="40" fill="#D1D5DB" opacity="0.5" />
               <circle cx="500" cy="150" r="60" fill="#9CA3AF" opacity="0.5" />
               
-              {/* Lock icon */}
               <rect x="220" y="250" width="160" height="180" rx="20" fill="#6B7280" />
               <circle cx="300" cy="200" r="60" stroke="#6B7280" strokeWidth="20" fill="none" />
               <circle cx="300" cy="340" r="25" fill="white" />
               <rect x="295" y="340" width="10" height="60" rx="5" fill="white" />
+
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Admin Password Reset</h1>
@@ -84,17 +72,14 @@ const AdminForgotPassword = () => {
         </div>
       </div>
 
-      {/* Right Side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
-          {/* Logo - Mobile */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Cognon</h1>
             <p className="text-sm text-gray-600 mt-1">Admin Portal</p>
           </div>
 
           {success ? (
-            // Success Message
             <div className="text-center">
               <div className="mb-6">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
@@ -127,7 +112,6 @@ const AdminForgotPassword = () => {
               </Link>
             </div>
           ) : (
-            // Reset Form
             <>
               <div className="mb-8">
                 <div className="inline-block px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium mb-4">
@@ -176,7 +160,7 @@ const AdminForgotPassword = () => {
               {/* Security Notice */}
               <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800 text-center">
-                  ⚠️ If you're unable to reset your password, please contact the system administrator.
+                  If you're unable to reset your password, please contact the system administrator.
                 </p>
               </div>
             </>

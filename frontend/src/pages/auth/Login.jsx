@@ -8,47 +8,33 @@ import { validateEmail, getErrorMessage } from '../../utils/helpers';
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
-/**
- * Login Page - Student/Tutor
- * Features:
- * - Role tabs (Student/Tutor)
- * - Form validation
- * - Remember me checkbox
- * - Forgot password link
- * - Redirect to signup
- */
+
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { loading, error, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // Active role tab
   const [activeRole, setActiveRole] = useState(ROLES.STUDENT);
 
-  // Form state
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false,
   });
 
-  // Form errors
   const [formErrors, setFormErrors] = useState({});
 
-  // Handle input change
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
     });
-    // Clear error for this field
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: '' });
     }
   };
 
-  // Validate form
   const validateForm = () => {
     const errors = {};
 
@@ -65,18 +51,15 @@ const Login = () => {
     return errors;
   };
 
-  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    // Dispatch login action
     const resultAction = await dispatch(
       loginUser({
         email: formData.email,
@@ -85,18 +68,14 @@ const Login = () => {
     );
 
     if (loginUser.fulfilled.match(resultAction)) {
-      // Login successful
       toast.success('Login successful!');
     } else {
-      // Login failed
       toast.error(resultAction.payload || 'Login failed');
     }
   };
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Redirect based on role
       if (user.role === ROLES.STUDENT) {
         navigate(ROUTES.STUDENT_DASHBOARD);
       } else if (user.role === ROLES.TUTOR) {
@@ -107,7 +86,6 @@ const Login = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Clear error on unmount
   useEffect(() => {
     return () => {
       dispatch(clearError());
@@ -116,7 +94,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Illustration */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-500 to-primary-700 items-center justify-center p-12">
         <div className="text-center text-white">
           <div className="mb-8">
@@ -126,10 +103,10 @@ const Login = () => {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Simple illustration - person with laptop */}
               <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
               <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
               <rect x="100" y="300" width="200" height="80" rx="10" fill="white" opacity="0.7" />
+
             </svg>
           </div>
           <h1 className="text-4xl font-bold mb-4">Welcome to Cognon</h1>
@@ -139,15 +116,12 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
-          {/* Logo - Mobile */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
 
-          {/* Welcome Text */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon..!</h2>
             <p className="text-gray-600">
@@ -155,7 +129,6 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Role Tabs */}
           <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
             <button
               type="button"
@@ -166,7 +139,7 @@ const Login = () => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Login
+              STUDENT
             </button>
             <button
               type="button"
@@ -177,11 +150,10 @@ const Login = () => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Register
+              TUTOR
             </button>
           </div>
 
-          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
               label="User name"
@@ -205,7 +177,6 @@ const Login = () => {
               required
             />
 
-            {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <label className="flex items-center">
                 <input
@@ -225,7 +196,6 @@ const Login = () => {
               </Link>
             </div>
 
-            {/* Submit Button */}
             <Button
               type="submit"
               variant="primary"
@@ -237,7 +207,6 @@ const Login = () => {
             </Button>
           </form>
 
-          {/* Sign Up Link */}
           <p className="mt-6 text-center text-gray-600">
             Don't have an account?{' '}
             <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
@@ -245,7 +214,6 @@ const Login = () => {
             </Link>
           </p>
 
-          {/* Google Sign In - Optional */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

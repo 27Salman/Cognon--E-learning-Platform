@@ -1,16 +1,6 @@
 import api from './axios';
 import { ENDPOINTS } from '../utils/constants';
 
-/**
- * Authentication API Service
- * All auth-related API calls
- */
-
-/**
- * User Signup
- * @param {Object} userData - { name, email, password, phone, role }
- * @returns {Promise} - { success, message, token, user }
- */
 export const signup = async (userData) => {
   try {
     const response = await api.post(ENDPOINTS.SIGNUP, userData);
@@ -20,11 +10,7 @@ export const signup = async (userData) => {
   }
 };
 
-/**
- * User Login
- * @param {Object} credentials - { email, password }
- * @returns {Promise} - { success, message, token, user }
- */
+
 export const login = async (credentials) => {
   try {
     const response = await api.post(ENDPOINTS.LOGIN, credentials);
@@ -34,10 +20,7 @@ export const login = async (credentials) => {
   }
 };
 
-/**
- * User Logout
- * @returns {Promise} - { success, message }
- */
+
 export const logout = async () => {
   try {
     const response = await api.post(ENDPOINTS.LOGOUT);
@@ -47,10 +30,7 @@ export const logout = async () => {
   }
 };
 
-/**
- * Get Current User
- * @returns {Promise} - { success, user }
- */
+
 export const getCurrentUser = async () => {
   try {
     const response = await api.get(ENDPOINTS.GET_CURRENT_USER);
@@ -60,10 +40,7 @@ export const getCurrentUser = async () => {
   }
 };
 
-/**
- * Check if token is valid
- * @returns {Promise<boolean>}
- */
+
 export const validateToken = async () => {
   try {
     await getCurrentUser();

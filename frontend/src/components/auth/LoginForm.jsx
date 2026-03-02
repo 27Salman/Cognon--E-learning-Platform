@@ -62,7 +62,6 @@ const LoginForm = () => {
       else if (role === 'tutor') navigate('/tutor/dashboard');
       else navigate('/student/dashboard');
     } catch (err) {
-      // Error handled by useEffect
     }
   };
 

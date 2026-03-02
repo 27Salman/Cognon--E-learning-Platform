@@ -1,11 +1,6 @@
 import React from 'react';
 
-/**
- * Loading Spinner Component
- * @param {string} size - Spinner size (sm, md, lg)
- * @param {string} text - Optional loading text
- */
-const Loader = ({ size = 'md', text = '' }) => {
+const Loader = ({ size = 'md', text = 'Cognon Loading...' }) => {
   const sizes = {
     sm: 'h-6 w-6',
     md: 'h-12 w-12',

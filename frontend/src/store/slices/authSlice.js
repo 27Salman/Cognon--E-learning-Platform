@@ -2,9 +2,6 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as authAPI from '../../api/authAPI';
 import { setToken, setUser, clearAuthData, getToken, getUser } from '../../utils/helpers';
 
-/**
- * Initial State
- */
 const initialState = {
   user: getUser(),
   token: getToken(),
@@ -13,9 +10,6 @@ const initialState = {
   error: null,
 };
 
-/**
- * Async Thunks - Handle API calls
- */
 
 // Signup
 export const signupUser = createAsyncThunk(
@@ -51,7 +45,6 @@ export const logoutUser = createAsyncThunk(
       await authAPI.logout();
       return true;
     } catch (error) {
-      // Even if API fails, clear local data
       return true;
     }
   }
@@ -70,18 +63,13 @@ export const fetchCurrentUser = createAsyncThunk(
   }
 );
 
-/**
- * Auth Slice
- */
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    // Clear error
     clearError: (state) => {
       state.error = null;
     },
-    // Set user from localStorage on app init
     setAuthFromStorage: (state) => {
       state.user = getUser();
       state.token = getToken();
@@ -102,7 +90,6 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.error = null;
         
-        // Save to localStorage
         setToken(action.payload.token);
         setUser(action.payload.user);
       })
@@ -124,7 +111,6 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.error = null;
         
-        // Save to localStorage
         setToken(action.payload.token);
         setUser(action.payload.user);
       })
@@ -145,11 +131,9 @@ const authSlice = createSlice({
         state.token = null;
         state.error = null;
         
-        // Clear localStorage
         clearAuthData();
       })
       .addCase(logoutUser.rejected, (state) => {
-        // Even if API fails, clear state
         state.loading = false;
         state.isAuthenticated = false;
         state.user = null;
@@ -168,7 +152,6 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.isAuthenticated = true;
         
-        // Update localStorage
         setUser(action.payload.user);
       })
       .addCase(fetchCurrentUser.rejected, (state) => {

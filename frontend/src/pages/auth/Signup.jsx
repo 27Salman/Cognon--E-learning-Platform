@@ -8,23 +8,14 @@ import { validateEmail, validatePhone, validatePassword } from '../../utils/help
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
-/**
- * Signup Page - Student/Tutor
- * Features:
- * - Role tabs (Student/Tutor)
- * - Form validation
- * - Password confirmation
- * - Redirect to login
- */
+
 const Signup = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // Active role tab
   const [activeRole, setActiveRole] = useState(ROLES.STUDENT);
 
-  // Form state
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -33,23 +24,19 @@ const Signup = () => {
     confirmPassword: '',
   });
 
-  // Form errors
   const [formErrors, setFormErrors] = useState({});
 
-  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
     });
-    // Clear error for this field
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: '' });
     }
   };
 
-  // Validate form
   const validateForm = () => {
     const errors = {};
 
@@ -86,18 +73,15 @@ const Signup = () => {
     return errors;
   };
 
-  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    // Dispatch signup action
     const resultAction = await dispatch(
       signupUser({
         name: formData.name,
@@ -115,7 +99,6 @@ const Signup = () => {
     }
   };
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === ROLES.STUDENT) {
@@ -126,7 +109,6 @@ const Signup = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Clear error on unmount
   useEffect(() => {
     return () => {
       dispatch(clearError());
@@ -135,7 +117,6 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Illustration */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-500 to-primary-700 items-center justify-center p-12">
         <div className="text-center text-white">
           <div className="mb-8">
@@ -145,7 +126,6 @@ const Signup = () => {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Signup illustration */}
               <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
               <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
               <circle cx="160" cy="250" r="8" fill="#6d28d9" />
@@ -160,15 +140,12 @@ const Signup = () => {
         </div>
       </div>
 
-      {/* Right Side - Signup Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
-          {/* Logo - Mobile */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
 
-          {/* Welcome Text */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon...!</h2>
             <p className="text-gray-600">
@@ -176,7 +153,6 @@ const Signup = () => {
             </p>
           </div>
 
-          {/* Role Tabs */}
           <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
             <button
               type="button"
@@ -202,7 +178,6 @@ const Signup = () => {
             </button>
           </div>
 
-          {/* Signup Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="User name"
@@ -259,7 +234,6 @@ const Signup = () => {
               required
             />
 
-            {/* Submit Button */}
             <Button
               type="submit"
               variant="primary"
@@ -271,7 +245,6 @@ const Signup = () => {
             </Button>
           </form>
 
-          {/* Login Link */}
           <p className="mt-6 text-center text-gray-600">
             Already have an account?{' '}
             <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
@@ -279,7 +252,6 @@ const Signup = () => {
             </Link>
           </p>
 
-          {/* Google Sign Up - Optional */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

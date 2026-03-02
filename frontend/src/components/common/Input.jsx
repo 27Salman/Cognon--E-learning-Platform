@@ -1,17 +1,5 @@
 import React from 'react';
 
-/**
- * Reusable Input Component
- * @param {string} label - Input label
- * @param {string} type - Input type (text, email, password, etc.)
- * @param {string} name - Input name
- * @param {string} value - Input value
- * @param {function} onChange - Change handler
- * @param {string} placeholder - Placeholder text
- * @param {string} error - Error message
- * @param {boolean} required - Required field
- * @param {boolean} disabled - Disabled state
- */
 const Input = ({
   label,
   type = 'text',
