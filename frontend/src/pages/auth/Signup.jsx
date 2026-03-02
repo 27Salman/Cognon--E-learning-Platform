@@ -149,7 +149,7 @@ const Signup = () => {
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon...!</h2>
             <p className="text-gray-600">
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              The Perfect e-Learning Platform
             </p>
           </div>
 
@@ -163,7 +163,7 @@ const Signup = () => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Login
+              STUDENT
             </button>
             <button
               type="button"
@@ -174,7 +174,7 @@ const Signup = () => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Register
+              TUTOR
             </button>
           </div>
 
