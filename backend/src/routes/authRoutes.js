@@ -9,6 +9,9 @@ router.post('/signup', signupValidation, validate, authController.signup);
 
 router.post('/login', loginValidation, validate, authController.login);
 
+router.get('/verify-email/:token', authController.verifyEmail);
+router.post('/resend-verification', authController.resendVerification);
+
 router.post('/logout', protect, authController.logout);
 
 router.get('/me', protect, authController.getCurrentUser);

@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const { USER_ROLES } = require("../config/constants");
+const crypto = require('crypto');
+const { sendVerificationEmail } = require('./emailService');
 
 const authService = {
     async registerUser(userData){
@@ -43,7 +45,20 @@ const authService = {
             };
         }
 
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        newUser.verificationToken = crypto
+            .createHash('sha256')
+            .update(verificationToken)
+            .digest('hex');
+        newUser.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
         await newUser.save();
+
+        try {
+            await sendVerificationEmail(newUser.email, newUser.name, verificationToken);
+        } catch (error) {
+            console.error('Failed to send verification email:', error);
+        }
 
         const userObject = newUser.toObject();
         delete userObject.password;

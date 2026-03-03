@@ -92,3 +92,69 @@ exports.getCurrentUser = asyncHandler(async (req, res) => {
         }
     });
 });
+
+exports.verifyEmail = asyncHandler(async (req, res) => {
+    const { token } = req.params;
+    
+    const hashedToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+    
+    const user = await User.findOne({
+        verificationToken: hashedToken,
+        verificationTokenExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'Invalid or expired verification token'
+        });
+    }
+  
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+    await user.save();
+  
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Email verified successfully'
+    });
+});
+
+exports.resendVerification = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    
+    const user = await User.findOne({ email: email.toLowerCase() });
+  
+    if (!user) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+            success: false,
+            message: 'User not found'
+        });
+    }
+  
+    if (user.isVerified) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'Email already verified'
+        });
+    }
+  
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    user.verificationToken = crypto
+        .createHash('sha256')
+        .update(verificationToken)
+        .digest('hex');
+    user.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
+    
+    await user.save();
+    await sendVerificationEmail(user.email, user.name, verificationToken);
+    
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Verification email sent'
+    });
+});
