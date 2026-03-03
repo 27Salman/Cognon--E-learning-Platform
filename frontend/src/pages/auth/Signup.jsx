@@ -3,11 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signupUser, clearError } from '../../store/slices/authSlice';
 import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
 import { validateEmail, validatePhone, validatePassword } from '../../utils/helpers';
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
-
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -25,6 +23,21 @@ const Signup = () => {
   });
 
   const [formErrors, setFormErrors] = useState({});
+
+  const roleContent = {
+    [ROLES.STUDENT]: {
+      title: 'Join as Student',
+      subtitle: 'Start your learning journey today',
+      gradient: 'from-primary-500 to-primary-700',
+    },
+    [ROLES.TUTOR]: {
+      title: 'Join as Tutor',
+      subtitle: 'Share your knowledge with the world',
+      gradient: 'from-primary-500 to-primary-700',
+    },
+  };
+
+  const currentContent = roleContent[activeRole];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -110,49 +123,53 @@ const Signup = () => {
   }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
-    return () => {
-      dispatch(clearError());
-    };
+    return () => dispatch(clearError());
   }, [dispatch]);
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-500 to-primary-700 items-center justify-center p-12">
+      {/* Left Side - Dynamic Illustration */}
+      <div className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}>
         <div className="text-center text-white">
           <div className="mb-8">
-            <svg
-              className="w-64 h-64 mx-auto"
-              viewBox="0 0 400 400"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+            <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
               <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
               <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
-              <circle cx="160" cy="250" r="8" fill="#6d28d9" />
-              <circle cx="200" cy="250" r="8" fill="#6d28d9" />
-              <circle cx="240" cy="250" r="8" fill="#6d28d9" />
+              <circle cx="160" cy="250" r="8" fill="#7c3aed" />
+              <circle cx="200" cy="250" r="8" fill="#7c3aed" />
+              <circle cx="240" cy="250" r="8" fill="#7c3aed" />
             </svg>
           </div>
-          <h1 className="text-4xl font-bold mb-4">Join Cognon Today</h1>
-          <p className="text-xl opacity-90">
-            Start your learning journey or share your knowledge with thousands of students.
+          <h1 className="text-4xl font-bold mb-4 transition-all duration-300">
+            {currentContent.title}
+          </h1>
+          <p className="text-xl opacity-90 transition-all duration-300">
+            {currentContent.subtitle}
           </p>
+          <div className="mt-8 flex justify-center gap-2">
+            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.STUDENT ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
+            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.TUTOR ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
+          </div>
         </div>
       </div>
 
+      {/* Right Side - Signup Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
+          {/* Logo - Mobile */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
 
+          {/* Welcome Text */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon...!</h2>
             <p className="text-gray-600">
-              The Perfect e-Learning Platform
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
             </p>
           </div>
 
+          {/* Role Tabs */}
           <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
             <button
               type="button"
@@ -178,6 +195,7 @@ const Signup = () => {
             </button>
           </div>
 
+          {/* Signup Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="User name"
@@ -223,6 +241,26 @@ const Signup = () => {
               required
             />
 
+            {formData.password && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-600">Password Strength:</span>
+                  <span className={`text-xs font-medium text-${getPasswordStrength(formData.password).color}-600`}>
+                    {getPasswordStrength(formData.password).text}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full bg-${getPasswordStrength(formData.password).color}-500 transition-all`}
+                    style={{ width: `${getPasswordStrength(formData.password).strength}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Must contain: uppercase, lowercase, number, special character (@$!%*?&), min 8 chars
+                </p>
+              </div>
+            )}
+
             <Input
               label="Confirm Password"
               type="password"
@@ -234,17 +272,17 @@ const Signup = () => {
               required
             />
 
-            <Button
+            {/* Submit Button  */}
+            <button
               type="submit"
-              variant="primary"
-              fullWidth
-              loading={loading}
               disabled={loading}
+              className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Register
-            </Button>
+              {loading ? 'Creating Account...' : 'Register'}
+            </button>
           </form>
 
+          {/* Login Link */}
           <p className="mt-6 text-center text-gray-600">
             Already have an account?{' '}
             <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
@@ -252,6 +290,7 @@ const Signup = () => {
             </Link>
           </p>
 
+          {/* Google Sign Up */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -263,7 +302,8 @@ const Signup = () => {
             </div>
             <button
               type="button"
-              className="mt-4 w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium"
+              onClick={() => toast.info('Google signup will be configured in backend')}
+              className="mt-4 w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium transition-colors"
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path

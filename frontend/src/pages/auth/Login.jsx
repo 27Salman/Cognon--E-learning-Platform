@@ -118,6 +118,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex">
+      {/* Left Side - Dynamic Illustration */}
       <div className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}>
         <div className="text-center text-white">
           <div className="mb-8 transition-all duration-500">
@@ -136,21 +137,25 @@ const Login = () => {
         </div>
       </div>
 
+      {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
+          {/* Logo - Mobile */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
 
+          {/* Welcome Text */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon..!</h2>
             <p className="text-gray-600">
-              The Perfect e-Learning Platform
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
             </p>
           </div>
 
+          {/* Role Tabs */}
           <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
-            <button
+            <Button
               type="button"
               onClick={() => setActiveRole(ROLES.STUDENT)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
@@ -160,8 +165,8 @@ const Login = () => {
               }`}
             >
               STUDENT
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => setActiveRole(ROLES.TUTOR)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
@@ -171,16 +176,12 @@ const Login = () => {
               }`}
             >
               TUTOR
-            </button>
+            </Button>
           </div>
 
           {/* Role Badge */}
           <div className="mb-6 text-center">
-            <span className={`inline-block px-4 py-1 rounded-full text-sm font-medium transition-all ${
-              activeRole === ROLES.STUDENT 
-                ? 'bg-primary-100 text-primary-700' 
-                : 'bg-blue-100 text-primary-700'
-            }`}>
+            <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-700">
               Logging in as {activeRole === ROLES.STUDENT ? 'Student' : 'Tutor'}
             </span>
           </div>
@@ -217,21 +218,13 @@ const Login = () => {
                   name="rememberMe"
                   checked={formData.rememberMe}
                   onChange={handleChange}
-                  className={`h-4 w-4 focus:ring-2 border-gray-300 rounded transition-colors ${
-                    activeRole === ROLES.STUDENT 
-                      ? 'text-primary-600 focus:ring-primary-500' 
-                      : 'text-primary-600 focus:ring-primary-500'
-                  }`}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm text-gray-700">Remember me</span>
               </label>
               <Link
                 to="/forgot-password"
-                className={`text-sm font-medium transition-colors ${
-                  activeRole === ROLES.STUDENT
-                    ? 'text-primary-600 hover:text-primary-700'
-                    : 'text-primary-600 hover:text-primary-700'
-                }`}
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
                 Forgot Password?
               </Link>
@@ -240,27 +233,17 @@ const Login = () => {
             {/* Submit Button */}
             <Button
               type="submit"
-              variant="primary"
-              fullWidth
-              loading={loading}
               disabled={loading}
-              className={activeRole === ROLES.TUTOR ? 'bg-primary-600 hover:bg-primary-700' : ''}
+              className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Login
+              {loading ? 'Loading...' : 'Login'}
             </Button>
           </form>
 
           {/* Sign Up Link */}
           <p className="mt-6 text-center text-gray-600">
             Don't have an account?{' '}
-            <Link 
-              to="/signup" 
-              className={`font-medium transition-colors ${
-                activeRole === ROLES.STUDENT
-                  ? 'text-primary-600 hover:text-primary-700'
-                  : 'text-primary-600 hover:text-primary-700'
-              }`}
-            >
+            <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
               Sign up for free!
             </Link>
           </p>
@@ -275,7 +258,7 @@ const Login = () => {
                 <span className="px-4 bg-gray-50 text-gray-500">Sign up with</span>
               </div>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => toast.info('Google login will be configured in backend')}
               className="mt-4 w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium transition-colors"
@@ -299,7 +282,7 @@ const Login = () => {
                 />
               </svg>
               Google
-            </button>
+            </Button>
           </div>
         </div>
       </div>

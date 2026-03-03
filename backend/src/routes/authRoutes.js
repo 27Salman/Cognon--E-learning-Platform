@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 const authController = require("../controllers/authController");
 const { protect } = require('../middleware/authMiddleware');
+const { validate } = require('../middleware/validation');
+const { signupValidation, loginValidation } = require('../validators/authValidator')
 
-router.post('/signup', authController.signup);
+router.post('/signup', signupValidation, validate, authController.signup);
 
-router.post('/login', authController.login);
+router.post('/login', loginValidation, validate, authController.login);
 
 router.post('/logout', protect, authController.logout);
 

@@ -2,291 +2,389 @@
 
 ## Project Overview
 
-Full-stack e-learning platform with role-based authentication (Admin, Tutor, Student).
-
-**Current Status:** Backend authentication complete (Week 1 - Days 1-3)
-
-**Repository:** Cognon Platform
-**Structure:** Monorepo (backend + frontend)
+**Name:** Cognon E-Learning Platform  
+**Type:** Full-stack MERN e-learning application  
+**Purpose:** Educational platform with three user roles (Student, Tutor, Admin)  
+**Status:** Week 1 Complete (Backend Auth), Frontend Setup Complete  
+**Developer:** Learning full-stack development through structured project building
 
 ---
 
 ## Tech Stack
 
 ### Backend
-- Node.js 18.x
-- Express.js 4.x
-- MongoDB 6.x (Atlas)
-- Mongoose 7.x
-- JWT (jsonwebtoken 9.x)
-- bcryptjs 2.4.3
+- **Runtime:** Node.js v18+
+- **Framework:** Express.js
+- **Database:** MongoDB with Mongoose ODM
+- **Authentication:** JWT (jsonwebtoken) with bcrypt password hashing
+- **Validation:** express-validator
+- **Security:** cors, helmet, express-rate-limit
+- **Environment:** dotenv
 
 ### Frontend
-- React 18.x
-- Redux Toolkit
-- React Router 6.x
-- Tailwind CSS
-- Axios
+- **Library:** React 18.3.1
+- **Build Tool:** Vite 5.4.11
+- **State Management:** Redux Toolkit 2.2.7
+- **Routing:** React Router DOM 6.26.0
+- **Styling:** Tailwind CSS 3.4.17
+- **HTTP Client:** Axios 1.7.2
+- **UI Utilities:** react-hot-toast 2.4.1, react-icons 5.2.1
+
+### Development Tools
+- **API Testing:** Postman (collection available)
+- **Version Control:** Git/GitHub
+- **Code Editor:** VS Code (assumed)
 
 ---
 
-## Architecture
+## Architecture Overview
 
-### Pattern
-- **Backend:** MVC with Services Layer
-- **Separation:** Model → Service → Controller → Route
-- **Auth:** JWT-based stateless authentication
-- **Roles:** RBAC (Role-Based Access Control)
+### System Architecture
+- **Pattern:** Monorepo with separate `/backend` and `/frontend` folders
+- **API Style:** RESTful JSON API
+- **Auth Method:** JWT tokens (7-day expiry) stored in localStorage
+- **Communication:** Frontend (port 3000) → Backend (port 5000) via Vite proxy
 
-### Request Flow
-```
-Route → Middleware → Controller → Service → Model → Database
-```
-
-### Layer Responsibilities
-- **Model:** Data structure, schema validation, pre/post hooks
-- **Service:** Business logic, reusable operations
-- **Controller:** HTTP handling (thin, 10-20 lines)
-- **Middleware:** Authentication, authorization, validation
-- **Utility:** Helper functions (token generation, etc.)
+### Key Architectural Decisions
+1. **Single User Model:** One unified User schema with `role` field (student/tutor/admin)
+2. **Separate Admin Login:** `/admin/login` as hidden URL for security
+3. **Role-Based Routing:** Client-side route guards (ProtectedRoute, RoleRoute)
+4. **Token Storage:** localStorage (key: `cognon_token`, `cognon_user`)
+5. **Auto-Redirect:** Based on user role after successful login
+6. **Color Scheme:** Primary purple (#8b5cf6) for all roles (not blue)
 
 ---
 
 ## Backend Structure
 ```
 backend/
+├── server.js              # Entry point
+├── config/
+│   └── db.js             # MongoDB connection
+├── models/
+│   └── User.js           # Unified user model (Student/Tutor/Admin)
+├── routes/
+│   └── authRoutes.js     # Auth endpoints
+├── controllers/
+│   └── authController.js # Auth logic (signup, login, getCurrentUser)
+├── middleware/
+│   └── authMiddleware.js # JWT verification, role-based access
+├── utils/
+│   └── validation.js     # Input validation functions
+└── .env                  # Environment variables
+```
+
+### Backend API Endpoints
+
+**Auth Routes** (`/api/auth`)
+- `POST /signup` - Register student/tutor (role in body)
+- `POST /login` - Login all roles (email, password)
+- `GET /me` - Get current user (requires auth)
+
+### User Model Schema
+```javascript
+{
+  name: String (required, min 3 chars),
+  email: String (required, unique, validated),
+  phone: String (required, 10 digits, starts 6-9),
+  password: String (required, hashed with bcrypt, min 6 chars),
+  role: String (enum: ['student', 'tutor', 'admin'], default: 'student'),
+  status: String (enum: ['active', 'inactive', 'blocked'], default: 'active'),
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Backend Environment Variables
+```
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/cognon
+JWT_SECRET=your_jwt_secret_key_here
+JWT_EXPIRE=7d
+NODE_ENV=development
+```
+
+---
+
+## Frontend Structure
+```
+frontend/
+├── public/
+│   └── index.html
 ├── src/
-│   ├── config/
-│   │   ├── database.js          # MongoDB connection
-│   │   └── constants.js         # App constants
-│   ├── models/
-│   │   └── User.js              # Single user model (all roles)
-│   ├── services/
-│   │   └── authService.js       # Auth business logic
-│   ├── controllers/
-│   │   └── authController.js    # HTTP handlers
-│   ├── middlewares/
-│   │   ├── authMiddleware.js    # JWT verification
-│   │   ├── roleMiddleware.js    # Role checking
-│   │   └── errorMiddleware.js   # Error handling
+│   ├── api/
+│   │   ├── axios.js              # Axios instance with interceptors
+│   │   └── authAPI.js            # Auth API calls
+│   ├── components/
+│   │   └── common/
+│   │       ├── Button.jsx        # Reusable button
+│   │       ├── Input.jsx         # Form input with validation
+│   │       └── Loader.jsx        # Loading spinner
+│   ├── pages/
+│   │   ├── auth/
+│   │   │   ├── Login.jsx         # Student/Tutor login with tabs
+│   │   │   ├── Signup.jsx        # Student/Tutor signup with tabs
+│   │   │   ├── AdminLogin.jsx    # Admin-only login
+│   │   │   ├── ForgotPassword.jsx
+│   │   │   └── AdminForgotPassword.jsx
+│   │   ├── student/
+│   │   │   └── StudentDashboard.jsx
+│   │   ├── tutor/
+│   │   │   └── TutorDashboard.jsx
+│   │   ├── admin/
+│   │   │   └── AdminDashboard.jsx
+│   │   └── Home.jsx              # Landing page
 │   ├── routes/
-│   │   ├── authRoutes.js        # Auth endpoints
-│   │   └── index.js             # Route aggregator
-│   └── utils/
-│       └── generateToken.js     # JWT generation
-├── uploads/
+│   │   ├── ProtectedRoute.jsx    # Auth guard
+│   │   └── RoleRoute.jsx         # Role-based guard
+│   ├── store/
+│   │   ├── store.js              # Redux store config
+│   │   └── slices/
+│   │       └── authSlice.js      # Auth state + thunks
+│   ├── utils/
+│   │   ├── constants.js          # Routes, roles, API endpoints
+│   │   └── helpers.js            # Token mgmt, validation, formatting
+│   ├── App.jsx                   # Main routing
+│   ├── main.jsx                  # Entry point
+│   └── index.css                 # Global Tailwind styles
 ├── .env
-├── .gitignore
 ├── package.json
-└── server.js                     # Entry point
+├── vite.config.js
+├── tailwind.config.js
+└── postcss.config.js
+```
+
+### Frontend Routes
+
+**Public:**
+- `/` - Home
+- `/login` - Student/Tutor login
+- `/signup` - Student/Tutor signup
+- `/forgot-password` - Student/Tutor password reset
+- `/admin/login` - Admin login (hidden URL)
+- `/admin/forgot-password` - Admin password reset
+
+**Protected (Student):**
+- `/student/dashboard`
+- `/student/courses`
+- `/student/profile`
+
+**Protected (Tutor):**
+- `/tutor/dashboard`
+- `/tutor/courses`
+- `/tutor/profile`
+- `/tutor/revenues`
+
+**Protected (Admin):**
+- `/admin/dashboard`
+- `/admin/users`
+- `/admin/courses`
+- `/admin/categories`
+- `/admin/tutors`
+
+### Redux Auth State
+```javascript
+{
+  user: null,           // User object from backend
+  token: null,          // JWT token
+  isAuthenticated: false,
+  loading: false,
+  error: null
+}
+```
+
+### Axios Interceptors
+- **Request:** Auto-attach JWT token from localStorage
+- **Response:** Handle 401 (logout + redirect), 403, 500 errors
+
+### Frontend Environment Variables
+```
+VITE_API_URL=http://localhost:5000/api
+VITE_APP_NAME=Cognon
 ```
 
 ---
 
-## Auth Strategy
+## Authentication Strategy
 
-### Single User Model
-- **Model:** User.js handles all roles (Student, Tutor, Admin)
-- **Role Field:** Enum ['student', 'tutor', 'admin']
-- **Profiles:** Conditional (studentProfile, tutorProfile)
+### Flow
+1. User submits credentials → dispatch `loginUser()`
+2. API call → backend validates → returns `{ token, user }`
+3. Redux saves to state + localStorage
+4. Axios interceptor adds token to future requests
+5. Auto-redirect based on `user.role`
+6. On 401 error → auto-logout + clear state + redirect `/login`
 
-### Authentication Flow
-1. User registers (student/tutor only)
-2. Password hashed (bcrypt, pre-save hook)
-3. JWT generated (7d expiry, contains userId + role)
-4. Token sent to client
-5. Client stores token (localStorage)
-6. Token sent in Authorization header
-7. Middleware verifies token → sets req.user
+### Validation Rules
+- **Email:** Standard email regex
+- **Phone:** 10 digits, starts with 6-9 (Indian format)
+- **Password:** Minimum 6 characters
+- **Name:** Minimum 3 characters
 
-### Authorization
-- **protect middleware:** Verify JWT, attach user to req.user
-- **restrictTo(...roles):** Check user role
-- **adminOnly/tutorOnly/studentOnly:** Convenience methods
-
-### Admin Creation
-- Admin accounts manually created in database
-- No signup endpoint for admin
+### Security Features
+- Passwords hashed with bcrypt (10 rounds)
+- JWT tokens with 7-day expiry
+- Admin login separate URL for security
+- Role verification on protected routes (both frontend + backend)
+- CORS enabled for `http://localhost:3000`
 
 ---
 
-## Database Design
+## Design System
 
-### User Model (models/User.js)
-
-**Common Fields:**
-- name, email (unique), password (hashed), phone
-- role: 'student' | 'tutor' | 'admin'
-- status: 'active' | 'blocked' | 'pending' | 'inactive'
-- profileImage, isVerified, lastLogin
-
-**Student-Specific:**
+### Colors (Tailwind Config)
 ```javascript
-studentProfile: {
-  enrolledCourses: [{ courseId, enrolledAt, progress, completedLessons }],
-  certificates: [ObjectId]
+primary: {
+  50: '#f5f3ff',
+  500: '#8b5cf6',  // Main brand purple
+  600: '#7c3aed',
+  700: '#6d28d9',
 }
 ```
 
-**Tutor-Specific:**
-```javascript
-tutorProfile: {
-  bio, expertise: [], experience,
-  coursesCreated: [ObjectId],
-  isApproved: Boolean  // Admin must approve
-}
-```
-
-**Hooks:**
-- Pre-save: Hash password if modified
-
-**Instance Methods:**
-- comparePassword(candidatePassword)
-- hasRole(role)
+### Login/Signup Pages
+- **Layout:** Split-screen (illustration left, form right)
+- **Tabs:** Student/Tutor role selection
+- **Theme:** Purple gradient background
+- **Dynamic:** Left side animates when switching roles
+- **Responsive:** Mobile-first design
 
 ---
 
 ## Completed Features
 
-### Day 1: Foundation
-- [x] User model (single model, role-based)
-- [x] authService (registerUser, loginUser, validation)
-- [x] generateToken utility
-- [x] Database connection
-- [x] Constants configuration
+### Backend (Week 1)
+✅ MongoDB connection setup  
+✅ User model with role-based schema  
+✅ Auth controller (signup, login, getCurrentUser)  
+✅ JWT authentication middleware  
+✅ Input validation  
+✅ Password hashing  
+✅ Error handling  
+✅ CORS configuration  
+✅ Postman collection for testing  
 
-### Day 2: Controllers & Routes
-- [x] authController (signup, login, logout, getCurrentUser)
-- [x] authRoutes (public + protected endpoints)
-- [x] Routes connected to server.js
-
-### Day 3: Middleware
-- [x] authMiddleware (protect, optionalAuth)
-- [x] roleMiddleware (restrictTo, adminOnly, tutorOnly, studentOnly)
-- [x] errorMiddleware (global error handling, 404 handler)
-- [x] Protected routes updated (/logout, /me)
-
----
-
-## API Endpoints
-
-### Public Routes
-```
-POST /api/auth/signup   - Register student/tutor
-POST /api/auth/login    - Login all roles
-```
-
-### Protected Routes
-```
-POST /api/auth/logout   - Logout (requires token)
-GET  /api/auth/me       - Get current user (requires token)
-```
-
----
-
-## Environment Variables
-```env
-NODE_ENV=development
-PORT=5000
-MONGODB_URI=mongodb+srv://...
-JWT_SECRET=your_secret_key
-JWT_EXPIRES_IN=7d
-CLIENT_URL=http://localhost:3000
-```
+### Frontend (Current)
+✅ Project setup with Vite + React 18  
+✅ Redux Toolkit state management  
+✅ Axios configuration with interceptors  
+✅ Protected route guards (auth + role-based)  
+✅ Login page (Student/Tutor tabs, dynamic UI)  
+✅ Signup page (Student/Tutor tabs, dynamic UI)  
+✅ Admin login page (separate)  
+✅ Forgot password pages (all roles)  
+✅ Dashboard placeholders (Student, Tutor, Admin)  
+✅ Reusable components (Button, Input, Loader)  
+✅ Token management utilities  
+✅ Form validation  
+✅ Toast notifications  
+✅ Tailwind CSS styling with purple theme  
+✅ Responsive design  
 
 ---
 
 ## Current Phase
 
-**Week 1: Backend Authentication - COMPLETE**
-
-Authentication system fully functional:
-- User registration (students, tutors)
-- User login (all roles)
-- JWT token generation
-- Token verification
-- Role-based access control
-- Error handling
-- Password encryption
-- Status management (blocked users)
+**Status:** Frontend authentication UI complete and functional  
+**Working:** Dev server running, all auth pages rendering  
+**Testing:** Ready for integration testing with backend  
 
 ---
 
 ## Next Immediate Tasks
 
-### Option 1: Frontend (Recommended)
-- React authentication pages (Login, Signup)
-- Protected routes (ProtectedRoute component)
-- Token storage (localStorage)
-- API integration (axios + Redux)
-- Role-based UI routing
+### Week 1: Pendings
+1. Complete the authentication processes
+2. OTP verification, email etc
+3. Make the password strong
+4. Need validation for username
+5. Google login and signup
+6. Showing an error when a user or tutor registers.(Showing a pop up  message of "next is not a function" error)
+7. The registration and login fails
 
-### Option 2: Backend Core Modules
-- Course model + CRUD
-- Category model + CRUD
+### Week 2: Full Auth Integration & Testing
+1. Start backend server (`npm start` in `/backend`)
+2. Start frontend server (`npm run dev` in `/frontend`)
+3. Test signup flow (Student → create account → auto-login → redirect)
+4. Test login flow (Tutor → login → redirect to dashboard)
+5. Test admin login flow
+6. Verify protected routes (try accessing without login)
+7. Verify role restrictions (student cannot access tutor routes)
+8. Test logout functionality
+9. Test token persistence (refresh page, should stay logged in)
+
+### Week 3: Course Module (Planned)
+- Course model (title, description, tutor, price, modules)
+- Course CRUD endpoints
+- Course listing page
+- Course detail page
 - Enrollment system
-- User profile management
-
-### Option 3: Backend Enhancements
-- Password reset
-- Email verification
-- Refresh tokens
-- Admin approval system for tutors
 
 ---
 
 ## Important Architectural Rules
 
-1. **Single User Model:** One User model with role field, NOT separate models
-2. **Services Layer:** All business logic in services, NOT controllers
-3. **Thin Controllers:** Controllers only handle HTTP (10-20 lines)
-4. **Password Hashing:** Automatic in model pre-save hook
-5. **JWT in Headers:** Format: `Authorization: Bearer <token>`
-6. **Middleware Order:** protect → role check → controller
-7. **Error Handling:** Centralized in errorMiddleware
-8. **No SuperAdmin:** Single admin is sufficient
-9. **Tutor Approval:** Tutors require admin approval (isApproved field)
-10. **Status Checks:** Blocked users cannot login
+### Code Standards
+1. **React Components:** Functional components with hooks only
+2. **File Naming:** PascalCase for components, camelCase for utilities
+3. **State Management:** Redux for global auth, local state for UI-only
+4. **API Calls:** Always through Redux thunks, never direct in components
+5. **Error Handling:** Try-catch in thunks, display via toast
+6. **Loading States:** Show spinner on async operations
+7. **Validation:** Both client-side (instant feedback) and server-side (security)
+
+### Dependency Versions (Critical)
+- React: 18.3.1 (NOT 19.x)
+- Vite: 5.4.11 (NOT 7.x or 8.x beta)
+- Tailwind: 3.4.17 (NOT 4.x)
+- Use exact versions in `package.json` (no ^ or ~)
+
+### Common Issues & Solutions
+- **Vite cache errors:** Delete `node_modules/.vite` and restart
+- **Port 3000 busy:** Kill process with `taskkill /PID <number> /F`
+- **Blank page:** Hard refresh `Ctrl+Shift+R` or use incognito
+- **401 errors:** Check backend running, verify token in localStorage
+
+### File Location Rules
+- **Never commit:** `node_modules/`, `.env`, `dist/`
+- **Backend runs on:** Port 5000
+- **Frontend runs on:** Port 3000
+- **MongoDB runs on:** localhost:27017
 
 ---
 
-## Testing
+## Development Workflow
 
-**Tools:** Postman
-**Test Flow:**
-1. Signup student/tutor
-2. Login → receive token
-3. Access /me with token → success
-4. Access /me without token → 401
-5. Login as unapproved tutor → 401
+### Starting Development
+```bash
+# Terminal 1 - Backend
+cd backend
+npm start
 
----
-
-## Key Dependencies
-```json
-{
-  "express": "^4.18.2",
-  "mongoose": "^7.6.3",
-  "bcryptjs": "^2.4.3",
-  "jsonwebtoken": "^9.0.2",
-  "dotenv": "^16.3.1",
-  "cors": "^2.8.5",
-  "helmet": "^7.0.0"
-}
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
 ```
 
----
-
-## Notes
-
-- MongoDB connection: Atlas (cloud)
-- Token expiry: 7 days (configurable)
-- CORS enabled for http://localhost:3000
-- Error responses: Consistent format { success, message }
-- Password min length: 6 characters
-- Phone validation: Indian format (10 digits, starts with 6-9)
+### Testing Auth Flow
+1. Open `http://localhost:3000/signup`
+2. Register as student with test credentials
+3. Verify auto-login and redirect to `/student/dashboard`
+4. Logout and test login at `/login`
+5. Test role switching (Student ↔ Tutor tabs)
 
 ---
 
-**Last Updated:** Week 1 Day 3 Complete
-**Ready For:** Frontend development or backend module expansion
+## Project Documentation Reference
+
+- **Postman Collection:** `Cognon_postman_collection.json`
+- **Module List:** `Cognon_Module_list.pdf`
+- **Timeline:** `Cognon_Timeline.pdf`
+- **Admin UI Reference:** `Cognon__admincompressed.pdf`
+- **Tutor UI Reference:** `Cognon__tutorcompressed.pdf`
+- **Architecture Diagram:** `diagramexport11620268_45_56PM.png`
+
+---
+
+**Last Updated:** Week 1 Complete, Frontend Setup Complete, the bugs to be fixed. 
+**Next Milestone:** Complete the google authentication login configure settings, otp varifications etc, forgot password sending to email and verification etc, Full authentication testing and course module planning

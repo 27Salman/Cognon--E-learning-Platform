@@ -58,6 +58,13 @@ const userSchema = new mongoose.Schema(
             default: false
         },
 
+        verificationToken: {
+            type: String
+        },
+        verificationTokenExpires: {
+            type: Date
+        },
+
         studentProfile: {
             enrolledCourses: [
                 {
