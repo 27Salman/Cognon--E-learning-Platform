@@ -2,8 +2,8 @@ const authService = require("../services/authService");
 const generateToken = require("../utils/generateToken");
 const { HTTP_STATUS, MESSAGES } = require("../config/constants");
 const asyncHandler = require('../middleware/asyncHandler');
-const crypto = require('crypto');
-const { sendPasswordResetEmail } = require('../services/emailService');
+const { verifyOTP, generateOTP, storeOTP, clearOTP } = require('../utils/otpGenerator');
+const { sendVerificationOTP, sendPasswordResetOTP } = require('../services/emailService');
 
 exports.signup = asyncHandler(async (req, res) => {
     const userData = req.body;
@@ -95,69 +95,79 @@ exports.getCurrentUser = asyncHandler(async (req, res) => {
     });
 });
 
-exports.verifyEmail = asyncHandler(async (req, res) => {
-    const { token } = req.params;
+exports.verifyEmailOTP = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
     
-    const hashedToken = crypto
-        .createHash('sha256')
-        .update(token)
-        .digest('hex');
-    
-    const user = await User.findOne({
-        verificationToken: hashedToken,
-        verificationTokenExpires: { $gt: Date.now() }
-    });
-    
-    if (!user) {
+    if (!email || !otp) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
-            message: 'Invalid or expired verification token'
+            message: 'Email and OTP are required'
         });
     }
-  
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpires = undefined;
-    await user.save();
-  
-    res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: 'Email verified successfully'
-    });
-});
-
-exports.resendVerification = asyncHandler(async (req, res) => {
-    const { email } = req.body;
+    
+    const result = verifyOTP(email, otp);
+    
+    if (!result.valid) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: result.message
+        });
+    }
     
     const user = await User.findOne({ email: email.toLowerCase() });
-  
+    
     if (!user) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
             success: false,
             message: 'User not found'
         });
     }
-  
+    
+    user.isVerified = true;
+    await user.save();
+    
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Email verified successfully'
+    });
+});
+
+exports.resendOTP = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    
+    if (!email) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'Email is required'
+        });
+    }
+    
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+            success: false,
+            message: 'User not found'
+        });
+    }
+    
     if (user.isVerified) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             message: 'Email already verified'
         });
     }
-  
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    user.verificationToken = crypto
-        .createHash('sha256')
-        .update(verificationToken)
-        .digest('hex');
-    user.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
     
-    await user.save();
-    await sendVerificationEmail(user.email, user.name, verificationToken);
+    clearOTP(email);
+    
+    const otp = generateOTP();
+    storeOTP(email, otp, 10);
+    
+    await sendVerificationOTP(email, user.name, otp);
     
     res.status(HTTP_STATUS.OK).json({
         success: true,
-        message: 'Verification email sent'
+        message: 'OTP sent successfully'
     });
 });
 
@@ -169,68 +179,86 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
     if (!user) {
         return res.status(HTTP_STATUS.OK).json({
             success: true,
-            message: 'If the email exists, a reset link has been sent'
+            message: 'If the email exists, an OTP has been sent'
         });
     }
-  
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    user.passwordResetToken = crypto
-        .createHash('sha256')
-        .update(resetToken)
-        .digest('hex');
-    user.passwordResetExpires = Date.now() + 60 * 60 * 1000; 
     
-    await user.save();
-  
+    const otp = generateOTP();
+    storeOTP(`reset_${email}`, otp, 10);
+    
     try {
-        await sendPasswordResetEmail(user.email, user.name, resetToken);
+        await sendPasswordResetOTP(user.email, user.name, otp);
         
         res.status(HTTP_STATUS.OK).json({
             success: true,
-            message: 'Password reset email sent'
+            message: 'Password reset OTP sent to your email'
         });
     } catch (error) {
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-        await user.save();
-        
-        throw new Error('Failed to send reset email');
+        clearOTP(`reset_${email}`);
+        throw new Error('Failed to send reset OTP');
     }
 });
 
-exports.resetPassword = asyncHandler(async (req, res) => {
-    const { token } = req.params;
-    const { password } = req.body;
+exports.verifyResetOTP = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
     
-    if (!password || password.length < 8) {
+    if (!email || !otp) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
-            message: 'Password must be at least 8 characters'
+            message: 'Email and OTP are required'
         });
     }
     
-    const hashedToken = crypto
-        .createHash('sha256')
-        .update(token)
-        .digest('hex');
+    const result = verifyOTP(`reset_${email}`, otp);
     
-    const user = await User.findOne({
-        passwordResetToken: hashedToken,
-        passwordResetExpires: { $gt: Date.now() }
+    if (!result.valid) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: result.message
+        });
+    }
+    
+    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    storeOTP(`token_${email}`, resetToken, 10);
+    
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'OTP verified successfully',
+        resetToken: resetToken
     });
-  
-    if (!user) {
+});
+
+exports.resetPassword = asyncHandler(async (req, res) => {
+    const { email, resetToken, newPassword } = req.body;
+    
+    if (!email || !resetToken || !newPassword) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'All fields are required'
+        });
+    }
+    
+    const result = verifyOTP(`token_${email}`, resetToken);
+    
+    if (!result.valid) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             message: 'Invalid or expired reset token'
         });
     }
     
-    user.password = password; 
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+            success: false,
+            message: 'User not found'
+        });
+    }
+    
+    user.password = newPassword;
     await user.save();
-  
+    
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'Password reset successful'

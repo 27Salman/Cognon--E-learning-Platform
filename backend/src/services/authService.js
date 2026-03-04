@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const { USER_ROLES } = require("../config/constants");
-const crypto = require('crypto');
-const { sendVerificationEmail } = require('./emailService');
+const { sendVerificationOTP } = require('./emailService');
+const { generateOTP, storeOTP } = require('../utils/otpGenerator');
 
 const authService = {
     async registerUser(userData){
@@ -27,7 +27,8 @@ const authService = {
             password,
             phone,
             role: userRole,
-            status: 'active'
+            status: 'active',
+            isVerified: false
         });
 
         if (userRole === USER_ROLES.TUTOR) {
@@ -45,19 +46,15 @@ const authService = {
             };
         }
 
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        newUser.verificationToken = crypto
-            .createHash('sha256')
-            .update(verificationToken)
-            .digest('hex');
-        newUser.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-
         await newUser.save();
 
+        const otp = generateOTP();
+        storeOTP(email, otp, 10);
+
         try {
-            await sendVerificationEmail(newUser.email, newUser.name, verificationToken);
+            await sendVerificationOTP(email, name, otp);
         } catch (error) {
-            console.error('Failed to send verification email:', error);
+            console.error('Failed to send verification OTP:', error);
         }
 
         const userObject = newUser.toObject();
@@ -70,17 +67,21 @@ const authService = {
         const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
         if (!user) {
-            throw new Error('Invalid email');
+            throw new Error('Invalid email or password');
         }
 
         const isPasswordMatch = await user.comparePassword(password);
 
         if (!isPasswordMatch) {
-            throw new Error('Invalid password');
+            throw new Error('Invalid email or password');
         }
 
         if (user.status === 'blocked') {
             throw new Error('Your account has been blocked. Please contact admin.');
+        }
+
+        if (!user.isVerified) {
+            throw new Error('Please verify your email before logging in');
         }
 
         if(user.role === USER_ROLES.TUTOR){

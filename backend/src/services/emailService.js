@@ -1,17 +1,20 @@
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransporter({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-});
+// Create transporter
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+};
 
-const sendVerificationEmail = async (email, name, token) => {
-  const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${token}`;
+const sendVerificationOTP = async (email, name, otp) => {
+  const transporter = createTransporter();
   
   const mailOptions = {
     from: `"Cognon E-Learning" <${process.env.SMTP_USER}>`,
@@ -26,7 +29,7 @@ const sendVerificationEmail = async (email, name, token) => {
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .button { display: inline-block; background: #8b5cf6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .otp-box { background: white; border: 2px solid #8b5cf6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #8b5cf6; margin: 20px 0; border-radius: 8px; }
           .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
         </style>
       </head>
@@ -38,17 +41,13 @@ const sendVerificationEmail = async (email, name, token) => {
           <div class="content">
             <h2>Hi ${name},</h2>
             <p>Thank you for registering with Cognon E-Learning Platform!</p>
-            <p>Please verify your email address by clicking the button below:</p>
-            <div style="text-align: center;">
-              <a href="${verificationUrl}" class="button">Verify Email Address</a>
-            </div>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #8b5cf6;">${verificationUrl}</p>
-            <p><strong>This link will expire in 24 hours.</strong></p>
+            <p>Please verify your email address using the OTP code below:</p>
+            <div class="otp-box">${otp}</div>
+            <p><strong>This code will expire in 10 minutes.</strong></p>
             <p>If you didn't create an account, please ignore this email.</p>
           </div>
           <div class="footer">
-            <p>&copy; 2026 Cognon E-Learning Platform. All rights reserved.</p>
+            <p>2026 Cognon E-Learning Platform. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -59,8 +58,8 @@ const sendVerificationEmail = async (email, name, token) => {
   await transporter.sendMail(mailOptions);
 };
 
-const sendPasswordResetEmail = async (email, name, token) => {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${token}`;
+const sendPasswordResetOTP = async (email, name, otp) => {
+  const transporter = createTransporter();
   
   const mailOptions = {
     from: `"Cognon E-Learning" <${process.env.SMTP_USER}>`,
@@ -75,7 +74,7 @@ const sendPasswordResetEmail = async (email, name, token) => {
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .button { display: inline-block; background: #8b5cf6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .otp-box { background: white; border: 2px solid #8b5cf6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #8b5cf6; margin: 20px 0; border-radius: 8px; }
           .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
         </style>
       </head>
@@ -87,17 +86,13 @@ const sendPasswordResetEmail = async (email, name, token) => {
           <div class="content">
             <h2>Hi ${name},</h2>
             <p>We received a request to reset your password for your Cognon account.</p>
-            <p>Click the button below to reset your password:</p>
-            <div style="text-align: center;">
-              <a href="${resetUrl}" class="button">Reset Password</a>
-            </div>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #8b5cf6;">${resetUrl}</p>
-            <p><strong>This link will expire in 1 hour.</strong></p>
+            <p>Use the OTP code below to reset your password:</p>
+            <div class="otp-box">${otp}</div>
+            <p><strong>This code will expire in 10 minutes.</strong></p>
             <p>If you didn't request a password reset, please ignore this email or contact support if you have concerns.</p>
           </div>
           <div class="footer">
-            <p>&copy; 2026 Cognon E-Learning Platform. All rights reserved.</p>
+            <p>2026 Cognon E-Learning Platform. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -109,6 +104,6 @@ const sendPasswordResetEmail = async (email, name, token) => {
 };
 
 module.exports = {
-  sendVerificationEmail,
-  sendPasswordResetEmail
+  sendVerificationOTP,
+  sendPasswordResetOTP
 };
