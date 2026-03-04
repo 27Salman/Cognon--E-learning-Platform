@@ -2,6 +2,8 @@ const authService = require("../services/authService");
 const generateToken = require("../utils/generateToken");
 const { HTTP_STATUS, MESSAGES } = require("../config/constants");
 const asyncHandler = require('../middleware/asyncHandler');
+const crypto = require('crypto');
+const { sendPasswordResetEmail } = require('../services/emailService');
 
 exports.signup = asyncHandler(async (req, res) => {
     const userData = req.body;
@@ -156,5 +158,81 @@ exports.resendVerification = asyncHandler(async (req, res) => {
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'Verification email sent'
+    });
+});
+
+exports.forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user) {
+        return res.status(HTTP_STATUS.OK).json({
+            success: true,
+            message: 'If the email exists, a reset link has been sent'
+        });
+    }
+  
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.passwordResetToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+    user.passwordResetExpires = Date.now() + 60 * 60 * 1000; 
+    
+    await user.save();
+  
+    try {
+        await sendPasswordResetEmail(user.email, user.name, resetToken);
+        
+        res.status(HTTP_STATUS.OK).json({
+            success: true,
+            message: 'Password reset email sent'
+        });
+    } catch (error) {
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save();
+        
+        throw new Error('Failed to send reset email');
+    }
+});
+
+exports.resetPassword = asyncHandler(async (req, res) => {
+    const { token } = req.params;
+    const { password } = req.body;
+    
+    if (!password || password.length < 8) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'Password must be at least 8 characters'
+        });
+    }
+    
+    const hashedToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+    
+    const user = await User.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { $gt: Date.now() }
+    });
+  
+    if (!user) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'Invalid or expired reset token'
+        });
+    }
+    
+    user.password = password; 
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+  
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Password reset successful'
     });
 });

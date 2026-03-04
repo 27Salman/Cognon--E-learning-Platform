@@ -64,6 +64,12 @@ const userSchema = new mongoose.Schema(
         verificationTokenExpires: {
             type: Date
         },
+        passwordResetToken: {
+            type: String
+        },
+        passwordResetExpires: {
+            type: Date
+        },
 
         studentProfile: {
             enrolledCourses: [
