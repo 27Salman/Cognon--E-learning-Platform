@@ -162,7 +162,7 @@ exports.resendOTP = asyncHandler(async (req, res) => {
     clearOTP(email);
     
     const otp = generateOTP();
-    storeOTP(email, otp, 10);
+    storeOTP(email, otp, 5);
     
     await sendVerificationOTP(email, user.name, otp);
     
@@ -185,7 +185,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
     }
     
     const otp = generateOTP();
-    storeOTP(`reset_${email}`, otp, 10);
+    storeOTP(`reset_${email}`, otp, 5);
     
     try {
         await sendPasswordResetOTP(user.email, user.name, otp);

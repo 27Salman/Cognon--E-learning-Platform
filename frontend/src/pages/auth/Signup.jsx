@@ -108,7 +108,7 @@ const Signup = () => {
 
     if (signupUser.fulfilled.match(resultAction)) {
       toast.success('Registration successful! Please verify your email.');
-      navigate('/verify-otp', { state: { email: formData.email } });
+      navigate('/verify-otp', { state: { email: formData.email, timestamp: Date.now() } });
     } else {
       toast.error(resultAction.payload || 'Signup failed');
     }

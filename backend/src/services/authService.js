@@ -54,7 +54,7 @@ const authService = {
         await newUser.save();
 
         const otp = generateOTP();
-        storeOTP(email, otp, 10);
+        storeOTP(email, otp, 5);
 
         try {
             await sendVerificationOTP(email, name, otp);

@@ -8,11 +8,12 @@ const VerifyOTP = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const email = location.state?.email;
+    const otpSentTime = location.state?.timestamp || Date.now();
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
-    const [timer, setTimer] = useState(600);
+    const [timer, setTimer] = useState(0);
     const inputRefs = useRef([]);
 
     useEffect(() => {
@@ -21,18 +22,25 @@ const VerifyOTP = () => {
             return;
         }
 
+        const calculateRemainingTime = () => {
+            const expiryTime = otpSentTime + (5 * 60 * 1000);
+            const remaining = Math.max(0, Math.floor((expiryTime - Date.now()) / 1000));
+            return remaining;
+        };
+
+        setTimer(calculateRemainingTime());
+
         const interval = setInterval(() => {
-        setTimer((prev) => {
-            if (prev <= 1) {
+            const remaining = calculateRemainingTime();
+            setTimer(remaining);
+
+            if (remaining <= 0) {
                 clearInterval(interval);
-                return 0;
             }
-            return prev - 1;
-            });
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [email, navigate]);
+    }, [email, otpSentTime, navigate]);
 
     const handleChange = (index, value) => {
         if (isNaN(value)) return;
@@ -73,6 +81,11 @@ const VerifyOTP = () => {
             return;
         }
 
+        if (timer <= 0) {
+            toast.error('OTP has expired. Please request a new one.');
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await axios.post('/auth/verify-otp', {
@@ -80,10 +93,10 @@ const VerifyOTP = () => {
                 otp: otpString
             });
 
-        if (response.data.success) {
-            toast.success('Email verified successfully!');
-            navigate('/login');
-        }
+            if (response.data.success) {
+                toast.success('Email verified successfully!');
+                navigate('/login');
+            }
         } catch (error) {
             toast.error(error.response?.data?.message || 'OTP verification failed');
         } finally {
@@ -97,10 +110,19 @@ const VerifyOTP = () => {
             const response = await axios.post('/auth/resend-otp', { email });
         
             if (response.data.success) {
-                toast.success('OTP sent successfully!');
-                setTimer(600);
+                toast.success('New OTP sent successfully!');
+                const newTimestamp = Date.now();
+                setTimer(300);
                 setOtp(['', '', '', '', '', '']);
                 inputRefs.current[0].focus();
+                
+                navigate('/verify-otp', { 
+                state: { 
+                    email, 
+                    timestamp: newTimestamp 
+                },
+                replace: true
+                });
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to resend OTP');
@@ -145,6 +167,7 @@ const VerifyOTP = () => {
                     onPaste={handlePaste}
                     className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:outline-none transition-colors"
                     autoFocus={index === 0}
+                    disabled={timer === 0}
                 />
                 ))}
             </div>
@@ -174,11 +197,16 @@ const VerifyOTP = () => {
                 <button
                 type="button"
                 onClick={handleResend}
-                disabled={resendLoading || timer > 540}
+                disabled={resendLoading || timer > 240}
                 className="text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                 {resendLoading ? 'Sending...' : 'Resend OTP'}
                 </button>
+                {timer > 240 && (
+                <p className="text-xs text-gray-500 mt-1">
+                    Available in {formatTime(timer - 240)}
+                </p>
+                )}
             </div>
             </form>
         </div>
