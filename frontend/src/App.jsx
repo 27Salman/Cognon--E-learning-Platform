@@ -14,6 +14,7 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import TutorDashboard from './pages/tutor/TutorDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import { ROUTES, ROLES } from './utils/constants';
+import VerifyOTP from './pages/auth/VerifyOTP';
 
 
 function App() {
@@ -31,6 +32,8 @@ function App() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+      <Route path="/verify-otp" element={<VerifyOTP />} />
+
 
       {/* Protected Student Routes */}
       <Route

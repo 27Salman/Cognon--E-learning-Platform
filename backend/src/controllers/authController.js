@@ -1,3 +1,4 @@
+const User = require('../models/User')
 const authService = require("../services/authService");
 const generateToken = require("../utils/generateToken");
 const { HTTP_STATUS, MESSAGES } = require("../config/constants");

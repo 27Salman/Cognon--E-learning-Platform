@@ -12,14 +12,19 @@ const authService = {
         });
 
         if(existingUser){
-            throw new Error( 'Email is already registered' )
+            throw new Error('Email is already registered')
+        }
+
+        const existingPhone = await User.findOne({ phone });
+        if(existingPhone){
+            throw new Error('Phone number is already registered')
         }
 
         const userRole = role || USER_ROLES.STUDENT;
 
         if( ![USER_ROLES.STUDENT, USER_ROLES.TUTOR].includes(userRole) ){
             throw new Error('Invalid role. Only students and tutors can register.');
-        };
+        }
 
         const newUser = new User({
             name,
@@ -86,7 +91,7 @@ const authService = {
 
         if(user.role === USER_ROLES.TUTOR){
             if(!user.tutorProfile.isApproved){
-                throw new Error('Your tutor account is pending for admin approval');
+                throw new Error('Your tutor account is pending admin approval');
             }
         }
 
@@ -99,40 +104,22 @@ const authService = {
         return userObject;
     },
 
-    validateRegistrationData(userData) {
-        const { name, email, password, phone } = userData;
-
-        if (!name || !email || !password || !phone) {
-            throw new Error('All fields are required');
-        }
-
-        if (name.trim().length < 2) {
-            throw new Error('Name must be at least 2 characters');
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            throw new Error('Invalid email format');
-        }
-
-        if (password.length < 6) {
-            throw new Error('Password must be at least 6 characters');
-        }
-
-        const phoneRegex = /^[6-9]\d{9}$/;
-        if (!phoneRegex.test(phone)) {
-            throw new Error('Invalid phone number format');
-        }
-
-        return true;
-    },
-
     async getUserByEmail(email) {
         return await User.findOne({ email: email.toLowerCase() });
     },
 
     async getUserById(userId) {
-      return await User.findById(userId).select('-password');
+        return await User.findById(userId).select('-password');
+    },
+
+    async checkEmailExists(email) {
+        const user = await User.findOne({ email: email.toLowerCase() });
+        return !!user;
+    },
+
+    async checkPhoneExists(phone) {
+        const user = await User.findOne({ phone });
+        return !!user;
     }
 };
 

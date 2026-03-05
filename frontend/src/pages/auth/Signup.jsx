@@ -6,6 +6,7 @@ import Input from '../../components/common/Input';
 import { validateEmail, validatePhone, validatePassword } from '../../utils/helpers';
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
+import { getPasswordStrength } from '../../utils/helpers';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -106,7 +107,8 @@ const Signup = () => {
     );
 
     if (signupUser.fulfilled.match(resultAction)) {
-      toast.success('Signup successful! Redirecting...');
+      toast.success('Registration successful! Please verify your email.');
+      navigate('/verify-otp', { state: { email: formData.email } });
     } else {
       toast.error(resultAction.payload || 'Signup failed');
     }
@@ -245,14 +247,20 @@ const Signup = () => {
               <div className="mt-2">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-600">Password Strength:</span>
-                  <span className={`text-xs font-medium text-${getPasswordStrength(formData.password).color}-600`}>
+                  <span 
+                    className="text-xs font-medium"
+                    style={{ color: getPasswordStrength(formData.password).color }}
+                  >
                     {getPasswordStrength(formData.password).text}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className={`h-2 rounded-full bg-${getPasswordStrength(formData.password).color}-500 transition-all`}
-                    style={{ width: `${getPasswordStrength(formData.password).strength}%` }}
+                    className="h-2 rounded-full transition-all"
+                    style={{ 
+                      width: `${getPasswordStrength(formData.password).strength}%`,
+                      backgroundColor: getPasswordStrength(formData.password).color
+                    }}
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2">

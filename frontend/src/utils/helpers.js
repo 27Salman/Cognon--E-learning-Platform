@@ -57,6 +57,31 @@ export const validatePassword = (password) => {
   return password.length >= 6;
 };
 
+export const getPasswordStrength = (password) => {
+  if (password.length === 0) return { strength: 0, text: '', color: '#6b7280' };
+  
+  let strength = 0;
+  const checks = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[@$!%*?&]/.test(password)
+  };
+  
+  strength = Object.values(checks).filter(Boolean).length;
+  
+  const strengthMap = {
+    0: { strength: 0, text: 'Very Weak', color: '#ef4444' },
+    1: { strength: 20, text: 'Weak', color: '#ef4444' },
+    2: { strength: 40, text: 'Fair', color: '#eab308' },
+    3: { strength: 60, text: 'Good', color: '#3b82f6' },
+    4: { strength: 80, text: 'Strong', color: '#22c55e' },
+    5: { strength: 100, text: 'Very Strong', color: '#22c55e' }
+  };
+  
+  return strengthMap[strength];
+};
 
 export const formatDate = (dateString) => {
   const date = new Date(dateString);
