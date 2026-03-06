@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from '../../api/axios';
 import Button from '../../components/common/Button';
 import toast from 'react-hot-toast';
+import { verifyOTP } from '../../api/authAPI';
 
 const VerifyOTP = () => {
     const navigate = useNavigate();
@@ -88,10 +89,7 @@ const VerifyOTP = () => {
 
         setLoading(true);
         try {
-            const response = await axios.post('/auth/verify-otp', {
-                email: email,
-                otp: otpString
-            });
+            const response = await verifyOTP(email, otpString)
 
             if (response.data.success) {
                 toast.success('Email verified successfully!');
