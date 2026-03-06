@@ -12,7 +12,7 @@ router.post('/login', loginValidation, validate, authController.login);
 router.post('/logout', protect, authController.logout);
 router.get('/me', protect, authController.getCurrentUser);
 
-router.get('/verify-otp', authController.verifyEmailOTP);
+router.post('/verify-otp', authController.verifyEmailOTP);
 router.post('/resend-otp', authController.resendOTP);
 
 router.post('/forgot-password', authController.forgotPassword);

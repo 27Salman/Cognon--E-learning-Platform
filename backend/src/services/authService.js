@@ -12,12 +12,22 @@ const authService = {
         });
 
         if(existingUser){
-            throw new Error('Email is already registered')
+            if (!existingUser.isVerified) {
+                console.log('Found unverified user. Deleting and allowing re-registration...');
+                await User.findByIdAndDelete(existingUser._id);
+            } else {
+                throw new Error('Email is already registered')
+            }
         }
 
         const existingPhone = await User.findOne({ phone });
         if(existingPhone){
-            throw new Error('Phone number is already registered')
+            if (!existingPhone.isVerified) {
+                console.log('Found unverified phone. Deleting and allowing re-registration...');
+                await User.findByIdAndDelete(existingPhone._id);
+            } else {
+                throw new Error('Phone number is already registered')
+            }
         }
 
         const userRole = role || USER_ROLES.STUDENT;
@@ -51,15 +61,35 @@ const authService = {
             };
         }
 
-        await newUser.save();
+        try {
+            await newUser.save();
+            console.log('User saved successfully:', newUser._id);
+        } catch (saveError) {
+            console.error('Error saving user:', saveError);
+            
+            if (saveError.code === 11000) {
+                console.log('Duplicate key error. Cleaning up and retrying...');
+                                await User.deleteMany({ 
+                    $or: [
+                        { email: email.toLowerCase() },
+                        { phone: phone }
+                    ]
+                });
+                
+                await newUser.save();
+            } else {
+                throw saveError;
+            }
+        }
 
         const otp = generateOTP();
         storeOTP(email, otp, 5);
 
         try {
             await sendVerificationOTP(email, name, otp);
+            console.log('OTP sent successfully to:', email);
         } catch (error) {
-            console.error('Failed to send verification OTP:', error);
+            console.error('Failed to send verification OTP:', error.message);
         }
 
         const userObject = newUser.toObject();
@@ -90,7 +120,7 @@ const authService = {
         }
 
         if(user.role === USER_ROLES.TUTOR){
-            if(!user.tutorProfile.isApproved){
+            if(!user.tutorProfile && !user.tutorProfile.isApproved){
                 throw new Error('Your tutor account is pending admin approval');
             }
         }

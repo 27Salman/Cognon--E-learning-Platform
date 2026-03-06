@@ -18,6 +18,12 @@ export const ENDPOINTS = {
   LOGIN: '/auth/login',
   LOGOUT: '/auth/logout',
   GET_CURRENT_USER: '/auth/me',
+
+  VERIFY_OTP: '/auth/verify-otp',
+  RESEND_OTP: '/auth/resend-otp',
+  FORGOT_PASSWORD: '/auth/forgot-password',
+  VERIFY_RESET_OTP: '/auth/verify-reset-otp',
+  RESET_PASSWORD: '/auth/reset-password',
   
   GET_COURSES: '/courses',
   GET_COURSE: '/courses/:id',
