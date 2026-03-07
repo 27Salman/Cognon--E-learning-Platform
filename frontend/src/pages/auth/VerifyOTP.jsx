@@ -91,9 +91,13 @@ const VerifyOTP = () => {
         try {
             const response = await verifyOTP(email, otpString)
 
-            if (response.data.success) {
-                toast.success('Email verified successfully!');
-                navigate('/login');
+            if (response.success) {
+                toast.success('Email verified successfully! Redirecting to login...');
+                setOtp(['', '', '', '', '', '']);
+      
+                setTimeout(() => {
+                    navigate('/login', { replace: true });
+                }, 1500);
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'OTP verification failed');

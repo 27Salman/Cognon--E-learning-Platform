@@ -24,6 +24,8 @@ const Signup = () => {
   });
 
   const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const roleContent = {
     [ROLES.STUDENT]: {
@@ -90,27 +92,42 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isSubmitting) {
+      return;
+    }
+
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    const resultAction = await dispatch(
-      signupUser({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-        role: activeRole,
-      })
-    );
+    setIsSubmitting(true);
 
-    if (signupUser.fulfilled.match(resultAction)) {
-      toast.success('Registration successful! Please verify your email.');
-      navigate('/verify-otp', { state: { email: formData.email, timestamp: Date.now() } });
-    } else {
-      toast.error(resultAction.payload || 'Signup failed');
+    try {
+      const resultAction = await dispatch(
+        signupUser({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          password: formData.password,
+          role: activeRole,
+        })
+      );
+
+      if (signupUser.fulfilled.match(resultAction)) {
+        toast.success('Registration successful! Please verify your email.');
+        navigate('/verify-otp', { 
+          state: { 
+            email: formData.email.trim(),
+            timestamp: Date.now()
+          } 
+        });
+      } else {
+        toast.error(resultAction.payload || 'Signup failed');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -283,7 +300,10 @@ const Signup = () => {
             {/* Submit Button  */}
             <button
               type="submit"
-              disabled={loading}
+              variant="primary"
+              fullWidth
+              loading={loading || isSubmitting}
+              disabled={loading || isSubmitting}
               className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating Account...' : 'Register'}
