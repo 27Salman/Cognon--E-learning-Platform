@@ -156,6 +156,11 @@ userSchema.methods.hasRole = function(role){
     return this.role === role;
 };
 
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ phone: 1 }, { unique: true });
+userSchema.index({ email: 1, isVerified: 1 });
+userSchema.index({ phone: 1, isVerified: 1 });
+
 module.exports = mongoose.model('User', userSchema);
 
 

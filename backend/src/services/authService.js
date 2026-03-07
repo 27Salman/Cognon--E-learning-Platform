@@ -4,102 +4,127 @@ const { sendVerificationOTP } = require('./emailService');
 const { generateOTP, storeOTP } = require('../utils/otpGenerator');
 
 const authService = {
-    async registerUser(userData){
+    async registerUser(userData) {
         const { name, email, password, phone, role, bio, expertise } = userData;
 
-        const existingUser = await User.findOne({
-            email: email.toLowerCase()
-        });
-
-        if(existingUser){
-            if (!existingUser.isVerified) {
-                console.log('Found unverified user. Deleting and allowing re-registration...');
-                await User.findByIdAndDelete(existingUser._id);
-            } else {
-                throw new Error('Email is already registered')
-            }
-        }
-
-        const existingPhone = await User.findOne({ phone });
-        if(existingPhone){
-            if (!existingPhone.isVerified) {
-                console.log('Found unverified phone. Deleting and allowing re-registration...');
-                await User.findByIdAndDelete(existingPhone._id);
-            } else {
-                throw new Error('Phone number is already registered')
-            }
-        }
-
-        const userRole = role || USER_ROLES.STUDENT;
-
-        if( ![USER_ROLES.STUDENT, USER_ROLES.TUTOR].includes(userRole) ){
-            throw new Error('Invalid role. Only students and tutors can register.');
-        }
-
-        const newUser = new User({
-            name,
-            email: email.toLowerCase(),
-            password,
-            phone,
-            role: userRole,
-            status: 'active',
-            isVerified: false
-        });
-
-        if (userRole === USER_ROLES.TUTOR) {
-            newUser.tutorProfile = {
-                bio: bio || '',
-                expertise: expertise || [],
-                experience: 0,
-                coursesCreated: [],
-                isApproved: false  
-            };
-        } else if (userRole === USER_ROLES.STUDENT) {
-            newUser.studentProfile = {
-                enrolledCourses: [],
-                certificates: []
-            };
-        }
-
         try {
-            await newUser.save();
-            console.log('User saved successfully:', newUser._id);
-        } catch (saveError) {
-            console.error('Error saving user:', saveError);
+            const normalizedEmail = email.toLowerCase().trim();
+            const normalizedPhone = phone.trim();
+
+            console.log('Registration attempt for:', normalizedEmail);
+
+            const deletedUsers = await User.deleteMany({
+                $or: [
+                    { email: normalizedEmail, isVerified: false },
+                    { phone: normalizedPhone, isVerified: false }
+                ]
+            });
+
+            if (deletedUsers.deletedCount > 0) {
+                console.log(`Deleted ${deletedUsers.deletedCount} unverified user(s)`);
+            }
+
+            const verifiedUser = await User.findOne({
+                $or: [
+                    { email: normalizedEmail, isVerified: true },
+                    { phone: normalizedPhone, isVerified: true }
+                ]
+            });
+
+            if (verifiedUser) {
+                if (verifiedUser.email === normalizedEmail) {
+                    throw new Error('This email is already registered and verified. Please login.');
+                }
+                if (verifiedUser.phone === normalizedPhone) {
+                    throw new Error('This phone number is already registered and verified.');
+                }
+            }
+
+            const userRole = role || USER_ROLES.STUDENT;
+
+            if (![USER_ROLES.STUDENT, USER_ROLES.TUTOR].includes(userRole)) {
+                throw new Error('Invalid role. Only students and tutors can register.');
+            }
+
+            const newUser = new User({
+                name: name.trim(),
+                email: normalizedEmail,
+                password,
+                phone: normalizedPhone,
+                role: userRole,
+                status: 'active',
+                isVerified: false
+            });
+
+            if (userRole === USER_ROLES.TUTOR) {
+                newUser.tutorProfile = {
+                    bio: bio || '',
+                    expertise: expertise || [],
+                    experience: 0,
+                    coursesCreated: [],
+                    isApproved: false
+                };
+            } else if (userRole === USER_ROLES.STUDENT) {
+                newUser.studentProfile = {
+                    enrolledCourses: [],
+                    certificates: []
+                };
+            }
+            let savedUser;
+            let retries = 3;
             
-            if (saveError.code === 11000) {
-                console.log('Duplicate key error. Cleaning up and retrying...');
-                                await User.deleteMany({ 
-                    $or: [
-                        { email: email.toLowerCase() },
-                        { phone: phone }
-                    ]
-                });
-                
-                await newUser.save();
-            } else {
-                throw saveError;
+            while (retries > 0) {
+                try {
+                    savedUser = await newUser.save();
+                    console.log('User saved successfully:', savedUser._id);
+                    break;
+                } catch (saveError) {
+                    if (saveError.code === 11000 && retries > 1) {
+                        console.log('Duplicate key error, cleaning and retrying...');
+                        
+                        await User.deleteMany({
+                            $or: [
+                                { email: normalizedEmail },
+                                { phone: normalizedPhone }
+                            ],
+                            isVerified: false
+                        });
+                        
+                        retries--;
+                        await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
+                    } else {
+                        throw saveError;
+                    }
+                }
             }
-        }
 
-        const otp = generateOTP();
-        storeOTP(email, otp, 5);
+            if (!savedUser) {
+                throw new Error('Failed to create user after multiple attempts');
+            }
 
-        try {
-            await sendVerificationOTP(email, name, otp);
-            console.log('OTP sent successfully to:', email);
+            const otp = generateOTP();
+            storeOTP(normalizedEmail, otp, 5);
+
+            try {
+                await sendVerificationOTP(normalizedEmail, name, otp);
+                console.log('OTP sent successfully to:', normalizedEmail);
+            } catch (emailError) {
+                console.error('Failed to send verification OTP:', emailError.message);
+            }
+
+            const userObject = savedUser.toObject();
+            delete userObject.password;
+
+            return userObject;
+
         } catch (error) {
-            console.error('Failed to send verification OTP:', error.message);
+            console.error('Registration error:', error.message);
+            throw error;
         }
-
-        const userObject = newUser.toObject();
-        delete userObject.password;
-
-        return userObject;
     },
 
     async loginUser(email, password) {
-        const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+        const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
 
         if (!user) {
             throw new Error('Invalid email or password');
@@ -119,8 +144,8 @@ const authService = {
             throw new Error('Please verify your email before logging in');
         }
 
-        if(user.role === USER_ROLES.TUTOR){
-            if(!user.tutorProfile && !user.tutorProfile.isApproved){
+        if (user.role === USER_ROLES.TUTOR) {
+            if (user.tutorProfile && !user.tutorProfile.isApproved) {
                 throw new Error('Your tutor account is pending admin approval');
             }
         }
@@ -135,7 +160,7 @@ const authService = {
     },
 
     async getUserByEmail(email) {
-        return await User.findOne({ email: email.toLowerCase() });
+        return await User.findOne({ email: email.toLowerCase().trim() });
     },
 
     async getUserById(userId) {
@@ -143,12 +168,18 @@ const authService = {
     },
 
     async checkEmailExists(email) {
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = await User.findOne({ 
+            email: email.toLowerCase().trim(),
+            isVerified: true 
+        });
         return !!user;
     },
 
     async checkPhoneExists(phone) {
-        const user = await User.findOne({ phone });
+        const user = await User.findOne({ 
+            phone: phone.trim(),
+            isVerified: true 
+        });
         return !!user;
     }
 };
