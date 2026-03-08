@@ -15,9 +15,10 @@ const authService = {
 
             const deletedUsers = await User.deleteMany({
                 $or: [
-                    { email: normalizedEmail, isVerified: false },
-                    { phone: normalizedPhone, isVerified: false }
-                ]
+                    { email: normalizedEmail },
+                    { phone: normalizedPhone }
+                ],
+                isVerified: false
             });
 
             if (deletedUsers.deletedCount > 0) {
@@ -26,9 +27,10 @@ const authService = {
 
             const verifiedUser = await User.findOne({
                 $or: [
-                    { email: normalizedEmail, isVerified: true },
-                    { phone: normalizedPhone, isVerified: true }
-                ]
+                    { email: normalizedEmail },
+                    { phone: normalizedPhone }
+                ],
+                isVerified: true
             });
 
             if (verifiedUser) {
@@ -70,17 +72,16 @@ const authService = {
                     certificates: []
                 };
             }
+
             let savedUser;
-            let retries = 3;
-            
-            while (retries > 0) {
+            for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
                     savedUser = await newUser.save();
-                    console.log('User saved successfully:', savedUser._id);
+                    console.log(`User saved on attempt ${attempt}:`, savedUser._id);
                     break;
                 } catch (saveError) {
-                    if (saveError.code === 11000 && retries > 1) {
-                        console.log('Duplicate key error, cleaning and retrying...');
+                    if (saveError.code === 11000 && attempt < 3) {
+                        console.log(`Duplicate key error on attempt ${attempt}, retrying...`);
                         
                         await User.deleteMany({
                             $or: [
@@ -90,9 +91,9 @@ const authService = {
                             isVerified: false
                         });
                         
-                        retries--;
-                        await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
+                        await new Promise(resolve => setTimeout(resolve, 200));
                     } else {
+                        console.error('Save error:', saveError.message);
                         throw saveError;
                     }
                 }
