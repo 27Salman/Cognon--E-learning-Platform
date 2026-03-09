@@ -1,89 +1,375 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import Button from '../components/common/Button';
+import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../utils/constants';
 
 const Home = () => {
+  const navigate = useNavigate();
+
+  const features = [
+    { icon: '📚', title: 'Learn Anything', description: 'Explore thousands of courses in various subjects' },
+    { icon: '🎯', title: 'Flexible Learning', description: 'Study at your own pace, anytime, anywhere' },
+    { icon: '🏆', title: 'Get Certified', description: 'Earn certificates recognized by industry leaders' },
+    { icon: '👥', title: 'Expert Tutors', description: 'Learn from experienced professionals' }
+  ];
+
+  const categories = [
+    { icon: '🎨', title: 'Design', courses: '2,456 Courses', color: 'bg-pink-100' },
+    { icon: '💼', title: 'Business', courses: '1,853 Courses', color: 'bg-blue-100' },
+    { icon: '💻', title: 'Development', courses: '3,721 Courses', color: 'bg-green-100' },
+    { icon: '📊', title: 'Marketing', courses: '1,456 Courses', color: 'bg-purple-100' }
+  ];
+
+  const courses = [
+    { 
+      title: 'Learn Figma - UI/UX Design', 
+      image: '🎨', 
+      price: '$57', 
+      rating: 4.5, 
+      students: '2.5k',
+      color: 'from-blue-400 to-indigo-500'
+    },
+    { 
+      title: 'Basics of learning team management', 
+      image: '👥', 
+      price: '$57', 
+      rating: 4.8, 
+      students: '1.8k',
+      color: 'from-cyan-400 to-blue-500'
+    },
+    { 
+      title: 'Learn Photoshop - Photo Editing', 
+      image: '🖼️', 
+      price: '$57', 
+      rating: 4.7, 
+      students: '3.2k',
+      color: 'from-green-400 to-emerald-500'
+    },
+    { 
+      title: 'Learn SQL - Database Management', 
+      image: '💾', 
+      price: '$57', 
+      rating: 4.6, 
+      students: '2.1k',
+      color: 'from-indigo-500 to-purple-600'
+    }
+  ];
+
+  const testimonials = [
+    { 
+      name: 'John Doe', 
+      role: 'Student',
+      rating: 5, 
+      text: 'Cognon has transformed my learning experience. The courses are well-structured and the tutors are incredibly knowledgeable. I highly recommend it to anyone looking to upskill!' 
+    },
+    { 
+      name: 'Jane Smith', 
+      role: 'Professional',
+      rating: 5, 
+      text: 'The flexibility and quality of courses on Cognon are unmatched. I was able to learn at my own pace and apply the knowledge directly to my work. Absolutely worth it!' 
+    },
+    { 
+      name: 'Mike Johnson', 
+      role: 'Entrepreneur',
+      rating: 5, 
+      text: 'As a busy entrepreneur, I needed a platform that could fit into my schedule. Cognon delivered exactly that with excellent content and supportive instructors.' 
+    }
+  ];
+
+  const stats = [
+    { icon: '👥', number: '50,000+', label: 'Active Students' },
+    { icon: '🎓', number: '1,000+', label: 'Expert Tutors' },
+    { icon: '📚', number: '10,000+', label: 'Online Courses' },
+    { icon: '⭐', number: '4.8/5', label: 'Average Rating' }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100">
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
-            <div className="flex gap-4">
+            <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
+            <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+              <a href="#home" className="text-gray-700 hover:text-purple-600 transition">Home</a>
+              <a href="#about" className="text-gray-700 hover:text-purple-600 transition">About</a>
+              <a href="#courses" className="text-gray-700 hover:text-purple-600 transition">Courses</a>
+              <a href="#contact" className="text-gray-700 hover:text-purple-600 transition">Contact</a>
+            </nav>
+            <div className="flex items-center gap-3">
               <Link to={ROUTES.LOGIN}>
-                <Button variant="outline">Login</Button>
+                <button className="px-5 py-2 text-sm text-purple-600 hover:text-purple-700 transition font-medium">
+                  Login
+                </button>
               </Link>
               <Link to={ROUTES.SIGNUP}>
-                <Button variant="primary">Sign Up</Button>
+                <button className="px-5 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition font-medium">
+                  Sign Up
+                </button>
               </Link>
             </div>
           </div>
         </div>
-      </nav>
+      </header>
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center">
-          <h2 className="text-5xl font-bold text-gray-900 mb-6">
-            Empowering Learners Through
-            <span className="text-primary-600"> Accessible Education</span>
-          </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of students and tutors on Cognon - the leading platform for 
-            high-quality, flexible, and affordable online learning experiences.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Link to={ROUTES.SIGNUP}>
-              <Button variant="primary" size="lg">
-                Get Started Free
-              </Button>
-            </Link>
-            <Link to={ROUTES.LOGIN}>
-              <Button variant="outline" size="lg">
-                Explore Courses
-              </Button>
-            </Link>
+      <section className="relative bg-gradient-to-br from-purple-50 via-blue-50 to-white py-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                We bring the<br />
+                <span className="text-purple-600">knowledge.</span><br />
+                We build the<br />
+                <span className="text-purple-600">experience.</span>
+              </h2>
+              <p className="text-gray-600 mb-8 leading-relaxed text-sm">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+              </p>
+              <div className="flex gap-4">
+                <Link to={ROUTES.SIGNUP}>
+                  <button className="px-8 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition font-medium text-sm">
+                    Get Started
+                  </button>
+                </Link>
+                <Link to={ROUTES.LOGIN}>
+                  <button className="px-8 py-3 border-2 border-purple-600 text-purple-600 rounded-md hover:bg-purple-50 transition font-medium text-sm">
+                    Explore
+                  </button>
+                </Link>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="bg-white rounded-3xl shadow-2xl p-6">
+                <div className="aspect-video bg-gradient-to-br from-cyan-400 via-blue-400 to-purple-500 rounded-2xl flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-7xl">💻</span>
+                  </div>
+                  <div className="absolute top-4 left-4 bg-white/90 rounded-lg p-3 shadow-lg">
+                    <span className="text-2xl">📊</span>
+                  </div>
+                  <div className="absolute bottom-4 right-4 bg-white/90 rounded-lg p-3 shadow-lg">
+                    <span className="text-2xl">🎯</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Features */}
-        <div className="grid md:grid-cols-3 gap-8 mt-20">
-          <div className="bg-white p-8 rounded-xl shadow-md">
-            <div className="text-primary-600 text-4xl mb-4">📚</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              Quality Courses
-            </h3>
-            <p className="text-gray-600">
-              Access hundreds of courses across various domains taught by expert tutors.
-            </p>
-          </div>
-          <div className="bg-white p-8 rounded-xl shadow-md">
-            <div className="text-primary-600 text-4xl mb-4">🎓</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              Expert Tutors
-            </h3>
-            <p className="text-gray-600">
-              Learn from industry professionals and certified instructors.
-            </p>
-          </div>
-          <div className="bg-white p-8 rounded-xl shadow-md">
-            <div className="text-primary-600 text-4xl mb-4">📜</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              Certifications
-            </h3>
-            <p className="text-gray-600">
-              Earn recognized certificates upon course completion.
-            </p>
+      {/* Become a Tutor CTA */}
+      <section className="py-16 bg-purple-600">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="text-white">
+              <h3 className="text-3xl font-bold mb-3">Become a Tutor on Cognon</h3>
+              <p className="text-purple-100 text-sm max-w-xl">
+                Share your knowledge, inspire learners worldwide, and earn money doing what you love. Join our community of expert tutors today!
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => navigate(ROUTES.SIGNUP)}
+                className="px-8 py-3 bg-white text-purple-600 rounded-md hover:bg-gray-100 transition font-medium text-sm whitespace-nowrap"
+              >
+                Register as Tutor
+              </button>
+              <button
+                className="px-8 py-3 border-2 border-white text-white rounded-md hover:bg-purple-700 transition font-medium text-sm whitespace-nowrap"
+              >
+                Learn More
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Why Choose Cognon */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose Cognon?</h2>
+            <p className="text-gray-600 text-sm">Discover what makes us the best choice for online learning</p>
+          </div>
+          <div className="grid md:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <div key={index} className="text-center">
+                <div className="text-6xl mb-4">{feature.icon}</div>
+                <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
+                <p className="text-gray-600 text-sm">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <p className="text-purple-600 font-semibold mb-2 text-sm uppercase tracking-wide">About Us</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              We provide the best opportunities<br />
+              to students around the globe
+            </h2>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
+            <div>
+              <p className="text-gray-600 leading-relaxed mb-6 text-sm">
+                At Cognon, we believe that education should be accessible to everyone, everywhere. Our platform connects passionate tutors with eager learners, creating a vibrant community of knowledge sharing and growth.
+              </p>
+              <p className="text-gray-600 leading-relaxed text-sm">
+                With thousands of courses across various disciplines, we empower individuals to pursue their passions, advance their careers, and achieve their goals through flexible, high-quality online learning experiences.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <img src="https://via.placeholder.com/250x200/8B5CF6/FFFFFF?text=Students" alt="Students" className="rounded-2xl shadow-lg" />
+              <img src="https://via.placeholder.com/250x200/7C3AED/FFFFFF?text=Learning" alt="Learning" className="rounded-2xl shadow-lg mt-8" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Join Our Growing Community</h2>
+          </div>
+          <div className="grid md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-5xl mb-3">{stat.icon}</div>
+                <div className="text-3xl font-bold mb-2">{stat.number}</div>
+                <div className="text-gray-400 text-sm">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Popular Categories */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Popular Categories</h2>
+            <p className="text-gray-600 text-sm">Explore our most popular course categories</p>
+          </div>
+          <div className="grid md:grid-cols-4 gap-6">
+            {categories.map((category, index) => (
+              <div key={index} className={`${category.color} rounded-2xl p-8 text-center hover:shadow-lg transition cursor-pointer`}>
+                <div className="text-6xl mb-4">{category.icon}</div>
+                <h3 className="font-bold text-lg mb-2">{category.title}</h3>
+                <p className="text-gray-600 text-sm">{category.courses}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Courses */}
+      <section id="courses" className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between items-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900">Featured Courses</h2>
+            <button className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2">
+              View All <span>→</span>
+            </button>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {courses.map((course, index) => (
+              <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition">
+                <div className={`aspect-video bg-gradient-to-br ${course.color} flex items-center justify-center text-6xl`}>
+                  {course.image}
+                </div>
+                <div className="p-5">
+                  <h3 className="font-bold text-base mb-3">{course.title}</h3>
+                  <div className="flex items-center justify-between text-xs text-gray-600 mb-4">
+                    <span className="flex items-center gap-1">⭐ {course.rating}</span>
+                    <span className="flex items-center gap-1">👥 {course.students}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-purple-600">{course.price}</span>
+                    <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs font-medium">
+                      Enroll Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 bg-purple-100">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between items-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900">What our students say</h2>
+            <div className="flex gap-2">
+              <button className="w-10 h-10 rounded-full bg-purple-600 text-white hover:bg-purple-700 transition flex items-center justify-center">←</button>
+              <button className="w-10 h-10 rounded-full bg-purple-600 text-white hover:bg-purple-700 transition flex items-center justify-center">→</button>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="bg-white rounded-2xl p-6 shadow-md">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-purple-300 flex items-center justify-center text-2xl mr-3">
+                    👤
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-sm">{testimonial.name}</h4>
+                    <p className="text-xs text-gray-500">{testimonial.role}</p>
+                    <div className="text-yellow-500 text-xs">{'⭐'.repeat(testimonial.rating)}</div>
+                  </div>
+                </div>
+                <p className="text-gray-700 text-xs leading-relaxed">{testimonial.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p>&copy; 2025 Cognon. All rights reserved.</p>
+      <footer className="bg-black text-white py-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <h3 className="text-xl font-bold mb-4 text-purple-400">Cognon</h3>
+              <p className="text-gray-400 text-sm">Empowering learners worldwide with quality education</p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4 text-sm">Quick Links</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white transition">Home</a></li>
+                <li><a href="#" className="hover:text-white transition">About</a></li>
+                <li><a href="#courses" className="hover:text-white transition">Courses</a></li>
+                <li><a href="#" className="hover:text-white transition">Contact</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4 text-sm">For Tutors</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><Link to={ROUTES.SIGNUP} className="hover:text-white transition">Become a Tutor</Link></li>
+                <li><Link to={ROUTES.LOGIN} className="hover:text-white transition">Tutor Login</Link></li>
+                <li><a href="#" className="hover:text-white transition">Resources</a></li>
+                <li><a href="#" className="hover:text-white transition">Support</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4 text-sm">Follow Us</h4>
+              <div className="flex gap-3">
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-purple-600 transition text-sm">f</a>
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-purple-600 transition text-sm">t</a>
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-purple-600 transition text-sm">in</a>
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-purple-600 transition text-sm">yt</a>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
+            <p>&copy; 2024 Cognon. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>
