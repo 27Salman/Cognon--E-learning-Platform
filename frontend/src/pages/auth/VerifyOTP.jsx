@@ -9,12 +9,11 @@ const VerifyOTP = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const email = location.state?.email;
-    const otpSentTime = location.state?.timestamp || Date.now();
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
-    const [timer, setTimer] = useState(0);
+    const [timer, setTimer] = useState(120); // 2 minutes
     const inputRefs = useRef([]);
 
     useEffect(() => {
@@ -23,25 +22,19 @@ const VerifyOTP = () => {
             return;
         }
 
-        const calculateRemainingTime = () => {
-            const expiryTime = otpSentTime + (5 * 60 * 1000);
-            const remaining = Math.max(0, Math.floor((expiryTime - Date.now()) / 1000));
-            return remaining;
-        };
-
-        setTimer(calculateRemainingTime());
-
+        // Start countdown timer
         const interval = setInterval(() => {
-            const remaining = calculateRemainingTime();
-            setTimer(remaining);
-
-            if (remaining <= 0) {
-                clearInterval(interval);
-            }
+            setTimer((prev) => {
+                if (prev <= 0) {
+                    clearInterval(interval);
+                    return 0;
+                }
+                return prev - 1;
+            });
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [email, otpSentTime, navigate]);
+    }, [email, navigate]);
 
     const handleChange = (index, value) => {
         if (isNaN(value)) return;
@@ -107,24 +100,20 @@ const VerifyOTP = () => {
     };
 
     const handleResend = async () => {
+        if (timer > 0) {
+            toast.error('Please wait for the timer to expire');
+            return;
+        }
+
         setResendLoading(true);
         try {
             const response = await axios.post('/auth/resend-otp', { email });
         
             if (response.data.success) {
                 toast.success('New OTP sent successfully!');
-                const newTimestamp = Date.now();
-                setTimer(300);
+                setTimer(120); // Reset to 2 minutes
                 setOtp(['', '', '', '', '', '']);
                 inputRefs.current[0].focus();
-                
-                navigate('/verify-otp', { 
-                state: { 
-                    email, 
-                    timestamp: newTimestamp 
-                },
-                replace: true
-                });
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to resend OTP');
@@ -180,7 +169,7 @@ const VerifyOTP = () => {
                     Time remaining: <span className="font-medium text-primary-600">{formatTime(timer)}</span>
                 </p>
                 ) : (
-                <p className="text-red-600 font-medium">OTP expired!</p>
+                <p className="text-red-600 font-medium">OTP expired! Please request a new one.</p>
                 )}
             </div>
 
@@ -199,14 +188,14 @@ const VerifyOTP = () => {
                 <button
                 type="button"
                 onClick={handleResend}
-                disabled={resendLoading || timer > 240}
+                disabled={resendLoading || timer > 0}
                 className="text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                 {resendLoading ? 'Sending...' : 'Resend OTP'}
                 </button>
-                {timer > 240 && (
+                {timer > 0 && (
                 <p className="text-xs text-gray-500 mt-1">
-                    Available in {formatTime(timer - 240)}
+                    Available after timer expires
                 </p>
                 )}
             </div>

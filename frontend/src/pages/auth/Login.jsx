@@ -265,7 +265,7 @@ const Login = () => {
               type="button"
               onClick={() => {
                 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-                window.location.href = `${API_URL}/auth/google`;
+                window.location.href = `${API_URL}/auth/google?role=${activeRole}`;
               }}
               className="mt-4 w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium transition-colors"
             >

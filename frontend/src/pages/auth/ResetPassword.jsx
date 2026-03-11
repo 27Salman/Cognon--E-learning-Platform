@@ -16,7 +16,7 @@ const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(300); // 5 minutes
+  const [timer, setTimer] = useState(120); // 2 minutes
   const inputRefs = useRef([]);
 
   useEffect(() => {
@@ -146,6 +146,11 @@ const ResetPassword = () => {
   };
 
   const handleResendOtp = async () => {
+    if (timer > 0) {
+      toast.error('Please wait for the timer to expire');
+      return;
+    }
+
     setLoading(true);
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -159,7 +164,7 @@ const ResetPassword = () => {
 
       if (response.ok) {
         toast.success('New OTP sent to your email!');
-        setTimer(300);
+        setTimer(120); // Reset to 2 minutes
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
@@ -240,11 +245,16 @@ const ResetPassword = () => {
               <button
                 type="button"
                 onClick={handleResendOtp}
-                disabled={loading || timer > 240}
+                disabled={loading || timer > 0}
                 className="text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Resend OTP
               </button>
+              {timer > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Available after timer expires
+                </p>
+              )}
             </div>
           </form>
         ) : (
