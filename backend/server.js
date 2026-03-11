@@ -4,11 +4,13 @@ const express = require("express");
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+const passport = require('passport');
 const connectDB = require("./src/config/db");
 const {HTTP_STATUS} = require('./src/config/constants');
 const { authRoutes } = require('./src/routes');
 const { errorHandler, notFound } = require('./src/middleware/errorMiddleware');
+require('./src/controllers/googleAuthController'); // Initialize passport strategies
 const PORT = process.env.PORT || 5000;
 
 const app = express();
@@ -27,6 +29,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(cookieParser());
+
+// Initialize Passport
+app.use(passport.initialize());
 
 if( process.env.NODE_ENV === 'development'){
   app.use(morgan('dev'));

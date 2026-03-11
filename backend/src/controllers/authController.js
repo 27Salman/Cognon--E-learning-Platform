@@ -265,3 +265,64 @@ exports.resetPassword = asyncHandler(async (req, res) => {
         message: 'Password reset successful'
     });
 });
+
+
+exports.upgradeToTutor = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { bio, expertise } = req.body;
+    
+    const user = await User.findById(userId);
+    
+    if (!user) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+            success: false,
+            message: 'User not found'
+        });
+    }
+    
+    if (user.role === 'tutor') {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'You are already a tutor'
+        });
+    }
+    
+    if (user.role !== 'student') {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'Only students can upgrade to tutor'
+        });
+    }
+    
+    // Upgrade to tutor
+    user.role = 'tutor';
+    user.tutorProfile = {
+        bio: bio || '',
+        expertise: expertise || [],
+        experience: 0,
+        coursesCreated: [],
+        isApproved: false // Requires admin approval
+    };
+    
+    await user.save();
+    
+    const token = generateToken(user._id, user.role);
+    
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Successfully upgraded to tutor. Awaiting admin approval.',
+        token,
+        user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            phone: user.phone,
+            tutorProfile: {
+                bio: user.tutorProfile.bio,
+                expertise: user.tutorProfile.expertise,
+                isApproved: user.tutorProfile.isApproved
+            }
+        }
+    });
+});

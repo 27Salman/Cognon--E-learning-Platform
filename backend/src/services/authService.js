@@ -126,7 +126,6 @@ const authService = {
 
     async loginUser(email, password) {
         const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
-
         if (!user) {
             throw new Error('Invalid email or password');
         }
@@ -141,7 +140,7 @@ const authService = {
             throw new Error('Your account has been blocked. Please contact admin.');
         }
 
-        if (!user.isVerified) {
+        if (!user.isVerified && user.role !== USER_ROLES.ADMIN) {
             throw new Error('Please verify your email before logging in');
         }
 
