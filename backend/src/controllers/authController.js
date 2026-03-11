@@ -162,7 +162,7 @@ exports.resendOTP = asyncHandler(async (req, res) => {
     clearOTP(email);
     
     const otp = generateOTP();
-    storeOTP(email, otp, 5);
+    storeOTP(email, otp, 2); // 2 minutes
     
     await sendVerificationOTP(email, user.name, otp);
     
@@ -185,7 +185,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
     }
     
     const otp = generateOTP();
-    storeOTP(`reset_${email}`, otp, 5);
+    storeOTP(`reset_${email}`, otp, 2); // 2 minutes
     
     try {
         await sendPasswordResetOTP(user.email, user.name, otp);
@@ -301,7 +301,7 @@ exports.upgradeToTutor = asyncHandler(async (req, res) => {
         expertise: expertise || [],
         experience: 0,
         coursesCreated: [],
-        isApproved: false // Requires admin approval
+        isApproved: false 
     };
     
     await user.save();

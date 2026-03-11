@@ -11,35 +11,57 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: `${process.env.API_URL || 'http://localhost:5000'}/api/auth/google/callback`,
+      passReqToCallback: true,
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
+        const email = profile.emails[0].value.toLowerCase();
+        const googleName = profile.displayName;
+        
+        // Get role from query parameter (default to student)
+        const role = req.query.state || USER_ROLES.STUDENT;
+
         // Check if user already exists
-        let user = await User.findOne({ email: profile.emails[0].value.toLowerCase() });
+        let user = await User.findOne({ email });
 
         if (user) {
           // User exists, return user
           return done(null, user);
         }
 
-        // Create new user
+        // Create new user with Google data
         user = await User.create({
-          name: profile.displayName,
-          email: profile.emails[0].value.toLowerCase(),
-          password: Math.random().toString(36).slice(-8) + 'Aa1!', // Random password
+          name: googleName, // Use Google display name
+          email: email,
+          password: Math.random().toString(36).slice(-8) + 'Aa1!', // Random secure password
           phone: '0000000000', // Placeholder phone
-          role: USER_ROLES.STUDENT,
+          role: role === USER_ROLES.TUTOR ? USER_ROLES.TUTOR : USER_ROLES.STUDENT,
           profileImage: profile.photos[0]?.value || 'https://via.placeholder.com/150',
           isVerified: true, // Google accounts are pre-verified
           status: 'active',
-          studentProfile: {
+        });
+
+        // Add role-specific profile
+        if (role === USER_ROLES.TUTOR) {
+          user.tutorProfile = {
+            bio: '',
+            expertise: [],
+            experience: 0,
+            coursesCreated: [],
+            isApproved: false, // Requires admin approval
+          };
+        } else {
+          user.studentProfile = {
             enrolledCourses: [],
             certificates: [],
-          },
-        });
+          };
+        }
+
+        await user.save();
 
         return done(null, user);
       } catch (error) {
+        console.error('Google OAuth error:', error);
         return done(error, null);
       }
     }
@@ -60,9 +82,13 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // Google Auth Routes
-exports.googleAuth = passport.authenticate('google', {
-  scope: ['profile', 'email'],
-});
+exports.googleAuth = (req, res, next) => {
+  const role = req.query.role || 'student';
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    state: role, // Pass role as state
+  })(req, res, next);
+};
 
 exports.googleAuthCallback = (req, res, next) => {
   passport.authenticate('google', { session: false }, (err, user, info) => {

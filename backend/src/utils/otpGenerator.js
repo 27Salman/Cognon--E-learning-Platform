@@ -17,7 +17,7 @@ const storeOTP = (email, otp, expiryMinutes = 10) => {
     });
 
     setTimeout(()=>{
-        otp.store.delete(key);
+        otpStore.delete(key);
     }, expiryMinutes * 60 * 1000)
 };
 

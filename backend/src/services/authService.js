@@ -104,7 +104,7 @@ const authService = {
             }
 
             const otp = generateOTP();
-            storeOTP(normalizedEmail, otp, 5);
+            storeOTP(normalizedEmail, otp, 2); // 2 minutes
 
             try {
                 await sendVerificationOTP(normalizedEmail, name, otp);
