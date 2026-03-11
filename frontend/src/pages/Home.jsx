@@ -168,15 +168,16 @@ const Home = () => {
             </div>
             <div className="flex gap-4">
               <button
-                onClick={() => navigate(ROUTES.SIGNUP)}
+                onClick={() => navigate(ROUTES.SIGNUP, { state: { role: 'tutor' } })}
                 className="px-8 py-3 bg-white text-purple-600 rounded-md hover:bg-gray-100 transition font-medium text-sm whitespace-nowrap"
               >
                 Register as Tutor
               </button>
               <button
+                onClick={() => navigate(ROUTES.LOGIN, { state: { role: 'tutor' } })}
                 className="px-8 py-3 border-2 border-white text-white rounded-md hover:bg-purple-700 transition font-medium text-sm whitespace-nowrap"
               >
-                Learn More
+                Tutor Login
               </button>
             </div>
           </div>

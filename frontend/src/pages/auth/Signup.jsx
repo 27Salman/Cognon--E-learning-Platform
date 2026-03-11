@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signupUser, clearError } from '../../store/slices/authSlice';
 import Input from '../../components/common/Input';
@@ -10,10 +10,13 @@ import { getPasswordStrength } from '../../utils/helpers';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const [activeRole, setActiveRole] = useState(ROLES.STUDENT);
+  // Get role from navigation state if provided
+  const initialRole = location.state?.role === 'tutor' ? ROLES.TUTOR : ROLES.STUDENT;
+  const [activeRole, setActiveRole] = useState(initialRole);
 
   const [formData, setFormData] = useState({
     name: '',

@@ -10,6 +10,8 @@ import Signup from './pages/auth/Signup';
 import AdminLogin from './pages/auth/AdminLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import AdminForgotPassword from './pages/auth/AdminForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
+import GoogleAuthSuccess from './pages/auth/GoogleAuthSuccess';
 import StudentDashboard from './pages/student/StudentDashboard';
 import TutorDashboard from './pages/tutor/TutorDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -30,9 +32,11 @@ function App() {
       <Route path={ROUTES.LOGIN} element={<Login />} />
       <Route path={ROUTES.SIGNUP} element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
       <Route path="/verify-otp" element={<VerifyOTP />} />
+      <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
 
 
       {/* Protected Student Routes */}
