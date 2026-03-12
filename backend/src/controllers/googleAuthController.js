@@ -30,11 +30,14 @@ passport.use(
         }
 
         // Create new user with Google data
+        // Generate unique placeholder phone (9 + 9 random digits)
+        const uniquePhone = '9' + Math.floor(100000000 + Math.random() * 900000000).toString();
+        
         user = await User.create({
           name: googleName, // Use Google display name
           email: email,
           password: Math.random().toString(36).slice(-8) + 'Aa1!', // Random secure password
-          phone: '0000000000', // Placeholder phone
+          phone: uniquePhone, // Unique valid placeholder phone
           role: role === USER_ROLES.TUTOR ? USER_ROLES.TUTOR : USER_ROLES.STUDENT,
           profileImage: profile.photos[0]?.value || 'https://via.placeholder.com/150',
           isVerified: true, // Google accounts are pre-verified
@@ -104,4 +107,4 @@ exports.googleAuthCallback = (req, res, next) => {
   })(req, res, next);
 };
 
-module.exports = passport;
+exports.passport = passport;
