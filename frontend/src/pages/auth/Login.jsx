@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
@@ -13,6 +13,7 @@ const Login = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
+  const hasShownToast = useRef(false);
 
   // Get role from navigation state if provided
   const initialRole = location.state?.role === 'tutor' ? ROLES.TUTOR : ROLES.STUDENT;
@@ -104,7 +105,8 @@ const Login = () => {
   };
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !hasShownToast.current) {
+      hasShownToast.current = true;
       if (user.role === ROLES.STUDENT) {
         navigate(ROUTES.STUDENT_DASHBOARD);
       } else if (user.role === ROLES.TUTOR) {

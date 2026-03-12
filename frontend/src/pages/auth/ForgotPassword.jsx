@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { validateEmail } from '../../utils/helpers';
@@ -7,10 +7,10 @@ import toast from 'react-hot-toast';
 import { FiArrowLeft } from 'react-icons/fi';
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     setEmail(e.target.value);
@@ -45,8 +45,13 @@ const ForgotPassword = () => {
 
       if (response.ok) {
         toast.success('Password reset OTP sent to your email!');
-        // Navigate to reset password page with email
-        navigate('/reset-password', { state: { email: email.trim() } });
+        // Navigate to reset password page with email and timestamp
+        navigate('/reset-password', { 
+          state: { 
+            email: email.trim(),
+            timestamp: Date.now()
+          } 
+        });
       } else {
         toast.error(data.message || 'Failed to send reset OTP');
       }
@@ -108,82 +113,46 @@ const ForgotPassword = () => {
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
 
-          {success ? (
-            <div className="text-center">
-              <div className="mb-6">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                  <svg
-                    className="w-10 h-10 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Check Your Email</h2>
-              <p className="text-gray-600 mb-8">
-                We've sent a password reset link to <strong>{email}</strong>. 
-                Please check your inbox and follow the instructions.
-              </p>
-              <Link
-                to="/login"
-                className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
-              >
-                <FiArrowLeft className="mr-2" />
-                Back to login screen
-              </Link>
-            </div>
-          ) : (
-            <>
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-3">Reset Your Password</h2>
-                <p className="text-gray-600">
-                  Forgot your password? No worries, then let's submit password reset. 
-                  It will be send to your email.
-                </p>
-              </div>
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Reset Your Password</h2>
+            <p className="text-gray-600">
+              Forgot your password? No worries, then let's submit password reset. 
+              It will be send to your email.
+            </p>
+          </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <Input
-                  label="Email Address"
-                  type="email"
-                  name="email"
-                  value={email}
-                  onChange={handleChange}
-                  placeholder="elementary221b@gmail.com"
-                  error={emailError}
-                  required
-                />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <Input
+              label="Email Address"
+              type="email"
+              name="email"
+              value={email}
+              onChange={handleChange}
+              placeholder="elementary221b@gmail.com"
+              error={emailError}
+              required
+            />
 
-                <Button
-                  type="submit"
-                  variant="primary"
-                  fullWidth
-                  loading={loading}
-                  disabled={loading}
-                >
-                  Reset Password
-                </Button>
-              </form>
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              loading={loading}
+              disabled={loading}
+            >
+              Reset Password
+            </Button>
+          </form>
 
-              <div className="mt-6 text-center">
-                <Link
-                  to="/login"
-                  className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  <FiArrowLeft className="mr-2" />
-                  Back to login screen
-                </Link>
-              </div>
-            </>
-          )}
+          <div className="mt-6 text-center">
+            <Link
+              to="/login"
+              className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
+            >
+              <FiArrowLeft className="mr-2" />
+              Back to login screen
+            </Link>
+          </div>
         </div>
       </div>
     </div>
