@@ -80,7 +80,7 @@ const StudentDashboard = () => {
       {/* Header with Icons */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center h-16">
             <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
             <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
               <a href="#home" className="text-gray-700 hover:text-purple-600 transition">Home</a>
@@ -89,7 +89,7 @@ const StudentDashboard = () => {
               <a href="#blog" className="text-gray-700 hover:text-purple-600 transition">Blog</a>
               <a href="#contact" className="text-gray-700 hover:text-purple-600 transition">Contact</a>
             </nav>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 space-x-6">
               {/* Wishlist Icon */}
               <button className="relative hover:opacity-80 transition" title="Wishlist">
                 <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
