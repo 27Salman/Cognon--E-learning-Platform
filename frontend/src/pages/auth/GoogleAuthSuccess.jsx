@@ -42,18 +42,22 @@ const GoogleAuthSuccess = () => {
             localStorage.setItem('cognon_token', token);
             localStorage.setItem('cognon_user', JSON.stringify(data.user));
 
+            // Show success toast
             toast.success('Login successful!');
 
-            // Redirect based on role
-            if (data.user.role === 'student') {
-              navigate(ROUTES.STUDENT_DASHBOARD);
-            } else if (data.user.role === 'tutor') {
-              navigate(ROUTES.TUTOR_DASHBOARD);
-            } else if (data.user.role === 'admin') {
-              navigate(ROUTES.ADMIN_DASHBOARD);
-            } else {
-              navigate(ROUTES.HOME);
-            }
+            // Small delay to ensure toast is visible before navigation
+            setTimeout(() => {
+              // Redirect based on role
+              if (data.user.role === 'student') {
+                navigate(ROUTES.STUDENT_DASHBOARD);
+              } else if (data.user.role === 'tutor') {
+                navigate(ROUTES.TUTOR_DASHBOARD);
+              } else if (data.user.role === 'admin') {
+                navigate(ROUTES.ADMIN_DASHBOARD);
+              } else {
+                navigate(ROUTES.HOME);
+              }
+            }, 100);
           } else {
             throw new Error('Failed to fetch user data');
           }

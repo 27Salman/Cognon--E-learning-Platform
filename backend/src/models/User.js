@@ -14,7 +14,6 @@ const userSchema = new mongoose.Schema(
         email: {
             type: String,
             required: [true, 'Email is required'],
-            unique: true,
             lowercase: true,
             trim: true,
             match: [ /^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please provide a valid email' ]
@@ -28,7 +27,13 @@ const userSchema = new mongoose.Schema(
         phone: {
             type: String,
             required: [true, 'Phone number is required'],
-            match: [/^[6-9]\d{9}$/, 'Please provide a valid phone number']
+            validate: {
+                validator: function(v) {
+                    // Must match Indian phone format
+                    return /^[6-9]\d{9}$/.test(v);
+                },
+                message: 'Please provide a valid phone number (10 digits starting with 6-9)'
+            }
         },
         role: {
             type: String,
@@ -156,6 +161,8 @@ userSchema.methods.hasRole = function(role){
     return this.role === role;
 };
 
+// Compound unique index: same email can exist with different roles
+userSchema.index({ email: 1, role: 1 }, { unique: true });
 
 module.exports = mongoose.model('User', userSchema);
 

@@ -94,11 +94,12 @@ const Login = () => {
       loginUser({
         email: formData.email,
         password: formData.password,
+        role: activeRole, 
       })
     );
 
     if (loginUser.fulfilled.match(resultAction)) {
-      toast.success('Login successful!');
+      
     } else {
       toast.error(resultAction.payload || 'Login failed');
     }
@@ -107,6 +108,8 @@ const Login = () => {
   useEffect(() => {
     if (isAuthenticated && user && !hasShownToast.current) {
       hasShownToast.current = true;
+      toast.success('Login successful!');
+      
       if (user.role === ROLES.STUDENT) {
         navigate(ROUTES.STUDENT_DASHBOARD);
       } else if (user.role === ROLES.TUTOR) {
@@ -118,6 +121,7 @@ const Login = () => {
   }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
+    hasShownToast.current = false;
     return () => dispatch(clearError());
   }, [dispatch]);
 

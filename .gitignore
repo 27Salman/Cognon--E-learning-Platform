@@ -40,3 +40,11 @@ frontend/.env
 # Package Manager
 package-lock.json
 yarn.lock
+
+FINAL_FIXES.md
+FIXES_APPLIED.md
+QUICK_START.md
+SETUP_INSTRUCTIONS.md
+PROJECT_STATE.md
+GOOGLE_OAUTH_SETUP.md
+LATEST_FIXES.md

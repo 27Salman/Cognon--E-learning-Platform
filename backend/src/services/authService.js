@@ -11,35 +11,28 @@ const authService = {
             const normalizedEmail = email.toLowerCase().trim();
             const normalizedPhone = phone.trim();
 
-            console.log('Registration attempt for:', normalizedEmail);
+            console.log('Registration attempt for:', normalizedEmail, 'as', role);
 
+            // Delete unverified users with same email AND role
             const deletedUsers = await User.deleteMany({
-                $or: [
-                    { email: normalizedEmail },
-                    { phone: normalizedPhone }
-                ],
+                email: normalizedEmail,
+                role: role,
                 isVerified: false
             });
 
             if (deletedUsers.deletedCount > 0) {
-                console.log(`Deleted ${deletedUsers.deletedCount} unverified user(s)`);
+                console.log(`Deleted ${deletedUsers.deletedCount} unverified user(s) with role ${role}`);
             }
 
+            // Check if verified user exists with same email AND role
             const verifiedUser = await User.findOne({
-                $or: [
-                    { email: normalizedEmail },
-                    { phone: normalizedPhone }
-                ],
+                email: normalizedEmail,
+                role: role,
                 isVerified: true
             });
 
             if (verifiedUser) {
-                if (verifiedUser.email === normalizedEmail) {
-                    throw new Error('This email is already registered and verified. Please login.');
-                }
-                if (verifiedUser.phone === normalizedPhone) {
-                    throw new Error('This phone number is already registered and verified.');
-                }
+                throw new Error(`This email is already registered as ${role}. Please login.`);
             }
 
             const userRole = role || USER_ROLES.STUDENT;
@@ -84,10 +77,8 @@ const authService = {
                         console.log(`Duplicate key error on attempt ${attempt}, retrying...`);
                         
                         await User.deleteMany({
-                            $or: [
-                                { email: normalizedEmail },
-                                { phone: normalizedPhone }
-                            ],
+                            email: normalizedEmail,
+                            role: userRole,
                             isVerified: false
                         });
                         
@@ -124,10 +115,17 @@ const authService = {
         }
     },
 
-    async loginUser(email, password) {
-        const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
+    async loginUser(email, password, role) {
+        const normalizedEmail = email.toLowerCase().trim();
+        
+        // Find user by email AND role
+        const user = await User.findOne({ 
+            email: normalizedEmail,
+            role: role 
+        }).select('+password');
+        
         if (!user) {
-            throw new Error('Invalid email or password');
+            throw new Error(`No ${role} account found with this email. Please check your credentials or register.`);
         }
 
         const isPasswordMatch = await user.comparePassword(password);

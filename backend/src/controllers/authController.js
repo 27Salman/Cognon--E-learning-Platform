@@ -33,9 +33,17 @@ exports.signup = asyncHandler(async (req, res) => {
 });
 
 exports.login = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
     
-    const user = await authService.loginUser(email, password);
+    // Role is required to determine which account to login to
+    if (!role) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'Role is required (student or tutor)'
+        });
+    }
+    
+    const user = await authService.loginUser(email, password, role);
     const token = generateToken(user._id, user.role);
 
     res.status(HTTP_STATUS.OK).json({

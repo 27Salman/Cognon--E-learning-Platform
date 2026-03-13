@@ -21,23 +21,26 @@ passport.use(
         // Get role from query parameter (default to student)
         const role = req.query.state || USER_ROLES.STUDENT;
 
-        // Check if user already exists
-        let user = await User.findOne({ email });
+        // Check if user already exists with this email AND role
+        let user = await User.findOne({ email, role });
 
         if (user) {
-          // User exists, return user
+          // User exists with this email and role, return user
           return done(null, user);
         }
 
         // Create new user with Google data
-        // Generate unique placeholder phone (9 + 9 random digits)
-        const uniquePhone = '9' + Math.floor(100000000 + Math.random() * 900000000).toString();
+        // Use a consistent placeholder phone for Google users
+        // Format: 9000000000 + last 3 digits of timestamp for uniqueness
+        const timestamp = Date.now().toString();
+        const uniqueSuffix = timestamp.slice(-3);
+        const googlePhone = `9000000${uniqueSuffix}`;
         
         user = await User.create({
           name: googleName, // Use Google display name
           email: email,
           password: Math.random().toString(36).slice(-8) + 'Aa1!', // Random secure password
-          phone: uniquePhone, // Unique valid placeholder phone
+          phone: googlePhone, // Placeholder phone for Google users
           role: role === USER_ROLES.TUTOR ? USER_ROLES.TUTOR : USER_ROLES.STUDENT,
           profileImage: profile.photos[0]?.value || 'https://via.placeholder.com/150',
           isVerified: true, // Google accounts are pre-verified
