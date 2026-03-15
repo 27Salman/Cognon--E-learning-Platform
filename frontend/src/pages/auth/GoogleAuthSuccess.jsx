@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../../store/slices/authSlice';
@@ -10,8 +10,13 @@ const GoogleAuthSuccess = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
+  const hasRun = useRef(false); // Prevents double execution in React 18 Strict Mode
 
   useEffect(() => {
+    // Guard: only run once even if effect fires twice (React Strict Mode)
+    if (hasRun.current) return;
+    hasRun.current = true;
+
     const token = searchParams.get('token');
     const error = searchParams.get('error');
 
@@ -21,58 +26,43 @@ const GoogleAuthSuccess = () => {
       return;
     }
 
-    if (token) {
-      // Fetch user data with token
-      const fetchUser = async () => {
-        try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-          const response = await fetch(`${API_URL}/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          const data = await response.json();
-
-          if (response.ok && data.user) {
-            // Store token and user in Redux
-            dispatch(setCredentials({ token, user: data.user }));
-            
-            // Store in localStorage
-            localStorage.setItem('cognon_token', token);
-            localStorage.setItem('cognon_user', JSON.stringify(data.user));
-
-            // Show success toast
-            toast.success('Login successful!');
-
-            // Small delay to ensure toast is visible before navigation
-            setTimeout(() => {
-              // Redirect based on role
-              if (data.user.role === 'student') {
-                navigate(ROUTES.STUDENT_DASHBOARD);
-              } else if (data.user.role === 'tutor') {
-                navigate(ROUTES.TUTOR_DASHBOARD);
-              } else if (data.user.role === 'admin') {
-                navigate(ROUTES.ADMIN_DASHBOARD);
-              } else {
-                navigate(ROUTES.HOME);
-              }
-            }, 100);
-          } else {
-            throw new Error('Failed to fetch user data');
-          }
-        } catch (error) {
-          console.error('Google auth error:', error);
-          toast.error('Authentication failed');
-          navigate(ROUTES.LOGIN);
-        }
-      };
-
-      fetchUser();
-    } else {
+    if (!token) {
       navigate(ROUTES.LOGIN);
+      return;
     }
-  }, [searchParams, navigate, dispatch]);
+
+    const fetchUser = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.user) {
+          dispatch(setCredentials({ token, user: data.user }));
+          localStorage.setItem('cognon_token', token);
+          localStorage.setItem('cognon_user', JSON.stringify(data.user));
+
+          toast.success('Google authentication successful!');
+
+          if (data.user.role === 'student') navigate(ROUTES.STUDENT_DASHBOARD);
+          else if (data.user.role === 'tutor') navigate(ROUTES.TUTOR_DASHBOARD);
+          else if (data.user.role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD);
+          else navigate(ROUTES.HOME);
+        } else {
+          throw new Error('Failed to fetch user data');
+        }
+      } catch (err) {
+        console.error('Google auth error:', err);
+        toast.error('Authentication failed');
+        navigate(ROUTES.LOGIN);
+      }
+    };
+
+    fetchUser();
+  }, []); // Empty deps — token is read from URL once, no need to re-run
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

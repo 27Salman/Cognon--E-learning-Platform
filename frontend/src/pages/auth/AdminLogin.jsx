@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 const AdminLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
+  const { loading } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -60,36 +60,17 @@ const AdminLogin = () => {
       loginUser({
         email: formData.email,
         password: formData.password,
+        role: ROLES.ADMIN,
       })
     );
 
     if (loginUser.fulfilled.match(resultAction)) {
-      const loggedInUser = resultAction.payload.user;
-      if (loggedInUser.role !== ROLES.ADMIN) {
-        toast.error('Unauthorized access. Admin only.');
-        dispatch(clearError());
-        return;
-      }
       toast.success('Admin login successful!');
+      navigate(ROUTES.ADMIN_DASHBOARD);
     } else {
       toast.error(resultAction.payload || 'Login failed');
     }
   };
-
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.role === ROLES.ADMIN) {
-        navigate(ROUTES.ADMIN_DASHBOARD);
-      } else {
-        toast.error('Unauthorized access');
-        if (user.role === ROLES.STUDENT) {
-          navigate(ROUTES.STUDENT_DASHBOARD);
-        } else if (user.role === ROLES.TUTOR) {
-          navigate(ROUTES.TUTOR_DASHBOARD);
-        }
-      }
-    }
-  }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
     return () => {

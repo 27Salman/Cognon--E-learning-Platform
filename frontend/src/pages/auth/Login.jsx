@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
@@ -13,7 +13,6 @@ const Login = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
-  const hasShownToast = useRef(false);
 
   // Get role from navigation state if provided
   const initialRole = location.state?.role === 'tutor' ? ROLES.TUTOR : ROLES.STUDENT;
@@ -94,34 +93,22 @@ const Login = () => {
       loginUser({
         email: formData.email,
         password: formData.password,
-        role: activeRole, 
+        role: activeRole,
       })
     );
 
     if (loginUser.fulfilled.match(resultAction)) {
-      
+      toast.success('Login successful!');
+      const role = resultAction.payload.user?.role;
+      if (role === ROLES.STUDENT) navigate(ROUTES.STUDENT_DASHBOARD);
+      else if (role === ROLES.TUTOR) navigate(ROUTES.TUTOR_DASHBOARD);
+      else if (role === ROLES.ADMIN) navigate(ROUTES.ADMIN_DASHBOARD);
     } else {
       toast.error(resultAction.payload || 'Login failed');
     }
   };
 
   useEffect(() => {
-    if (isAuthenticated && user && !hasShownToast.current) {
-      hasShownToast.current = true;
-      toast.success('Login successful!');
-      
-      if (user.role === ROLES.STUDENT) {
-        navigate(ROUTES.STUDENT_DASHBOARD);
-      } else if (user.role === ROLES.TUTOR) {
-        navigate(ROUTES.TUTOR_DASHBOARD);
-      } else if (user.role === ROLES.ADMIN) {
-        navigate(ROUTES.ADMIN_DASHBOARD);
-      }
-    }
-  }, [isAuthenticated, user, navigate]);
-
-  useEffect(() => {
-    hasShownToast.current = false;
     return () => dispatch(clearError());
   }, [dispatch]);
 

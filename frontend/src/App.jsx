@@ -14,9 +14,11 @@ import ResetPassword from './pages/auth/ResetPassword';
 import GoogleAuthSuccess from './pages/auth/GoogleAuthSuccess';
 import StudentDashboard from './pages/student/StudentDashboard';
 import TutorDashboard from './pages/tutor/TutorDashboard';
-import AdminDashboard from './pages/admin/AdminDashboard';
+//import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLayout from './components/layouts/AdminLayout';
 import { ROUTES, ROLES } from './utils/constants';
 import VerifyOTP from './pages/auth/VerifyOTP';
+
 
 
 function App() {
@@ -115,55 +117,28 @@ function App() {
 
       {/* Protected Admin Routes */}
       <Route
-        path={ROUTES.ADMIN_DASHBOARD}
+        path="/admin"
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <AdminDashboard />
+              <AdminLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
-      <Route
-        path={ROUTES.ADMIN_USERS}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <div className="p-8">Admin Users - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.ADMIN_COURSES}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <div className="p-8">Admin Courses - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.ADMIN_CATEGORIES}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <div className="p-8">Admin Categories - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.ADMIN_TUTORS}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <div className="p-8">Admin Tutors - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="dashboard" element={<></>} />
+        <Route path="profile" element={<></>} />
+        <Route path="categories" element={<></>} />
+        <Route path="students" element={<></>} />
+        <Route path="orders" element={<></>} />
+        <Route path="tutors" element={<></>} />
+        <Route path="coupon" element={<></>} />
+        <Route path="courses" element={<></>} />
+        <Route path="wallet" element={<></>} />
+      </Route>
+
+      {/* Fallback */}
       <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
     </Routes>
   );
