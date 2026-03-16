@@ -25,26 +25,26 @@ passport.use(
         let user = await User.findOne({ email, role });
 
         if (user) {
-          // User exists with this email and role, return user
+          // User exists — check they originally signed up via Google
+          if (user.authProvider === 'local') {
+            return done(null, false, {
+              message: 'This email is registered with email/password. Please use manual login.'
+            });
+          }
           return done(null, user);
         }
 
         // Create new user with Google data
-        // Use a consistent placeholder phone for Google users
-        // Format: 9000000000 + last 3 digits of timestamp for uniqueness
-        const timestamp = Date.now().toString();
-        const uniqueSuffix = timestamp.slice(-3);
-        const googlePhone = `9000000${uniqueSuffix}`;
-        
         user = await User.create({
-          name: googleName, // Use Google display name
+          name: googleName,
           email: email,
-          password: Math.random().toString(36).slice(-8) + 'Aa1!', // Random secure password
-          phone: googlePhone, // Placeholder phone for Google users
+          password: Math.random().toString(36).slice(-8) + 'Aa1!',
+          phone: null,
           role: role === USER_ROLES.TUTOR ? USER_ROLES.TUTOR : USER_ROLES.STUDENT,
-          profileImage: profile.photos[0]?.value || 'https://via.placeholder.com/150',
-          isVerified: true, // Google accounts are pre-verified
+          profileImage: profile.photos[0]?.value || null,
+          isVerified: true,
           status: 'active',
+          authProvider: 'google',
         });
 
         // Add role-specific profile
@@ -98,14 +98,15 @@ exports.googleAuth = (req, res, next) => {
 
 exports.googleAuthCallback = (req, res, next) => {
   passport.authenticate('google', { session: false }, (err, user, info) => {
-    if (err || !user) {
+    if (err) {
       return res.redirect(`${process.env.CLIENT_URL}/login?error=google_auth_failed`);
     }
+    if (!user) {
+      const msg = encodeURIComponent(info?.message || 'Google authentication failed');
+      return res.redirect(`${process.env.CLIENT_URL}/login?error=${msg}`);
+    }
 
-    // Generate JWT token
     const token = generateToken(user._id, user.role);
-
-    // Redirect to frontend with token
     res.redirect(`${process.env.CLIENT_URL}/auth/google/success?token=${token}`);
   })(req, res, next);
 };

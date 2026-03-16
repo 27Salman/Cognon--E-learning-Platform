@@ -3,7 +3,7 @@ const authService = require("../services/authService");
 const generateToken = require("../utils/generateToken");
 const { HTTP_STATUS, MESSAGES } = require("../config/constants");
 const asyncHandler = require('../middleware/asyncHandler');
-const { verifyOTP, generateOTP, storeOTP, clearOTP } = require('../utils/otpGenerator');
+const { verifyOTP, generateOTP, createOTP } = require('../services/otpService');
 const { sendVerificationOTP, sendPasswordResetOTP } = require('../services/emailService');
 
 exports.signup = asyncHandler(async (req, res) => {
@@ -35,15 +35,11 @@ exports.signup = asyncHandler(async (req, res) => {
 exports.login = asyncHandler(async (req, res) => {
     const { email, password, role } = req.body;
     
-    // Role is required to determine which account to login to
-    if (!role) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: 'Role is required (student or tutor)'
-        });
-    }
+    // If no role provided, default to admin (for admin login page)
+    // For student/tutor login, role is explicitly sent
+    const loginRole = role || 'admin';
     
-    const user = await authService.loginUser(email, password, role);
+    const user = await authService.loginUser(email, password, loginRole);
     const token = generateToken(user._id, user.role);
 
     res.status(HTTP_STATUS.OK).json({
@@ -106,35 +102,28 @@ exports.getCurrentUser = asyncHandler(async (req, res) => {
 
 exports.verifyEmailOTP = asyncHandler(async (req, res) => {
     const { email, otp } = req.body;
-    
+
     if (!email || !otp) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             message: 'Email and OTP are required'
         });
     }
-    
-    const result = verifyOTP(email, otp);
-    
-    if (!result.valid) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: result.message
-        });
-    }
-    
+
+    await verifyOTP(email.toLowerCase(), otp, 'email_verification');
+
     const user = await User.findOne({ email: email.toLowerCase() });
-    
+
     if (!user) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
             success: false,
             message: 'User not found'
         });
     }
-    
+
     user.isVerified = true;
     await user.save();
-    
+
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'Email verified successfully'
@@ -143,37 +132,33 @@ exports.verifyEmailOTP = asyncHandler(async (req, res) => {
 
 exports.resendOTP = asyncHandler(async (req, res) => {
     const { email } = req.body;
-    
+
     if (!email) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             message: 'Email is required'
         });
     }
-    
+
     const user = await User.findOne({ email: email.toLowerCase() });
-    
+
     if (!user) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
             success: false,
             message: 'User not found'
         });
     }
-    
+
     if (user.isVerified) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             message: 'Email already verified'
         });
     }
-    
-    clearOTP(email);
-    
-    const otp = generateOTP();
-    storeOTP(email, otp, 2); // 2 minutes
-    
+
+    const otp = await createOTP(email.toLowerCase(), 'email_verification');
     await sendVerificationOTP(email, user.name, otp);
-    
+
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'OTP sent successfully'
@@ -182,92 +167,92 @@ exports.resendOTP = asyncHandler(async (req, res) => {
 
 exports.forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
-    
+
     const user = await User.findOne({ email: email.toLowerCase() });
-    
+
     if (!user) {
         return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: 'If the email exists, an OTP has been sent'
         });
     }
-    
-    const otp = generateOTP();
-    storeOTP(`reset_${email}`, otp, 2); // 2 minutes
-    
+
+    const otp = await createOTP(email.toLowerCase(), 'password_change');
+
     try {
         await sendPasswordResetOTP(user.email, user.name, otp);
-        
         res.status(HTTP_STATUS.OK).json({
             success: true,
             message: 'Password reset OTP sent to your email'
         });
     } catch (error) {
-        clearOTP(`reset_${email}`);
         throw new Error('Failed to send reset OTP');
     }
 });
 
 exports.verifyResetOTP = asyncHandler(async (req, res) => {
     const { email, otp } = req.body;
-    
+
     if (!email || !otp) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             message: 'Email and OTP are required'
         });
     }
-    
-    const result = verifyOTP(`reset_${email}`, otp);
-    
-    if (!result.valid) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: result.message
-        });
-    }
-    
+
+    await verifyOTP(email.toLowerCase(), otp, 'password_change');
+
     const resetToken = require('crypto').randomBytes(32).toString('hex');
-    storeOTP(`token_${email}`, resetToken, 10);
-    
+    // Store reset token temporarily as a new OTP doc with purpose 'email_change' reused as token holder
+    await createOTP(email.toLowerCase(), 'email_change', resetToken);
+
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'OTP verified successfully',
-        resetToken: resetToken
+        resetToken
     });
 });
 
 exports.resetPassword = asyncHandler(async (req, res) => {
     const { email, resetToken, newPassword } = req.body;
-    
+
     if (!email || !resetToken || !newPassword) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             message: 'All fields are required'
         });
     }
-    
-    const result = verifyOTP(`token_${email}`, resetToken);
-    
-    if (!result.valid) {
+
+    // Verify the reset token stored in newEmail field
+    const OTP = require('../models/OTP');
+    const tokenDoc = await OTP.findOne({
+        email: email.toLowerCase(),
+        purpose: 'email_change',
+        newEmail: resetToken,
+        verified: false
+    });
+
+    if (!tokenDoc) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             message: 'Invalid or expired reset token'
         });
     }
-    
+
+    await OTP.deleteOne({ _id: tokenDoc._id });
+
     const user = await User.findOne({ email: email.toLowerCase() });
-    
+
     if (!user) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
             success: false,
             message: 'User not found'
         });
     }
-    
+
     user.password = newPassword;
     await user.save();
-    
+
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'Password reset successful'
