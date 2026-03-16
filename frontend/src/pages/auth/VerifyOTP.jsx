@@ -9,6 +9,7 @@ const VerifyOTP = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const email = location.state?.email;
+    const role = location.state?.role || 'student';
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
@@ -82,15 +83,15 @@ const VerifyOTP = () => {
 
         setLoading(true);
         try {
-            const response = await verifyOTP(email, otpString)
+            const response = await verifyOTP(email, otpString);
 
             if (response.success) {
-                toast.success('Email verified successfully! Redirecting to login...');
+                toast.success('Email verified successfully!');
                 setOtp(['', '', '', '', '', '']);
-      
+                const dashboard = role === 'tutor' ? '/tutor/dashboard' : '/student/dashboard';
                 setTimeout(() => {
-                    navigate('/login', { replace: true });
-                }, 1500);
+                    navigate(dashboard, { replace: true });
+                }, 1000);
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'OTP verification failed');
@@ -111,7 +112,7 @@ const VerifyOTP = () => {
         
             if (response.data.success) {
                 toast.success('New OTP sent successfully!');
-                setTimer(120); // Reset to 2 minutes
+                setTimer(120); 
                 setOtp(['', '', '', '', '', '']);
                 inputRefs.current[0].focus();
             }

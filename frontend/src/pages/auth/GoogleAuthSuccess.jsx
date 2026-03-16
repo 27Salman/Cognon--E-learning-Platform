@@ -21,7 +21,7 @@ const GoogleAuthSuccess = () => {
     const error = searchParams.get('error');
 
     if (error) {
-      toast.error('Google authentication failed');
+      toast.error(decodeURIComponent(error));
       navigate(ROUTES.LOGIN);
       return;
     }

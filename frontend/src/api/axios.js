@@ -30,16 +30,35 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
+      // Clear all auth data from localStorage
       clearAuthData();
-      window.location.href = '/login';
+      localStorage.removeItem('cognon_token');
+      localStorage.removeItem('cognon_user');
+      localStorage.removeItem('adminInfo');
+      localStorage.removeItem('tutorInfo');
+
+      // Dispatch Redux logout to clear store state
+      import('../store/store').then(({ default: store }) => {
+        import('../store/slices/authSlice').then(({ logoutUser }) => {
+          store.dispatch(logoutUser());
+        });
+      });
+
+      // Redirect based on current path
+      const path = window.location.pathname;
+      if (path.startsWith('/admin')) {
+        window.location.href = '/admin/login';
+      } else {
+        window.location.href = '/login';
+      }
     }
 
     if (error.response?.status === 403) {
-      console.error('Access forbidden:', error.response.data.message);
+      console.error('Access forbidden:', error.response?.data?.message);
     }
 
     if (error.response?.status === 500) {
-      console.error('Server error:', error.response.data.message);
+      console.error('Server error:', error.response?.data?.message);
     }
 
     return Promise.reject(error);

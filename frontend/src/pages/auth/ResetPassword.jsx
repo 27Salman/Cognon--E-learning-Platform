@@ -4,19 +4,20 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import toast from 'react-hot-toast';
 import { FiArrowLeft } from 'react-icons/fi';
+import { validatePassword } from '../../utils/helpers';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email;
 
-  const [step, setStep] = useState('otp'); // 'otp' or 'password'
+  const [step, setStep] = useState('otp'); 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(120); // 2 minutes
+  const [timer, setTimer] = useState(120); 
   const inputRefs = useRef([]);
 
   useEffect(() => {
@@ -106,8 +107,13 @@ const ResetPassword = () => {
       return;
     }
 
-    if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    if (/\s/.test(newPassword)) {
+      toast.error('Password must not contain spaces');
+      return;
+    }
+
+    if (!validatePassword(newPassword)) {
+      toast.error('Min 8 chars, must include uppercase, lowercase, number & special character (@$!%*?&)');
       return;
     }
 

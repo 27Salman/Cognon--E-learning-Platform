@@ -20,11 +20,12 @@ const ForgotPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email.trim()) {
+    const trimmed = email.trim();
+    if (!trimmed) {
       setEmailError('Email is required');
       return;
     }
-    if (!validateEmail(email)) {
+    if (!validateEmail(trimmed)) {
       setEmailError('Invalid email format');
       return;
     }
@@ -35,28 +36,19 @@ const ForgotPassword = () => {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${API_URL}/auth/forgot-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email.trim() }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
         toast.success('Password reset OTP sent to your email!');
-        // Navigate to reset password page with email and timestamp
-        navigate('/reset-password', { 
-          state: { 
-            email: email.trim(),
-            timestamp: Date.now()
-          } 
-        });
+        navigate('/reset-password', { state: { email: trimmed, timestamp: Date.now() } });
       } else {
         toast.error(data.message || 'Failed to send reset OTP');
       }
     } catch (error) {
-      console.error('Forgot password error:', error);
       toast.error('Failed to send reset OTP. Please try again.');
     } finally {
       setLoading(false);

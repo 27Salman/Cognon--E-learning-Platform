@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signupUser, clearError } from '../../store/slices/authSlice';
 import Input from '../../components/common/Input';
@@ -13,6 +13,14 @@ const Signup = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
+
+  // Redirect already-authenticated users to their dashboard
+  if (isAuthenticated && user) {
+    const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
+      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
+      : ROUTES.STUDENT_DASHBOARD;
+    return <Navigate to={dashboard} replace />;
+  }
 
   // Get role from navigation state if provided
   const initialRole = location.state?.role === 'tutor' ? ROLES.TUTOR : ROLES.STUDENT;
@@ -67,7 +75,7 @@ const Signup = () => {
 
     if (!formData.email.trim()) {
       errors.email = 'Email is required';
-    } else if (!validateEmail(formData.email)) {
+    } else if (!validateEmail(formData.email.trim())) {
       errors.email = 'Invalid email format';
     }
 
@@ -80,7 +88,7 @@ const Signup = () => {
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (!validatePassword(formData.password)) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = 'Min 8 chars, must include uppercase, lowercase, number & special character (@$!%*?&), no spaces';
     }
 
     if (!formData.confirmPassword) {
@@ -123,6 +131,7 @@ const Signup = () => {
         navigate('/verify-otp', { 
           state: { 
             email: formData.email.trim(),
+            role: activeRole,
             timestamp: Date.now()
           } 
         });
@@ -133,16 +142,6 @@ const Signup = () => {
       setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.role === ROLES.STUDENT) {
-        navigate(ROUTES.STUDENT_DASHBOARD);
-      } else if (user.role === ROLES.TUTOR) {
-        navigate(ROUTES.TUTOR_DASHBOARD);
-      }
-    }
-  }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
     return () => dispatch(clearError());

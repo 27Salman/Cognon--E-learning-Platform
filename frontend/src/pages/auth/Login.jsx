@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
 import Input from '../../components/common/Input';
@@ -14,6 +14,14 @@ const Login = () => {
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
+  // Redirect already-authenticated users to their dashboard
+  if (isAuthenticated && user) {
+    const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
+      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
+      : ROUTES.STUDENT_DASHBOARD;
+    return <Navigate to={dashboard} replace />;
+  }
+
   // Get role from navigation state if provided
   const initialRole = location.state?.role === 'tutor' ? ROLES.TUTOR : ROLES.STUDENT;
   const [activeRole, setActiveRole] = useState(initialRole);
@@ -21,7 +29,6 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false,
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -58,11 +65,8 @@ const Login = () => {
   const currentContent = roleContent[activeRole];
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
-    });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: '' });
     }
@@ -72,11 +76,13 @@ const Login = () => {
     const errors = {};
     if (!formData.email.trim()) {
       errors.email = 'Email is required';
-    } else if (!validateEmail(formData.email)) {
+    } else if (!validateEmail(formData.email.trim())) {
       errors.email = 'Invalid email format';
     }
     if (!formData.password) {
       errors.password = 'Password is required';
+    } else if (/\s/.test(formData.password)) {
+      errors.password = 'Password must not contain spaces';
     }
     return errors;
   };
@@ -91,7 +97,7 @@ const Login = () => {
 
     const resultAction = await dispatch(
       loginUser({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
         role: activeRole,
       })
@@ -100,9 +106,9 @@ const Login = () => {
     if (loginUser.fulfilled.match(resultAction)) {
       toast.success('Login successful!');
       const role = resultAction.payload.user?.role;
-      if (role === ROLES.STUDENT) navigate(ROUTES.STUDENT_DASHBOARD);
-      else if (role === ROLES.TUTOR) navigate(ROUTES.TUTOR_DASHBOARD);
-      else if (role === ROLES.ADMIN) navigate(ROUTES.ADMIN_DASHBOARD);
+      if (role === ROLES.STUDENT) navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
+      else if (role === ROLES.TUTOR) navigate(ROUTES.TUTOR_DASHBOARD, { replace: true });
+      else if (role === ROLES.ADMIN) navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     } else {
       toast.error(resultAction.payload || 'Login failed');
     }
@@ -185,12 +191,12 @@ const Login = () => {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
-              label="User name"
+              label="Email"
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your User name"
+              placeholder="Enter your email"
               error={formErrors.email}
               required
             />
@@ -206,18 +212,8 @@ const Login = () => {
               required
             />
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="rememberMe"
-                  checked={formData.rememberMe}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">Remember me</span>
-              </label>
+            {/* Forgot Password */}
+            <div className="flex items-center justify-end">
               <Link
                 to="/forgot-password"
                 className="text-sm text-primary-600 hover:text-primary-700 font-medium"

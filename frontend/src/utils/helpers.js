@@ -25,7 +25,6 @@ export const removeUser = () => {
   localStorage.removeItem(STORAGE_KEYS.USER);
 };
 
-
 export const clearAuthData = () => {
   removeToken();
   removeUser();
@@ -54,7 +53,14 @@ export const validatePhone = (phone) => {
 };
 
 export const validatePassword = (password) => {
-  return password.length >= 6;
+  // Min 8 chars, no spaces, must have uppercase, lowercase, number, special char
+  if (password.length < 8) return false;
+  if (/\s/.test(password)) return false;
+  if (!/[A-Z]/.test(password)) return false;
+  if (!/[a-z]/.test(password)) return false;
+  if (!/\d/.test(password)) return false;
+  if (!/[@$!%*?&]/.test(password)) return false;
+  return true;
 };
 
 export const getPasswordStrength = (password) => {

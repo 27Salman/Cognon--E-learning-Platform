@@ -338,11 +338,9 @@ const StudentDashboard = () => {
             </div>
             <div>
               <p className="text-gray-600 leading-relaxed mb-6 text-sm">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-              </p>
+                Install practical, industry-ready web development skills into your career and gain access to modern tools, frameworks, and real-world projects. Learn how to build responsive websites and scalable applications using popular frameworks. We guide you through architecture, best practices, and deployment so you can focus on building clean, efficient, and production-ready web applications.              </p>
               <p className="text-gray-600 leading-relaxed text-sm">
-                Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-              </p>
+                Launch high-impact digital marketing strategies and get hands-on experience with SEO, social media, paid ads, and content marketing.  Learn how to reach the right audience, drive meaningful traffic, and convert users into loyal customers. Start building campaigns based on real data and measurable outcomes. We connect you with tools, analytics, and proven frameworks.              </p>
             </div>
           </div>
         </div>
@@ -355,11 +353,10 @@ const StudentDashboard = () => {
             <div>
               <h2 className="text-4xl font-bold mb-6">Join Us</h2>
               <p className="text-gray-400 mb-8 leading-relaxed text-sm">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-              </p>
+                Instructors from around the world teach millions of students on Byway. We provide the tools and skills to teach what you love.              </p>
               <button className="px-8 py-3 bg-white text-gray-900 rounded-md hover:bg-gray-100 transition font-medium text-sm">
-                Get Started
-              </button>
+                Start Your Instructor Journey
+                </button>
             </div>
             <div className="bg-gray-800 rounded-3xl p-12 aspect-square flex items-center justify-center">
               <span className="text-9xl">🚀</span>
@@ -377,13 +374,13 @@ const StudentDashboard = () => {
             </div>
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6 uppercase">
-                LOREM IPSUM DOLOR SIT AMET
+                Transform your life through education              
               </h2>
               <p className="text-gray-400 mb-8 leading-relaxed text-sm">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.
+                Learners around the world are launching new careers, advancing in their fields, and enriching their lives.              
               </p>
               <button className="px-8 py-3 bg-white text-gray-900 rounded-md hover:bg-gray-100 transition font-medium text-sm">
-                Learn More
+              Checkout Courses
               </button>
             </div>
           </div>

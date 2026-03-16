@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
+import { adminAPI } from '../../api/adminAPI';
 import { Camera, Pencil, User, Mail, Phone } from 'lucide-react';
 
 export default function AdminProfile({ adminInfo, onUpdateProfile }) {
   const { user } = useSelector((state) => state.auth);
   const fileInputRef = useRef(null);
 
-  // Use real logged-in admin data from Redux, fallback to adminInfo
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || adminInfo?.name || '',
@@ -27,9 +27,34 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    onUpdateProfile(formData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('phone', formData.phone);
+        
+      if (formData.profileImage && formData.profileImage.startsWith('data:')) {
+        const response = await fetch(formData.profileImage);
+        const blob = await response.blob();
+        formDataToSend.append('profileImage', blob, 'profile.jpg');
+      }
+        
+      const result = await adminAPI.updateProfile(formDataToSend);
+        
+      onUpdateProfile(result.data);
+        
+      setFormData({
+        ...result.data,
+        profileImage: result.data.profileImageURL || result.data.profileImage
+      });
+        
+      setIsEditing(false);
+        
+      alert('Profile updated successfully!');
+    } catch (error) {
+      console.error('Update error:', error);
+      alert(error.response?.data?.message || 'Failed to update profile');
+    }
   };
 
   const handleCancel = () => {

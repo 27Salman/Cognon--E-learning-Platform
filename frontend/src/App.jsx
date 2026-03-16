@@ -13,9 +13,9 @@ import AdminForgotPassword from './pages/auth/AdminForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import GoogleAuthSuccess from './pages/auth/GoogleAuthSuccess';
 import StudentDashboard from './pages/student/StudentDashboard';
-import TutorDashboard from './pages/tutor/TutorDashboard';
-//import AdminDashboard from './pages/admin/AdminDashboard';
+//import TutorDashboard from './pages/tutor/TutorDashboard';
 import AdminLayout from './components/layouts/AdminLayout';
+import TutorLayout from './components/layouts/TutorLayout';
 import { ROUTES, ROLES } from './utils/constants';
 import VerifyOTP from './pages/auth/VerifyOTP';
 
@@ -75,45 +75,24 @@ function App() {
 
       {/* Protected Tutor Routes */}
       <Route
-        path={ROUTES.TUTOR_DASHBOARD}
+        path="/tutor"
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.TUTOR]}>
-              <TutorDashboard />
+              <TutorLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
-      <Route
-        path={ROUTES.TUTOR_COURSES}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.TUTOR]}>
-              <div className="p-8">Tutor Courses - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.TUTOR_PROFILE}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.TUTOR]}>
-              <div className="p-8">Tutor Profile - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.TUTOR_REVENUES}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.TUTOR]}>
-              <div className="p-8">Tutor Revenues - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<Navigate to="/tutor/profile" replace />} />
+        <Route path="dashboard" element={<></>} />
+        <Route path="profile" element={<></>} />
+        <Route path="courses" element={<></>} />
+        <Route path="orders" element={<></>} />
+        <Route path="wallet" element={<></>} />
+        <Route path="coupon" element={<></>} />
+        <Route path="chat" element={<></>} />
+      </Route>
 
       {/* Protected Admin Routes */}
       <Route

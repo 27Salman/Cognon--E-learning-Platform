@@ -28,7 +28,7 @@ export default function AdminSidebar({ adminInfo }) {
   const handleLogout = async () => {
     await dispatch(logoutUser());
     toast.success('Logged out successfully');
-    navigate('/admin/login');
+    navigate('/admin/login', { replace: true });
   };
 
   const displayName = user?.name || adminInfo?.name || 'Admin';
