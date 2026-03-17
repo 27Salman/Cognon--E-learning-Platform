@@ -23,7 +23,6 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
     profileImage: adminInfo?.profileImage || null,
   });
 
-  // Re-sync when adminInfo prop updates (after layout fetches/updates)
   useEffect(() => {
     if (!isEditing) {
       setFormData({

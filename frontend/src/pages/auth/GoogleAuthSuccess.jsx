@@ -10,10 +10,9 @@ const GoogleAuthSuccess = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
-  const hasRun = useRef(false); // Prevents double execution in React 18 Strict Mode
+  const hasRun = useRef(false); 
 
   useEffect(() => {
-    // Guard: only run once even if effect fires twice (React Strict Mode)
     if (hasRun.current) return;
     hasRun.current = true;
 
@@ -42,7 +41,6 @@ const GoogleAuthSuccess = () => {
 
         if (response.ok && data.user) {
           dispatch(setCredentials({ token, user: data.user }));
-          // setCredentials calls setToken/setUser which write to localStorage
           toast.success('Google authentication successful!');
 
           if (data.user.role === 'student') navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
@@ -60,7 +58,7 @@ const GoogleAuthSuccess = () => {
     };
 
     fetchUser();
-  }, []); // Empty deps — token is read from URL once, no need to re-run
+  }, []); 
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

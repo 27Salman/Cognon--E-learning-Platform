@@ -9,7 +9,6 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // Token in storage but user object not yet in Redux — fetch it (hard refresh case)
   useEffect(() => {
     if (isAuthenticated && !user) {
       dispatch(fetchCurrentUser());
@@ -20,8 +19,6 @@ const ProtectedRoute = ({ children }) => {
     const loginPath = location.pathname.startsWith('/admin')
       ? '/admin/login'
       : '/login';
-    // Use replace so the protected route is NOT added to history before login.
-    // This prevents the back button from cycling between login and the protected page.
     return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
 

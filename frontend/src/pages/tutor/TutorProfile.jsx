@@ -22,7 +22,6 @@ export default function TutorProfile({ tutorInfo, onUpdateProfile }) {
         profileImage: tutorInfo?.profileImage || null
     });
 
-    // Sync formData when tutorInfo updates (e.g. after TutorLayout fetches fresh profile)
     useEffect(() => {
         if (!isEditing) {
             setFormData({
@@ -52,7 +51,7 @@ export default function TutorProfile({ tutorInfo, onUpdateProfile }) {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            selectedFileRef.current = file; // store the actual File
+            selectedFileRef.current = file; 
             const reader = new FileReader();
             reader.onloadend = () => {
                 setFormData(prev => ({ ...prev, profileImage: reader.result }));
@@ -70,13 +69,11 @@ export default function TutorProfile({ tutorInfo, onUpdateProfile }) {
             formDataToSend.append('subject', formData.subject);
             formDataToSend.append('bio', formData.bio);
 
-            // Use the actual File object — works on every save, not just the first
             if (selectedFileRef.current) {
                 formDataToSend.append('profileImage', selectedFileRef.current);
             }
 
             const result = await tutorAPI.updateProfile(formDataToSend);
-            // axios interceptor returns response.data directly → result = { success, message, data }
             const updatedUser = result.data;
 
             selectedFileRef.current = null;

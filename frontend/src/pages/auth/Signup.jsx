@@ -14,7 +14,6 @@ const Signup = () => {
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // ALL hooks before any early return
   const initialRole = location.pathname === '/tutor/register' ? ROLES.TUTOR : ROLES.STUDENT;
   const [activeRole, setActiveRole] = useState(initialRole);
   const [formData, setFormData] = useState({
@@ -27,7 +26,6 @@ const Signup = () => {
     return () => dispatch(clearError());
   }, [dispatch]);
 
-  // Redirect already-authenticated users to their dashboard
   if (isAuthenticated && user) {
     const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
       : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
@@ -35,7 +33,6 @@ const Signup = () => {
     return <Navigate to={dashboard} replace />;
   }
 
-  // Sync URL when tab changes
   const handleRoleChange = (role) => {
     setActiveRole(role);
     const path = role === ROLES.TUTOR ? '/tutor/register' : '/signup';

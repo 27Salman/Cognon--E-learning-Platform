@@ -5,10 +5,8 @@ import { studentAPI } from '../../api/studentAPI';
 import toast from 'react-hot-toast';
 import { validatePhone } from '../../utils/helpers';
 
-// Only treat as a valid image URL if it starts with http or data: (base64 preview)
 const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
 
-// Generate a consistent gradient color pair from a name string
 const getAvatarColors = (name) => {
     const palettes = [
         ['#7c3aed', '#a855f7'], // purple
@@ -40,7 +38,6 @@ export default function StudentProfile({ studentInfo, onUpdateProfile }) {
         profileImage: studentInfo?.profileImage || null,
     });
 
-    // Sync when studentInfo prop updates (after layout fetches fresh data)
     useEffect(() => {
         if (!isEditing) {
             setFormData({

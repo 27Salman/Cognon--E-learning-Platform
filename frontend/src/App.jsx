@@ -29,10 +29,8 @@ function App() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    // Hydrate Redux from localStorage on mount (handles page refresh and new tabs)
     dispatch(setAuthFromStorage());
 
-    // Cross-tab logout: when user logs out in one tab, all other tabs log out too
     const handleStorageEvent = (e) => {
       if (e.key === STORAGE_KEYS.LOGOUT_SIGNAL) {
         dispatch(logoutUser());

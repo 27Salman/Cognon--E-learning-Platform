@@ -53,7 +53,6 @@ export default function ChangeEmailModal({ currentEmail, onClose, onSuccess }) {
             setStep(2);
             startTimer();
         } catch (err) {
-            // Backend duplicate check
             const msg = err.response?.data?.message || 'Failed to send OTP. Please try again.';
             if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('use')) {
                 setEmailError('This email is already in use');

@@ -55,7 +55,7 @@ export default function StudentNavbar({ studentInfo }) {
                             <Bell className="w-5 h-5 text-gray-700" />
                         </button>
 
-                        {/* Avatar — direct navigate to profile */}
+                        {/* Avatar  */}
                         <button
                             onClick={() => navigate('/student/profile')}
                             className="focus:outline-none"

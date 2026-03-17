@@ -6,7 +6,6 @@ import Loader from '../components/common/Loader';
 const RoleRoute = ({ children, allowedRoles }) => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
-  // Still resolving user — don't redirect yet
   if (isAuthenticated && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -19,7 +18,6 @@ const RoleRoute = ({ children, allowedRoles }) => {
     return children;
   }
 
-  // Wrong role — redirect to their own dashboard
   return <Navigate to={getOwnDashboard(user?.role)} replace />;
 };
 

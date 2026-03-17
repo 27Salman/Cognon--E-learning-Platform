@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser } from '../../store/slices/authSlice';
+import { useLocation, Outlet } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import TutorNavbar from '../tutor/TutorNavbar';
 import TutorSidebar from '../tutor/TutorSidebar';
 import Footer from '../common/Footer';
 import TutorProfile from '../../pages/tutor/TutorProfile';
-import toast from 'react-hot-toast';
 import { tutorAPI } from '../../api/tutorAPI';
 
 export default function TutorLayout() {
-    const navigate = useNavigate();
     const location = useLocation();
-    const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
 
     const [tutorInfo, setTutorInfo] = useState(() => {
@@ -24,13 +20,10 @@ export default function TutorLayout() {
         } catch { return {}; }
     });
 
-    // Fetch fresh profile from backend on mount — ensures profileImage is always current
     useEffect(() => {
         if (!user) return;
         tutorAPI.getProfile()
             .then((res) => {
-                // axios interceptor unwraps response.data → res = { success, data: tutor }
-                // Mongoose toJSON() adds profileImageURL (full URL) alongside profileImage (filename)
                 const data = res.data || res;
                 const profile = {
                     _id: data._id,
@@ -46,7 +39,6 @@ export default function TutorLayout() {
                 localStorage.setItem('tutorInfo', JSON.stringify(profile));
             })
             .catch(() => {
-                // Fallback to Redux user if fetch fails
                 if (user) {
                     setTutorInfo(prev => ({
                         ...prev,
@@ -59,34 +51,11 @@ export default function TutorLayout() {
             });
     }, [user?._id]);
 
-    // Set current section based on route
-    const currentSection = (() => {
-        const path = location.pathname;
-        if (path.includes('/dashboard')) return 'dashboard';
-        if (path.includes('/profile')) return 'profile';
-        if (path.includes('/courses')) return 'courses';
-        if (path.includes('/orders')) return 'orders';
-        if (path.includes('/wallet')) return 'wallet';
-        if (path.includes('/coupon')) return 'coupon';
-        if (path.includes('/chat')) return 'chat';
-        return 'dashboard';
-    })();
-
-    // Handle profile update
     const handleUpdateProfile = (updatedData) => {
         const { password, ...toStore } = updatedData;
-        // profileImageURL is the full URL, profileImage may be just a filename — always prefer URL
         toStore.profileImage = toStore.profileImageURL || toStore.profileImage || null;
         setTutorInfo(toStore);
         localStorage.setItem('tutorInfo', JSON.stringify(toStore));
-    };
-
-    // Handle logout
-    const handleLogout = async () => {
-        await dispatch(logoutUser());
-        localStorage.removeItem('tutorInfo');
-        toast.success('Logged out successfully');
-        navigate('/login', { replace: true });
     };
 
     const isProfileRoute = location.pathname === '/tutor/profile' || location.pathname === '/tutor';

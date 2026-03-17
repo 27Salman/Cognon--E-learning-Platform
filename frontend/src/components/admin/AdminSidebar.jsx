@@ -49,7 +49,7 @@ export default function AdminSidebar({ adminInfo }) {
         <p className="mt-2 font-semibold text-gray-800 text-sm text-center">{displayName}</p>
       </div>
 
-      {/* Nav items + Logout */}
+      {/* Nav items  */}
       <nav className="flex-1 px-3 py-3 space-y-0.5">
         {menuItems.map(({ name, path, icon: Icon }) => (
           <button

@@ -17,8 +17,8 @@ const VerifyOTP = () => {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
-    const [resendTimer, setResendTimer] = useState(120); // 2 min — resend lock
-    const [expiryTimer, setExpiryTimer] = useState(300); // 5 min — OTP validity
+    const [resendTimer, setResendTimer] = useState(120); 
+    const [expiryTimer, setExpiryTimer] = useState(300); 
     const inputRefs = useRef([]);
     const resendIntervalRef = useRef(null);
     const expiryIntervalRef = useRef(null);
@@ -73,7 +73,6 @@ const VerifyOTP = () => {
         try {
             const response = await verifyOTP(email, otpString);
             if (response.success) {
-                // Auto-login: store credentials from verification response
                 if (response.token && response.user) {
                     dispatch(setCredentials({ token: response.token, user: response.user }));
                 }

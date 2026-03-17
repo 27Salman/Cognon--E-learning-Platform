@@ -13,7 +13,6 @@ const AdminLogin = () => {
   const location = useLocation();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // ALL hooks must be declared before any early return
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [formErrors, setFormErrors] = useState({});
 
@@ -21,7 +20,6 @@ const AdminLogin = () => {
     return () => { dispatch(clearError()); };
   }, [dispatch]);
 
-  // Redirect already-authenticated users — to original destination or their dashboard
   if (isAuthenticated && user) {
     const dashboard =
       user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD :
@@ -58,7 +56,6 @@ const AdminLogin = () => {
 
     if (loginUser.fulfilled.match(resultAction)) {
       toast.success('Admin login successful!');
-      // Navigation handled by the isAuthenticated guard above
     } else {
       toast.error(resultAction.payload || 'Login failed');
     }

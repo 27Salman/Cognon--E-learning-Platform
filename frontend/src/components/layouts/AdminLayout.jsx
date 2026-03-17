@@ -25,7 +25,6 @@ export default function AdminLayout() {
     } catch { return {}; }
   });
 
-  // Fetch fresh profile on mount so image persists after logout/login
   useEffect(() => {
     if (!user) return;
     adminAPI.getProfile()

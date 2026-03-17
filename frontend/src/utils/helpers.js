@@ -1,6 +1,6 @@
 import { STORAGE_KEYS } from './constants';
 
-// ─── Token ────────────────────────────────────────────────────────────────────
+// Token 
 export const setToken = (token) => {
   localStorage.setItem(STORAGE_KEYS.TOKEN, token);
 };
@@ -13,7 +13,7 @@ export const removeToken = () => {
   localStorage.removeItem(STORAGE_KEYS.TOKEN);
 };
 
-// ─── User ─────────────────────────────────────────────────────────────────────
+// User 
 export const setUser = (user) => {
   localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 };
@@ -27,7 +27,7 @@ export const removeUser = () => {
   localStorage.removeItem(STORAGE_KEYS.USER);
 };
 
-// ─── Clear all auth data ──────────────────────────────────────────────────────
+// Clear all auth data 
 export const clearAuthData = () => {
   removeToken();
   removeUser();
@@ -36,7 +36,7 @@ export const clearAuthData = () => {
   localStorage.removeItem('studentInfo');
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers 
 export const isAuthenticated = () => !!getToken();
 
 export const getAuthHeader = () => {

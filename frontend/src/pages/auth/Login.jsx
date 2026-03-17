@@ -14,7 +14,6 @@ const Login = () => {
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // ALL hooks must be declared before any early return
   const initialRole = location.pathname === '/tutor/login' ? ROLES.TUTOR : ROLES.STUDENT;
   const [activeRole, setActiveRole] = useState(initialRole);
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -24,7 +23,6 @@ const Login = () => {
     return () => dispatch(clearError());
   }, [dispatch]);
 
-  // Redirect already-authenticated users — to original destination or their dashboard
   if (isAuthenticated && user) {
     const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
       : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
@@ -33,7 +31,6 @@ const Login = () => {
     return <Navigate to={from} replace />;
   }
 
-  // Sync URL when tab changes
   const handleRoleChange = (role) => {
     setActiveRole(role);
     const path = role === ROLES.TUTOR ? '/tutor/login' : '/login';
@@ -112,7 +109,6 @@ const Login = () => {
 
     if (loginUser.fulfilled.match(resultAction)) {
       toast.success('Login successful!');
-      // Navigation handled by the isAuthenticated guard above — no manual navigate needed
     } else {
       toast.error(resultAction.payload || 'Login failed');
     }

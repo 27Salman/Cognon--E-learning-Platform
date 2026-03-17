@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser } from '../../store/slices/authSlice';
+import { useLocation, Outlet } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import StudentNavbar from '../student/StudentNavbar';
 import StudentSidebar from '../student/StudentSidebar';
 import Footer from '../common/Footer';
 import StudentProfile from '../../pages/student/StudentProfile';
-import toast from 'react-hot-toast';
 import { studentAPI } from '../../api/studentAPI';
 
 export default function StudentLayout() {
-    const navigate = useNavigate();
     const location = useLocation();
-    const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
 
     const [studentInfo, setStudentInfo] = useState(() => {
@@ -29,7 +25,6 @@ export default function StudentLayout() {
         } catch { return {}; }
     });
 
-    // Fetch fresh profile on mount
     useEffect(() => {
         if (!user) return;
         studentAPI.getProfile()
@@ -68,13 +63,6 @@ export default function StudentLayout() {
     };
 
     const isProfileRoute = location.pathname === '/student/profile';
-
-    // Dashboard uses its own full-page layout (no sidebar)
-    const isDashboard = location.pathname === '/student/dashboard';
-
-    if (isDashboard) {
-        return <Outlet context={{ studentInfo }} />;
-    }
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">

@@ -4,7 +4,6 @@ import { setToken, setUser, clearAuthData, getToken, getUser } from '../../utils
 import { STORAGE_KEYS } from '../../utils/constants';
 
 const broadcastLogout = () => {
-  // Write + immediately remove so the 'storage' event fires in other tabs
   localStorage.setItem(STORAGE_KEYS.LOGOUT_SIGNAL, Date.now().toString());
   localStorage.removeItem(STORAGE_KEYS.LOGOUT_SIGNAL);
 };
@@ -100,7 +99,6 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(signupUser.fulfilled, (state) => {
-        // Signup only creates the account — user must verify OTP before being authenticated
         state.loading = false;
         state.error = null;
       })
@@ -156,7 +154,6 @@ const authSlice = createSlice({
     // Get Current User
     builder
       .addCase(fetchCurrentUser.pending, (state) => {
-        // Don't set global loading — avoids flash on protected routes
       })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.loading = false;
