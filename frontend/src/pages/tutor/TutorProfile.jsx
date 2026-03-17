@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Camera, Lock, Pencil } from 'lucide-react';
 import ChangeEmailModal from '../../components/tutor/ChangeEmailModal';
 import ChangePasswordModal from '../../components/tutor/ChangePasswordModal';
@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 export default function TutorProfile({ tutorInfo, onUpdateProfile }) {
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false); 
-    const selectedFileRef = useRef(null); // track actual File object
+    const selectedFileRef = useRef(null);
 
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -21,6 +21,20 @@ export default function TutorProfile({ tutorInfo, onUpdateProfile }) {
         bio: tutorInfo?.tutorProfile?.bio || tutorInfo?.bio || '',
         profileImage: tutorInfo?.profileImage || null
     });
+
+    // Sync formData when tutorInfo updates (e.g. after TutorLayout fetches fresh profile)
+    useEffect(() => {
+        if (!isEditing) {
+            setFormData({
+                name: tutorInfo?.name || '',
+                email: tutorInfo?.email || '',
+                phone: tutorInfo?.phone || '',
+                subject: tutorInfo?.tutorProfile?.subject || tutorInfo?.subject || '',
+                bio: tutorInfo?.tutorProfile?.bio || tutorInfo?.bio || '',
+                profileImage: tutorInfo?.profileImage || null
+            });
+        }
+    }, [tutorInfo]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -62,8 +76,8 @@ export default function TutorProfile({ tutorInfo, onUpdateProfile }) {
             }
 
             const result = await tutorAPI.updateProfile(formDataToSend);
-            // axios wraps response in result.data, backend sends { success, data: user }
-            const updatedUser = result.data?.data || result.data;
+            // axios interceptor returns response.data directly → result = { success, message, data }
+            const updatedUser = result.data;
 
             selectedFileRef.current = null;
             onUpdateProfile(updatedUser);
@@ -100,7 +114,6 @@ export default function TutorProfile({ tutorInfo, onUpdateProfile }) {
         });
         setIsEditing(false);
     };
-
     return (
         <div className="p-8 max-w-5xl">
             {/* Header */}

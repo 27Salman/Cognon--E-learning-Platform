@@ -7,6 +7,7 @@ import TutorSidebar from '../tutor/TutorSidebar';
 import Footer from '../common/Footer';
 import TutorProfile from '../../pages/tutor/TutorProfile';
 import toast from 'react-hot-toast';
+import { tutorAPI } from '../../api/tutorAPI';
 
 export default function TutorLayout() {
     const navigate = useNavigate();
@@ -18,31 +19,45 @@ export default function TutorLayout() {
         try {
             const stored = localStorage.getItem('tutorInfo');
             const parsed = stored ? JSON.parse(stored) : null;
-            // Only use cache if it belongs to the current logged-in user
             if (parsed && user && parsed._id === user._id) return parsed;
             return {};
         } catch { return {}; }
     });
 
-    // Sync real user data on mount — always overwrite if user identity changed
+    // Fetch fresh profile from backend on mount — ensures profileImage is always current
     useEffect(() => {
-        if (user) {
-            setTutorInfo(prev => {
-                // If cached data is from a different user, reset entirely
-                if (prev._id && prev._id !== user._id) {
-                    localStorage.removeItem('tutorInfo');
-                    return { _id: user._id, name: user.name, email: user.email, phone: user.phone };
-                }
-                return {
-                    ...prev,
-                    _id: user._id,
-                    name: prev.name || user.name,
-                    email: user.email,
-                    phone: user.phone,
+        if (!user) return;
+        tutorAPI.getProfile()
+            .then((res) => {
+                // axios interceptor unwraps response.data → res = { success, data: tutor }
+                // Mongoose toJSON() adds profileImageURL (full URL) alongside profileImage (filename)
+                const data = res.data || res;
+                const profile = {
+                    _id: data._id,
+                    name: data.name,
+                    email: data.email,
+                    phone: data.phone,
+                    profileImage: data.profileImageURL || data.profileImage || null,
+                    tutorProfile: data.tutorProfile || {},
+                    role: data.role,
+                    status: data.status,
                 };
+                setTutorInfo(profile);
+                localStorage.setItem('tutorInfo', JSON.stringify(profile));
+            })
+            .catch(() => {
+                // Fallback to Redux user if fetch fails
+                if (user) {
+                    setTutorInfo(prev => ({
+                        ...prev,
+                        _id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        phone: user.phone,
+                    }));
+                }
             });
-        }
-    }, [user]);
+    }, [user?._id]);
 
     // Set current section based on route
     const currentSection = (() => {
@@ -60,10 +75,8 @@ export default function TutorLayout() {
     // Handle profile update
     const handleUpdateProfile = (updatedData) => {
         const { password, ...toStore } = updatedData;
-        // Normalize: always use the full URL for profileImage display
-        if (toStore.profileImageURL) {
-            toStore.profileImage = toStore.profileImageURL;
-        }
+        // profileImageURL is the full URL, profileImage may be just a filename — always prefer URL
+        toStore.profileImage = toStore.profileImageURL || toStore.profileImage || null;
         setTutorInfo(toStore);
         localStorage.setItem('tutorInfo', JSON.stringify(toStore));
     };

@@ -14,6 +14,19 @@ const Signup = () => {
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
+  // ALL hooks before any early return
+  const initialRole = location.pathname === '/tutor/register' ? ROLES.TUTOR : ROLES.STUDENT;
+  const [activeRole, setActiveRole] = useState(initialRole);
+  const [formData, setFormData] = useState({
+    name: '', email: '', phone: '', password: '', confirmPassword: '',
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    return () => dispatch(clearError());
+  }, [dispatch]);
+
   // Redirect already-authenticated users to their dashboard
   if (isAuthenticated && user) {
     const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
@@ -22,21 +35,12 @@ const Signup = () => {
     return <Navigate to={dashboard} replace />;
   }
 
-  // Get role from navigation state if provided
-  const initialRole = location.state?.role === 'tutor' ? ROLES.TUTOR : ROLES.STUDENT;
-  const [activeRole, setActiveRole] = useState(initialRole);
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-  });
-
-  const [formErrors, setFormErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  // Sync URL when tab changes
+  const handleRoleChange = (role) => {
+    setActiveRole(role);
+    const path = role === ROLES.TUTOR ? '/tutor/register' : '/signup';
+    navigate(path, { replace: true });
+  };
 
   const roleContent = {
     [ROLES.STUDENT]: {
@@ -129,10 +133,10 @@ const Signup = () => {
       if (signupUser.fulfilled.match(resultAction)) {
         toast.success('Registration successful! Please verify your email.');
         navigate('/verify-otp', { 
+          replace: true,
           state: { 
             email: formData.email.trim(),
             role: activeRole,
-            timestamp: Date.now()
           } 
         });
       } else {
@@ -142,10 +146,6 @@ const Signup = () => {
       setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    return () => dispatch(clearError());
-  }, [dispatch]);
 
   return (
     <div className="min-h-screen flex">
@@ -194,7 +194,7 @@ const Signup = () => {
           <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
             <button
               type="button"
-              onClick={() => setActiveRole(ROLES.STUDENT)}
+              onClick={() => handleRoleChange(ROLES.STUDENT)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
                 activeRole === ROLES.STUDENT
                   ? 'bg-white text-primary-600 shadow-sm'
@@ -205,7 +205,7 @@ const Signup = () => {
             </button>
             <button
               type="button"
-              onClick={() => setActiveRole(ROLES.TUTOR)}
+              onClick={() => handleRoleChange(ROLES.TUTOR)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
                 activeRole === ROLES.TUTOR
                   ? 'bg-white text-primary-600 shadow-sm'

@@ -5,35 +5,59 @@ import AdminNavbar from '../admin/AdminNavbar';
 import AdminSidebar from '../admin/AdminSidebar';
 import ProfileSection from '../../pages/admin/AdminProfile';
 import Footer from '../common/Footer';
+import { adminAPI } from '../../api/adminAPI';
 
 export default function AdminLayout() {
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
 
-  // adminInfo holds only mutable UI state (profile image, display name overrides)
   const [adminInfo, setAdminInfo] = useState(() => {
     try {
       const stored = localStorage.getItem('adminInfo');
-      return stored ? JSON.parse(stored) : {};
-    } catch {
+      const parsed = stored ? JSON.parse(stored) : null;
+      if (parsed && user && parsed._id === user._id) {
+        if (parsed.profileImage && !parsed.profileImage.startsWith('http')) {
+          parsed.profileImage = null;
+        }
+        return parsed;
+      }
       return {};
-    }
+    } catch { return {}; }
   });
 
-  // Sync real user data into adminInfo on mount
+  // Fetch fresh profile on mount so image persists after logout/login
   useEffect(() => {
-    if (user) {
-      setAdminInfo(prev => ({
-        ...prev,
-        name: prev.name || user.name,
-        email: user.email,   // always use real email
-        phone: user.phone,   // always use real phone
-      }));
-    }
-  }, [user]);
+    if (!user) return;
+    adminAPI.getProfile()
+      .then((res) => {
+        const data = res.data || res;
+        const profile = {
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          profileImage: data.profileImageURL || data.profileImage || null,
+          role: data.role,
+        };
+        setAdminInfo(profile);
+        localStorage.setItem('adminInfo', JSON.stringify(profile));
+      })
+      .catch(() => {
+        if (user) {
+          setAdminInfo(prev => ({
+            ...prev,
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+          }));
+        }
+      });
+  }, [user?._id]);
 
   const handleUpdateProfile = (updatedData) => {
     const { password, ...toStore } = updatedData;
+    toStore.profileImage = toStore.profileImageURL || toStore.profileImage || null;
     setAdminInfo(toStore);
     localStorage.setItem('adminInfo', JSON.stringify(toStore));
   };

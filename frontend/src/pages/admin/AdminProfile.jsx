@@ -1,19 +1,39 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { adminAPI } from '../../api/adminAPI';
-import { Camera, Pencil, User, Mail, Phone } from 'lucide-react';
+import { Camera, Pencil, User, Mail, Phone, Lock } from 'lucide-react';
+import toast from 'react-hot-toast';
+import AdminChangePasswordModal from '../../components/admin/AdminChangePasswordModal';
+
+const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
 
 export default function AdminProfile({ adminInfo, onUpdateProfile }) {
   const { user } = useSelector((state) => state.auth);
   const fileInputRef = useRef(null);
+  const selectedFileRef = useRef(null);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
   const [formData, setFormData] = useState({
-    name: user?.name || adminInfo?.name || '',
-    email: user?.email || adminInfo?.email || '',
-    phone: user?.phone || adminInfo?.phone || '',
+    name: adminInfo?.name || user?.name || '',
+    email: adminInfo?.email || user?.email || '',
+    phone: adminInfo?.phone || user?.phone || '',
     profileImage: adminInfo?.profileImage || null,
   });
+
+  // Re-sync when adminInfo prop updates (after layout fetches/updates)
+  useEffect(() => {
+    if (!isEditing) {
+      setFormData({
+        name: adminInfo?.name || user?.name || '',
+        email: adminInfo?.email || user?.email || '',
+        phone: adminInfo?.phone || user?.phone || '',
+        profileImage: adminInfo?.profileImage || null,
+      });
+    }
+  }, [adminInfo]);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -22,6 +42,7 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    selectedFileRef.current = file;
     const reader = new FileReader();
     reader.onloadend = () => setFormData(prev => ({ ...prev, profileImage: reader.result }));
     reader.readAsDataURL(file);
@@ -29,39 +50,40 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
 
   const handleSave = async () => {
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('phone', formData.phone);
-        
-      if (formData.profileImage && formData.profileImage.startsWith('data:')) {
-        const response = await fetch(formData.profileImage);
-        const blob = await response.blob();
-        formDataToSend.append('profileImage', blob, 'profile.jpg');
-      }
-        
-      const result = await adminAPI.updateProfile(formDataToSend);
-        
-      onUpdateProfile(result.data);
-        
+      setLoading(true);
+      const fd = new FormData();
+      fd.append('name', formData.name.trim());
+      fd.append('phone', formData.phone.trim());
+      if (selectedFileRef.current) fd.append('profileImage', selectedFileRef.current);
+
+      const result = await adminAPI.updateProfile(fd);
+      const updated = result.data;
+
+      selectedFileRef.current = null;
+      onUpdateProfile(updated);
+
       setFormData({
-        ...result.data,
-        profileImage: result.data.profileImageURL || result.data.profileImage
+        name: updated.name || '',
+        email: updated.email || '',
+        phone: updated.phone || '',
+        profileImage: updated.profileImageURL || updated.profileImage || null,
       });
-        
+
       setIsEditing(false);
-        
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (error) {
-      console.error('Update error:', error);
-      alert(error.response?.data?.message || 'Failed to update profile');
+      toast.error(error.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCancel = () => {
+    selectedFileRef.current = null;
     setFormData({
-      name: user?.name || adminInfo?.name || '',
-      email: user?.email || adminInfo?.email || '',
-      phone: user?.phone || adminInfo?.phone || '',
+      name: adminInfo?.name || user?.name || '',
+      email: adminInfo?.email || user?.email || '',
+      phone: adminInfo?.phone || user?.phone || '',
       profileImage: adminInfo?.profileImage || null,
     });
     setIsEditing(false);
@@ -69,11 +91,9 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
 
   return (
     <div className="p-8 max-w-4xl">
-      {/* Page heading */}
       <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
       <p className="text-sm text-gray-500 mt-1 mb-8">Manage your admin profile</p>
 
-      {/* Card */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-lg font-bold text-gray-800">Admin Profile</h2>
@@ -89,9 +109,10 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
             <div className="flex gap-2">
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                disabled={loading}
+                className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
               >
-                Save
+                {loading ? 'Saving...' : 'Save'}
               </button>
               <button
                 onClick={handleCancel}
@@ -107,7 +128,7 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
           {/* Left — avatar */}
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div className="relative">
-              {formData.profileImage ? (
+              {isValidImageSrc(formData.profileImage) ? (
                 <img
                   src={formData.profileImage}
                   alt="Profile"
@@ -120,13 +141,16 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
                   </span>
                 </div>
               )}
-              {/* Camera button */}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-1 right-1 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center shadow-md hover:bg-purple-700 transition-colors"
-              >
-                <Camera className="w-4 h-4 text-white" />
-              </button>
+              {/* Camera only in edit mode */}
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-1 right-1 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center shadow-md hover:bg-purple-700 transition-colors"
+                >
+                  <Camera className="w-4 h-4 text-white" />
+                </button>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -141,7 +165,6 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
 
           {/* Right — fields */}
           <div className="flex-1 space-y-5">
-            {/* Full Name */}
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1.5">
                 <User className="w-3.5 h-3.5" /> Full Name
@@ -156,20 +179,18 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
               />
             </div>
 
-            {/* Email — always read-only, shows real login email */}
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1.5">
                 <Mail className="w-3.5 h-3.5" /> Email Address
               </label>
               <input
                 type="email"
-                value={user?.email || formData.email}
+                value={formData.email}
                 disabled
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 bg-gray-50 cursor-not-allowed"
               />
             </div>
 
-            {/* Phone */}
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1.5">
                 <Phone className="w-3.5 h-3.5" /> Phone Number
@@ -177,15 +198,33 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
               <input
                 type="tel"
                 name="phone"
-                value={user?.phone || formData.phone}
+                value={formData.phone}
                 onChange={handleChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50 disabled:text-gray-600"
               />
             </div>
+
+            {/* Change Password */}
+            <div className="pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="flex items-center gap-2 px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
+              >
+                <Lock className="w-4 h-4" />
+                Change Password
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {showPasswordModal && (
+        <AdminChangePasswordModal
+          adminInfo={{ ...adminInfo, email: formData.email }}
+          onClose={() => setShowPasswordModal(false)}
+        />
+      )}
     </div>
   );
 }

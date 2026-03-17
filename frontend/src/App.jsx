@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { setAuthFromStorage } from './store/slices/authSlice';
+import { setAuthFromStorage, logoutUser } from './store/slices/authSlice';
+import { STORAGE_KEYS } from './utils/constants';
 import ProtectedRoute from './routes/ProtectedRoute';
 import RoleRoute from './routes/RoleRoute';
 import Home from './pages/Home';
@@ -10,21 +11,35 @@ import Signup from './pages/auth/Signup';
 import AdminLogin from './pages/auth/AdminLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import AdminForgotPassword from './pages/auth/AdminForgotPassword';
+import AdminResetPassword from './pages/auth/AdminResetPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import GoogleAuthSuccess from './pages/auth/GoogleAuthSuccess';
 import StudentDashboard from './pages/student/StudentDashboard';
 //import TutorDashboard from './pages/tutor/TutorDashboard';
 import AdminLayout from './components/layouts/AdminLayout';
 import TutorLayout from './components/layouts/TutorLayout';
+import StudentLayout from './components/layouts/StudentLayout';
 import { ROUTES, ROLES } from './utils/constants';
+import NotFound from './pages/NotFound';
 import VerifyOTP from './pages/auth/VerifyOTP';
 
 
 
 function App() {
   const dispatch = useDispatch();
+
   useEffect(() => {
+    // Hydrate Redux from localStorage on mount (handles page refresh and new tabs)
     dispatch(setAuthFromStorage());
+
+    // Cross-tab logout: when user logs out in one tab, all other tabs log out too
+    const handleStorageEvent = (e) => {
+      if (e.key === STORAGE_KEYS.LOGOUT_SIGNAL) {
+        dispatch(logoutUser());
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+    return () => window.removeEventListener('storage', handleStorageEvent);
   }, [dispatch]);
 
   return (
@@ -32,46 +47,33 @@ function App() {
       {/* Public Routes */}
       <Route path={ROUTES.HOME} element={<Home />} />
       <Route path={ROUTES.LOGIN} element={<Login />} />
+      <Route path="/tutor/login" element={<Login />} />
       <Route path={ROUTES.SIGNUP} element={<Signup />} />
+      <Route path="/tutor/register" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+      <Route path="/admin/reset-password" element={<AdminResetPassword />} />
       <Route path="/verify-otp" element={<VerifyOTP />} />
       <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
 
 
       {/* Protected Student Routes */}
       <Route
-        path={ROUTES.STUDENT_DASHBOARD}
+        path="/student"
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <StudentDashboard />
+              <StudentLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
-      <Route
-        path={ROUTES.STUDENT_COURSES}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <div className="p-8">Student Courses - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.STUDENT_PROFILE}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <div className="p-8">Student Profile - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<Navigate to="/student/dashboard" replace />} />
+        <Route path="dashboard" element={<StudentDashboard />} />
+        <Route path="profile" element={<></>} />
+      </Route>
 
       {/* Protected Tutor Routes */}
       <Route
@@ -85,13 +87,7 @@ function App() {
         }
       >
         <Route index element={<Navigate to="/tutor/profile" replace />} />
-        <Route path="dashboard" element={<></>} />
         <Route path="profile" element={<></>} />
-        <Route path="courses" element={<></>} />
-        <Route path="orders" element={<></>} />
-        <Route path="wallet" element={<></>} />
-        <Route path="coupon" element={<></>} />
-        <Route path="chat" element={<></>} />
       </Route>
 
       {/* Protected Admin Routes */}
@@ -108,17 +104,10 @@ function App() {
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<></>} />
         <Route path="profile" element={<></>} />
-        <Route path="categories" element={<></>} />
-        <Route path="students" element={<></>} />
-        <Route path="orders" element={<></>} />
-        <Route path="tutors" element={<></>} />
-        <Route path="coupon" element={<></>} />
-        <Route path="courses" element={<></>} />
-        <Route path="wallet" element={<></>} />
       </Route>
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

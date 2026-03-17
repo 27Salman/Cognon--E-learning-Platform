@@ -5,52 +5,32 @@ import { getToken, clearAuthData } from '../utils/helpers';
 const api = axios.create({
   baseURL: API_URL,
   timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
-
 
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
+  (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear all auth data from localStorage
       clearAuthData();
-      localStorage.removeItem('cognon_token');
-      localStorage.removeItem('cognon_user');
-      localStorage.removeItem('adminInfo');
-      localStorage.removeItem('tutorInfo');
 
-      // Dispatch Redux logout to clear store state
       import('../store/store').then(({ default: store }) => {
         import('../store/slices/authSlice').then(({ logoutUser }) => {
           store.dispatch(logoutUser());
         });
       });
 
-      // Redirect based on current path
       const path = window.location.pathname;
-      if (path.startsWith('/admin')) {
-        window.location.href = '/admin/login';
-      } else {
-        window.location.href = '/login';
-      }
+      window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
     }
 
     if (error.response?.status === 403) {

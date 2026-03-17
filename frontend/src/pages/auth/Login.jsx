@@ -14,24 +14,31 @@ const Login = () => {
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // Redirect already-authenticated users to their dashboard
+  // ALL hooks must be declared before any early return
+  const initialRole = location.pathname === '/tutor/login' ? ROLES.TUTOR : ROLES.STUDENT;
+  const [activeRole, setActiveRole] = useState(initialRole);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formErrors, setFormErrors] = useState({});
+
+  useEffect(() => {
+    return () => dispatch(clearError());
+  }, [dispatch]);
+
+  // Redirect already-authenticated users — to original destination or their dashboard
   if (isAuthenticated && user) {
     const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
       : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
       : ROUTES.STUDENT_DASHBOARD;
-    return <Navigate to={dashboard} replace />;
+    const from = location.state?.from?.pathname || dashboard;
+    return <Navigate to={from} replace />;
   }
 
-  // Get role from navigation state if provided
-  const initialRole = location.state?.role === 'tutor' ? ROLES.TUTOR : ROLES.STUDENT;
-  const [activeRole, setActiveRole] = useState(initialRole);
-
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-
-  const [formErrors, setFormErrors] = useState({});
+  // Sync URL when tab changes
+  const handleRoleChange = (role) => {
+    setActiveRole(role);
+    const path = role === ROLES.TUTOR ? '/tutor/login' : '/login';
+    navigate(path, { replace: true });
+  };
 
   const roleContent = {
     [ROLES.STUDENT]: {
@@ -105,18 +112,11 @@ const Login = () => {
 
     if (loginUser.fulfilled.match(resultAction)) {
       toast.success('Login successful!');
-      const role = resultAction.payload.user?.role;
-      if (role === ROLES.STUDENT) navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
-      else if (role === ROLES.TUTOR) navigate(ROUTES.TUTOR_DASHBOARD, { replace: true });
-      else if (role === ROLES.ADMIN) navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      // Navigation handled by the isAuthenticated guard above — no manual navigate needed
     } else {
       toast.error(resultAction.payload || 'Login failed');
     }
   };
-
-  useEffect(() => {
-    return () => dispatch(clearError());
-  }, [dispatch]);
 
   return (
     <div className="min-h-screen flex">
@@ -159,7 +159,7 @@ const Login = () => {
           <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
             <Button
               type="button"
-              onClick={() => setActiveRole(ROLES.STUDENT)}
+              onClick={() => handleRoleChange(ROLES.STUDENT)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
                 activeRole === ROLES.STUDENT
                   ? 'bg-white text-primary-600 shadow-sm'
@@ -170,7 +170,7 @@ const Login = () => {
             </Button>
             <Button
               type="button"
-              onClick={() => setActiveRole(ROLES.TUTOR)}
+              onClick={() => handleRoleChange(ROLES.TUTOR)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
                 activeRole === ROLES.TUTOR
                   ? 'bg-white text-primary-600 shadow-sm'

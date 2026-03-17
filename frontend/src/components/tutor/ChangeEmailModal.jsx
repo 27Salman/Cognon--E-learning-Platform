@@ -12,20 +12,24 @@ export default function ChangeEmailModal({ currentEmail, onClose, onSuccess }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
+    const [expiryTimer, setExpiryTimer] = useState(0);
     const timerRef = useRef(null);
+    const expiryRef = useRef(null);
 
     const startTimer = () => {
         setTimer(120);
+        setExpiryTimer(300);
         clearInterval(timerRef.current);
+        clearInterval(expiryRef.current);
         timerRef.current = setInterval(() => {
-            setTimer(prev => {
-                if (prev <= 1) { clearInterval(timerRef.current); return 0; }
-                return prev - 1;
-            });
+            setTimer(prev => { if (prev <= 1) { clearInterval(timerRef.current); return 0; } return prev - 1; });
+        }, 1000);
+        expiryRef.current = setInterval(() => {
+            setExpiryTimer(prev => { if (prev <= 1) { clearInterval(expiryRef.current); return 0; } return prev - 1; });
         }, 1000);
     };
 
-    useEffect(() => () => clearInterval(timerRef.current), []);
+    useEffect(() => () => { clearInterval(timerRef.current); clearInterval(expiryRef.current); }, []);
 
     const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -180,21 +184,33 @@ export default function ChangeEmailModal({ currentEmail, onClose, onSuccess }) {
                                     onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setError(''); }}
                                     maxLength={6}
                                     placeholder="000000"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                    disabled={expiryTimer <= 0}
+                                    className={`w-full px-4 py-3 border rounded-lg text-center text-2xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-purple-600 ${expiryTimer <= 0 ? 'border-red-300 bg-red-50 cursor-not-allowed' : 'border-gray-300'}`}
                                 />
                             </div>
 
                             {/* Timer */}
                             <div className="text-center mb-4">
-                                {timer > 0 ? (
-                                    <p className="text-sm text-gray-600">
-                                        Resend available in <span className="font-semibold text-purple-600">{formatTime(timer)}</span>
-                                    </p>
+                                {expiryTimer <= 0 ? (
+                                    <p className="text-sm text-red-600 font-medium">OTP expired! Please go back and request a new one.</p>
                                 ) : (
-                                    <button onClick={handleResendOTP} disabled={loading}
-                                        className="text-sm text-purple-600 hover:text-purple-700 font-medium disabled:opacity-50">
-                                        {loading ? 'Sending...' : 'Resend OTP'}
-                                    </button>
+                                    <p className="text-sm text-gray-500">
+                                        OTP valid for: <span className="font-semibold text-gray-700">{formatTime(expiryTimer)}</span>
+                                    </p>
+                                )}
+                                {expiryTimer > 0 && (
+                                    <div className="mt-1">
+                                        {timer > 0 ? (
+                                            <p className="text-xs text-gray-400">
+                                                Resend available in <span className="font-semibold text-purple-600">{formatTime(timer)}</span>
+                                            </p>
+                                        ) : (
+                                            <button onClick={handleResendOTP} disabled={loading}
+                                                className="text-sm text-purple-600 hover:text-purple-700 font-medium disabled:opacity-50">
+                                                {loading ? 'Sending...' : 'Resend OTP'}
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
@@ -205,11 +221,11 @@ export default function ChangeEmailModal({ currentEmail, onClose, onSuccess }) {
                             )}
 
                             <div className="flex gap-3">
-                                <button onClick={() => { setStep(1); setOtp(''); setError(''); clearInterval(timerRef.current); setTimer(0); }}
+                                <button onClick={() => { setStep(1); setOtp(''); setError(''); clearInterval(timerRef.current); clearInterval(expiryRef.current); setTimer(0); setExpiryTimer(0); }}
                                     className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
                                     Back
                                 </button>
-                                <button onClick={handleVerifyOTP} disabled={loading || otp.length !== 6}
+                                <button onClick={handleVerifyOTP} disabled={loading || otp.length !== 6 || expiryTimer <= 0}
                                     className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                     {loading ? 'Verifying...' : 'Verify & Update'}
                                 </button>

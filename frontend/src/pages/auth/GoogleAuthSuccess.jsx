@@ -42,15 +42,13 @@ const GoogleAuthSuccess = () => {
 
         if (response.ok && data.user) {
           dispatch(setCredentials({ token, user: data.user }));
-          localStorage.setItem('cognon_token', token);
-          localStorage.setItem('cognon_user', JSON.stringify(data.user));
-
+          // setCredentials calls setToken/setUser which write to localStorage
           toast.success('Google authentication successful!');
 
-          if (data.user.role === 'student') navigate(ROUTES.STUDENT_DASHBOARD);
-          else if (data.user.role === 'tutor') navigate(ROUTES.TUTOR_DASHBOARD);
-          else if (data.user.role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD);
-          else navigate(ROUTES.HOME);
+          if (data.user.role === 'student') navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
+          else if (data.user.role === 'tutor') navigate(ROUTES.TUTOR_DASHBOARD, { replace: true });
+          else if (data.user.role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+          else navigate(ROUTES.HOME, { replace: true });
         } else {
           throw new Error('Failed to fetch user data');
         }
