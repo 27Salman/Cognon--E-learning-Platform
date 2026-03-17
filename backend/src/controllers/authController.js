@@ -85,6 +85,11 @@ exports.getCurrentUser = asyncHandler(async (req, res) => {
         });
     }
   
+    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const profileImageURL = user.profileImage
+        ? (user.profileImage.startsWith('http') ? user.profileImage : `${BASE_URL}/uploads/${user.profileImage}`)
+        : null;
+
     res.status(HTTP_STATUS.OK).json({
         success: true,
         user: {
@@ -93,9 +98,17 @@ exports.getCurrentUser = asyncHandler(async (req, res) => {
             email: user.email,
             role: user.role,
             phone: user.phone,
-            profileImage: user.profileImage,
+            profileImage: profileImageURL,
             status: user.status,
-            createdAt: user.createdAt
+            createdAt: user.createdAt,
+            ...(user.role === 'tutor' && {
+                tutorProfile: {
+                    bio: user.tutorProfile?.bio,
+                    subject: user.tutorProfile?.subject,
+                    expertise: user.tutorProfile?.expertise,
+                    isApproved: user.tutorProfile?.isApproved
+                }
+            })
         }
     });
 });
@@ -124,9 +137,26 @@ exports.verifyEmailOTP = asyncHandler(async (req, res) => {
     user.isVerified = true;
     await user.save();
 
+    const token = generateToken(user._id, user.role);
+
     res.status(HTTP_STATUS.OK).json({
         success: true,
-        message: 'Email verified successfully'
+        message: 'Email verified successfully',
+        token,
+        user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            phone: user.phone,
+            ...(user.role === 'tutor' && {
+                tutorProfile: {
+                    bio: user.tutorProfile?.bio,
+                    expertise: user.tutorProfile?.expertise,
+                    isApproved: user.tutorProfile?.isApproved
+                }
+            })
+        }
     });
 });
 

@@ -3,52 +3,65 @@ const { deleteOldProfileImage } = require('../services/fileService');
 const { createOTP, verifyOTP } = require('../services/otpService');
 const { sendOTPEmail } = require('../services/emailService');
 
+const buildImageURL = (profileImage) => {
+    if (!profileImage) return null;
+    if (profileImage.startsWith('http')) return profileImage;
+    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+    return `${BASE_URL}/uploads/${profileImage}`;
+};
 
 exports.getProfile = async (req, res) => {
   try {
     const admin = await User.findById(req.user.id).select('-password');
-    
     res.status(200).json({
       success: true,
-      data: admin
+      data: {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        phone: admin.phone,
+        profileImage: admin.profileImage,
+        profileImageURL: buildImageURL(admin.profileImage),
+        role: admin.role,
+      }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 exports.updateProfile = async (req, res) => {
   try {
     const { name, phone } = req.body;
-    
     const admin = await User.findById(req.user.id);
-    
-    if (name) admin.name = name;
-    if (phone) admin.phone = phone;
-    
+
+    if (name) admin.name = name.trim();
+    if (phone !== undefined) admin.phone = phone.trim() || null;
+
     if (req.file) {
-      if (admin.profileImage) {
+      if (admin.profileImage && !admin.profileImage.startsWith('http')) {
         await deleteOldProfileImage(admin.profileImage);
       }
-      
       admin.profileImage = req.file.filename;
     }
-    
+
     await admin.save();
-    
+
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: admin
+      data: {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        phone: admin.phone,
+        profileImage: admin.profileImage,
+        profileImageURL: buildImageURL(admin.profileImage),
+        role: admin.role,
+      }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

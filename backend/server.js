@@ -16,6 +16,7 @@ require('./src/controllers/googleAuthController'); // Initialize passport strate
 const { authRoutes } = require('./src/routes/authRoutes');
 const { adminRoutes } = require('./src/routes/adminRoutes');
 const { tutorRoutes } = require('./src/routes/tutorRoutes');
+const { userRoutes } = require('./src/routes/userRoutes');
 
 const PORT = process.env.PORT || 5000;
 
@@ -47,6 +48,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'src/uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tutor', tutorRoutes);
+app.use('/api/student', userRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(HTTP_STATUS.OK).json({

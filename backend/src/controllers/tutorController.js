@@ -33,18 +33,32 @@ exports.updateProfile = async (req, res) => {
         if (bio !== undefined) tutor.tutorProfile.bio = bio;
 
         if (req.file) {
-            if (tutor.profileImage) {
+            if (tutor.profileImage && !tutor.profileImage.startsWith('http')) {
                 await deleteOldProfileImage(tutor.profileImage);
             }
             tutor.profileImage = req.file.filename;
         }
 
         await tutor.save({ validateModifiedOnly: true });
-        
+
+        const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+        const profileImageURL = tutor.profileImage
+            ? (tutor.profileImage.startsWith('http') ? tutor.profileImage : `${BASE_URL}/uploads/${tutor.profileImage}`)
+            : null;
+
         res.status(200).json({
             success: true,
             message: 'Profile updated successfully',
-            data: tutor
+            data: {
+                _id: tutor._id,
+                name: tutor.name,
+                email: tutor.email,
+                phone: tutor.phone,
+                profileImage: profileImageURL,
+                tutorProfile: tutor.tutorProfile,
+                role: tutor.role,
+                status: tutor.status
+            }
         });
     } catch (error) {
         res.status(500).json({
