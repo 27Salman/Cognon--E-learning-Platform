@@ -191,7 +191,6 @@ userSchema.methods.hasRole = function(role){
     return this.role === role;
 };
 
-// Compound unique index: same email can exist with different roles
 userSchema.index({ email: 1, role: 1 }, { unique: true });
 
 module.exports = mongoose.model('User', userSchema);

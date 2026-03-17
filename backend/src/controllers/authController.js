@@ -3,7 +3,7 @@ const authService = require("../services/authService");
 const generateToken = require("../utils/generateToken");
 const { HTTP_STATUS, MESSAGES } = require("../config/constants");
 const asyncHandler = require('../middleware/asyncHandler');
-const { verifyOTP, generateOTP, createOTP } = require('../services/otpService');
+const { verifyOTP, createOTP } = require('../services/otpService');
 const { sendVerificationOTP, sendPasswordResetOTP } = require('../services/emailService');
 
 exports.signup = asyncHandler(async (req, res) => {
@@ -34,9 +34,7 @@ exports.signup = asyncHandler(async (req, res) => {
 
 exports.login = asyncHandler(async (req, res) => {
     const { email, password, role } = req.body;
-    
-    // If no role provided, default to admin (for admin login page)
-    // For student/tutor login, role is explicitly sent
+
     const loginRole = role || 'admin';
     
     const user = await authService.loginUser(email, password, loginRole);
@@ -233,7 +231,6 @@ exports.verifyResetOTP = asyncHandler(async (req, res) => {
     await verifyOTP(email.toLowerCase(), otp, 'password_change');
 
     const resetToken = require('crypto').randomBytes(32).toString('hex');
-    // Store reset token temporarily as a new OTP doc with purpose 'email_change' reused as token holder
     await createOTP(email.toLowerCase(), 'email_change', resetToken);
 
     res.status(HTTP_STATUS.OK).json({
@@ -253,7 +250,6 @@ exports.resetPassword = asyncHandler(async (req, res) => {
         });
     }
 
-    // Verify the reset token stored in newEmail field
     const OTP = require('../models/OTP');
     const tokenDoc = await OTP.findOne({
         email: email.toLowerCase(),

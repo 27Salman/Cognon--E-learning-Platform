@@ -13,7 +13,6 @@ const authService = {
 
             console.log('Registration attempt for:', normalizedEmail, 'as', role);
 
-            // Delete unverified users with same email AND role
             const deletedUsers = await User.deleteMany({
                 email: normalizedEmail,
                 role: role,
@@ -24,7 +23,6 @@ const authService = {
                 console.log(`Deleted ${deletedUsers.deletedCount} unverified user(s) with role ${role}`);
             }
 
-            // Check if verified user exists with same email AND role
             const verifiedUser = await User.findOne({
                 email: normalizedEmail,
                 role: role,
@@ -58,7 +56,7 @@ const authService = {
                     expertise: expertise || [],
                     experience: 0,
                     coursesCreated: [],
-                    isApproved: true  // no admin approval required
+                    isApproved: true  
                 };
             } else if (userRole === USER_ROLES.STUDENT) {
                 newUser.studentProfile = {

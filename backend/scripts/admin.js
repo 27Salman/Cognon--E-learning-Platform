@@ -19,12 +19,11 @@ const createAdmin = async () => {
       process.exit(0);
     }
 
-    // Don't hash password here - let the User model pre-save hook handle it
     const admin = await User.create({
       name: 'Admin User',
       email: adminEmail,
       phone: '9999999999',
-      password: adminPassword, // Plain password - will be hashed by pre-save hook
+      password: adminPassword, 
       role: 'admin',
       isVerified: true,
       status: 'active',

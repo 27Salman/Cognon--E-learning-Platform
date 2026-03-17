@@ -18,14 +18,11 @@ passport.use(
         const email = profile.emails[0].value.toLowerCase();
         const googleName = profile.displayName;
         
-        // Get role from query parameter (default to student)
         const role = req.query.state || USER_ROLES.STUDENT;
 
-        // Check if user already exists with this email AND role
         let user = await User.findOne({ email, role });
 
         if (user) {
-          // User exists — check they originally signed up via Google
           if (user.authProvider === 'local') {
             return done(null, false, {
               message: 'This email is registered with email/password. Please use manual login.'
@@ -54,7 +51,7 @@ passport.use(
             expertise: [],
             experience: 0,
             coursesCreated: [],
-            isApproved: false, // Requires admin approval
+            isApproved: false, 
           };
         } else {
           user.studentProfile = {
@@ -92,7 +89,7 @@ exports.googleAuth = (req, res, next) => {
   const role = req.query.role || 'student';
   passport.authenticate('google', {
     scope: ['profile', 'email'],
-    state: role, // Pass role as state
+    state: role, 
   })(req, res, next);
 };
 

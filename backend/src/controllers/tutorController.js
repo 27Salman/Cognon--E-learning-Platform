@@ -73,7 +73,6 @@ exports.requestEmailChange = async (req, res) => {
     try {
         const { newEmail } = req.body;
 
-        // Check if another user (different account) already uses this email with the same role
         const existingUser = await User.findOne({
             email: newEmail.toLowerCase(),
             role: req.user.role,
