@@ -59,6 +59,17 @@ function App() {
 
       {/* Protected Student Routes */}
       <Route
+        path="/student/dashboard"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+              <StudentDashboard />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/student"
         element={
           <ProtectedRoute>
@@ -69,7 +80,6 @@ function App() {
         }
       >
         <Route index element={<Navigate to="/student/dashboard" replace />} />
-        <Route path="dashboard" element={<StudentDashboard />} />
         <Route path="profile" element={<></>} />
       </Route>
 

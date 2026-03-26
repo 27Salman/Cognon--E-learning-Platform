@@ -137,7 +137,7 @@ const StudentDashboard = () => {
                       <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
                       <p className="text-xs text-gray-500">{user?.email}</p>
                     </div>
-                    <a href="#profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 transition">
+                    <a href="#profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 transition" onClick={() => { navigate('/student/profile'); setShowProfileMenu(false); }}>
                       My Profile
                     </a>
                     <a href="#courses" className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 transition">

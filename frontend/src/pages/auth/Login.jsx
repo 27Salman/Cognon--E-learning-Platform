@@ -8,6 +8,22 @@ import { validateEmail } from '../../utils/helpers';
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
+const MAX_ATTEMPTS = 3;
+
+const getAttemptKey = (role) => `cognon_failed_attempts_${role}`;
+
+const getStoredAttempts = (role) => {
+  return parseInt(sessionStorage.getItem(getAttemptKey(role)) || '0', 10);
+};
+
+const saveAttempts = (role, count) => {
+  sessionStorage.setItem(getAttemptKey(role), count.toString());
+};
+
+const clearAttempts = (role) => {
+  sessionStorage.removeItem(getAttemptKey(role));
+};
+
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,25 +32,104 @@ const Login = () => {
 
   const initialRole = location.pathname === '/tutor/login' ? ROLES.TUTOR : ROLES.STUDENT;
   const [activeRole, setActiveRole] = useState(initialRole);
+
+  const [failedAttempts, setFailedAttempts] = useState(
+    () => getStoredAttempts(initialRole)
+  );
+
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [formErrors, setFormErrors] = useState({});
+
+  const isLocked = failedAttempts >= MAX_ATTEMPTS;
+  const attemptsRemaining = MAX_ATTEMPTS - failedAttempts;
+
+  useEffect(() => {
+    setFailedAttempts(getStoredAttempts(activeRole));
+  }, [activeRole]);
 
   useEffect(() => {
     return () => dispatch(clearError());
   }, [dispatch]);
 
   if (isAuthenticated && user) {
-    const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
-      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
-      : ROUTES.STUDENT_DASHBOARD;
+    const dashboard =
+      user.role === ROLES.TUTOR
+        ? ROUTES.TUTOR_DASHBOARD
+        : user.role === ROLES.ADMIN
+        ? ROUTES.ADMIN_DASHBOARD
+        : ROUTES.STUDENT_DASHBOARD;
     const from = location.state?.from?.pathname || dashboard;
     return <Navigate to={from} replace />;
   }
 
   const handleRoleChange = (role) => {
     setActiveRole(role);
+    setFormData({ email: '', password: '' });
+    setFormErrors({});
     const path = role === ROLES.TUTOR ? '/tutor/login' : '/login';
     navigate(path, { replace: true });
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: '' });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!validateEmail(formData.email.trim())) {
+      errors.email = 'Invalid email format';
+    }
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (/\s/.test(formData.password)) {
+      errors.password = 'Password must not contain spaces';
+    }
+    return errors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (isLocked) return;
+
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    const resultAction = await dispatch(
+      loginUser({
+        email: formData.email.trim(),
+        password: formData.password,
+        role: activeRole,
+      })
+    );
+
+    if (loginUser.fulfilled.match(resultAction)) {
+      clearAttempts(activeRole);
+      setFailedAttempts(0);
+      toast.success('Login successful!');
+    } else {
+      const newCount = failedAttempts + 1;
+      setFailedAttempts(newCount);
+      saveAttempts(activeRole, newCount);
+
+      if (newCount >= MAX_ATTEMPTS) {
+        toast.error('Account temporarily locked. Please reset your password.');
+      } else {
+        const remaining = MAX_ATTEMPTS - newCount;
+        toast.error(
+          `Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
+        );
+      }
+    }
   };
 
   const roleContent = {
@@ -68,60 +163,14 @@ const Login = () => {
 
   const currentContent = roleContent[activeRole];
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (formErrors[name]) {
-      setFormErrors({ ...formErrors, [name]: '' });
-    }
-  };
-
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!validateEmail(formData.email.trim())) {
-      errors.email = 'Invalid email format';
-    }
-    if (!formData.password) {
-      errors.password = 'Password is required';
-    } else if (/\s/.test(formData.password)) {
-      errors.password = 'Password must not contain spaces';
-    }
-    return errors;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-
-    const resultAction = await dispatch(
-      loginUser({
-        email: formData.email.trim(),
-        password: formData.password,
-        role: activeRole,
-      })
-    );
-
-    if (loginUser.fulfilled.match(resultAction)) {
-      toast.success('Login successful!');
-    } else {
-      toast.error(resultAction.payload || 'Login failed');
-    }
-  };
-
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Dynamic Illustration */}
-      <div className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}>
+      {/* Left Side */}
+      <div
+        className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}
+      >
         <div className="text-center text-white">
-          <div className="mb-8 transition-all duration-500">
-            {currentContent.icon}
-          </div>
+          <div className="mb-8 transition-all duration-500">{currentContent.icon}</div>
           <h1 className="text-4xl font-bold mb-4 transition-all duration-300">
             {currentContent.title}
           </h1>
@@ -129,8 +178,16 @@ const Login = () => {
             {currentContent.subtitle}
           </p>
           <div className="mt-8 flex justify-center gap-2">
-            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.STUDENT ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
-            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.TUTOR ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
+            <div
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                activeRole === ROLES.STUDENT ? 'bg-white scale-110' : 'bg-white/30'
+              }`}
+            ></div>
+            <div
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                activeRole === ROLES.TUTOR ? 'bg-white scale-110' : 'bg-white/30'
+              }`}
+            ></div>
           </div>
         </div>
       </div>
@@ -184,6 +241,46 @@ const Login = () => {
             </span>
           </div>
 
+          {/* Lockout Warning Banner — only visible after 3 failures */}
+          {isLocked && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <svg
+                  className="w-5 h-5 text-red-500 mt-0.5 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                  />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-red-800">
+                    Too many failed attempts
+                  </p>
+                  <p className="text-sm text-red-600 mt-1">
+                    Your login has been temporarily disabled. Reset your password to
+                    continue.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Attempts remaining warning — shows from attempt 1 onwards */}
+          {!isLocked && failedAttempts > 0 && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-700 text-center">
+                {attemptsRemaining} attempt{attemptsRemaining === 1 ? '' : 's'} remaining
+                before your login is disabled
+              </p>
+            </div>
+          )}
+
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
@@ -194,6 +291,7 @@ const Login = () => {
               onChange={handleChange}
               placeholder="Enter your email"
               error={formErrors.email}
+              disabled={isLocked}
               required
             />
 
@@ -205,26 +303,41 @@ const Login = () => {
               onChange={handleChange}
               placeholder="Enter your Password"
               error={formErrors.password}
+              disabled={isLocked}
               required
             />
 
-            {/* Forgot Password */}
+            {/* Forgot Password — becomes prominent when locked */}
             <div className="flex items-center justify-end">
-              <Link
-                to="/forgot-password"
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-              >
-                Forgot Password?
-              </Link>
+              {isLocked ? (
+                <Link
+                  to="/forgot-password"
+                  className="text-sm font-medium px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  Reset your password →
+                </Link>
+              ) : (
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Forgot Password?
+                </Link>
+              )}
             </div>
 
             {/* Submit Button */}
             <Button
               type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || isLocked}
+              className={`w-full py-3 px-4 font-medium rounded-lg transition-colors
+                ${
+                  isLocked
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed'
+                }`}
             >
-              {loading ? 'Loading...' : 'Login'}
+              {loading ? 'Loading...' : isLocked ? 'Login disabled' : 'Login'}
             </Button>
           </form>
 
@@ -248,29 +361,25 @@ const Login = () => {
             </div>
             <button
               type="button"
+              disabled={isLocked}
               onClick={() => {
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                if (isLocked) return;
+                const API_URL =
+                  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
                 window.location.href = `${API_URL}/auth/google?role=${activeRole}`;
               }}
-              className="mt-4 w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+              className={`mt-4 w-full flex items-center justify-center px-4 py-3 border rounded-lg font-medium transition-colors
+                ${
+                  isLocked
+                    ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
               Continue with Google
             </button>
