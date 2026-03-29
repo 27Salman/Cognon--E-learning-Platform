@@ -35,7 +35,7 @@ exports.signup = asyncHandler(async (req, res) => {
 exports.login = asyncHandler(async (req, res) => {
     const { email, password, role } = req.body;
 
-    const loginRole = role || 'admin';
+    const loginRole = role || 'student';
     
     const user = await authService.loginUser(email, password, loginRole);
     const token = generateToken(user._id, user.role);

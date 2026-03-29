@@ -120,7 +120,8 @@ const authService = {
             email: normalizedEmail,
             role: role 
         }).select('+password');
-        
+    
+
         if (!user) {
             if (role === USER_ROLES.ADMIN) {
                 throw new Error('Invalid admin credentials');
@@ -131,6 +132,7 @@ const authService = {
         const isPasswordMatch = await user.comparePassword(password);
 
         if (!isPasswordMatch) {
+
             throw new Error('Invalid email or password');
         }
 
