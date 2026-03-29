@@ -1,63 +1,41 @@
-import React, { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
 import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
 import { validateEmail } from '../../utils/helpers';
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
 const MAX_ATTEMPTS = 3;
 
-const getAttemptKey = (role) => `cognon_failed_attempts_${role}`;
-
-const getStoredAttempts = (role) => {
-  return parseInt(sessionStorage.getItem(getAttemptKey(role)) || '0', 10);
-};
-
-const saveAttempts = (role, count) => {
-  sessionStorage.setItem(getAttemptKey(role), count.toString());
-};
-
-const clearAttempts = (role) => {
-  sessionStorage.removeItem(getAttemptKey(role));
-};
-
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
+  const submitBtnRef = useRef(null);
 
   const initialRole = location.pathname === '/tutor/login' ? ROLES.TUTOR : ROLES.STUDENT;
   const [activeRole, setActiveRole] = useState(initialRole);
-
-  const [failedAttempts, setFailedAttempts] = useState(
-    () => getStoredAttempts(initialRole)
-  );
-
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [formErrors, setFormErrors] = useState({});
+  const [attemptsByKey, setAttemptsByKey] = useState({});
 
+  const attemptKey = `${formData.email.trim().toLowerCase()}:${activeRole}`;
+  const failedAttempts = attemptsByKey[attemptKey] || 0;
   const isLocked = failedAttempts >= MAX_ATTEMPTS;
   const attemptsRemaining = MAX_ATTEMPTS - failedAttempts;
 
   useEffect(() => {
-    setFailedAttempts(getStoredAttempts(activeRole));
-  }, [activeRole]);
+    if (isLocked && submitBtnRef.current) submitBtnRef.current.blur();
+  }, [isLocked]);
 
-  useEffect(() => {
-    return () => dispatch(clearError());
-  }, [dispatch]);
+  useEffect(() => { return () => dispatch(clearError()); }, [dispatch]);
 
   if (isAuthenticated && user) {
-    const dashboard =
-      user.role === ROLES.TUTOR
-        ? ROUTES.TUTOR_DASHBOARD
-        : user.role === ROLES.ADMIN
-        ? ROUTES.ADMIN_DASHBOARD
-        : ROUTES.STUDENT_DASHBOARD;
+    const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
+      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD : ROUTES.STUDENT_DASHBOARD;
     const from = location.state?.from?.pathname || dashboard;
     return <Navigate to={from} replace />;
   }
@@ -66,98 +44,61 @@ const Login = () => {
     setActiveRole(role);
     setFormData({ email: '', password: '' });
     setFormErrors({});
-    const path = role === ROLES.TUTOR ? '/tutor/login' : '/login';
-    navigate(path, { replace: true });
+    navigate(role === ROLES.TUTOR ? '/tutor/login' : '/login', { replace: true });
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (formErrors[name]) {
-      setFormErrors({ ...formErrors, [name]: '' });
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!validateEmail(formData.email.trim())) {
-      errors.email = 'Invalid email format';
-    }
-    if (!formData.password) {
-      errors.password = 'Password is required';
-    } else if (/\s/.test(formData.password)) {
-      errors.password = 'Password must not contain spaces';
-    }
+    if (!formData.email.trim()) errors.email = 'Email is required';
+    else if (!validateEmail(formData.email.trim())) errors.email = 'Invalid email format';
+    if (!formData.password) errors.password = 'Password is required';
+    else if (/\s/.test(formData.password)) errors.password = 'Password must not contain spaces';
     return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (isLocked) return;
-
     const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
+    if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
 
-    const resultAction = await dispatch(
-      loginUser({
-        email: formData.email.trim(),
-        password: formData.password,
-        role: activeRole,
-      })
-    );
+    const resultAction = await dispatch(loginUser({
+      email: formData.email.trim(),
+      password: formData.password,
+      role: activeRole,
+    }));
 
     if (loginUser.fulfilled.match(resultAction)) {
-      clearAttempts(activeRole);
-      setFailedAttempts(0);
+      setAttemptsByKey(prev => ({ ...prev, [attemptKey]: 0 }));
       toast.success('Login successful!');
     } else {
       const newCount = failedAttempts + 1;
-      setFailedAttempts(newCount);
-      saveAttempts(activeRole, newCount);
-
+      setAttemptsByKey(prev => ({ ...prev, [attemptKey]: newCount }));
       if (newCount >= MAX_ATTEMPTS) {
-        toast.error('Account temporarily locked. Please reset your password.');
+        toast.error('Too many failed attempts. Please reset your password.');
       } else {
         const remaining = MAX_ATTEMPTS - newCount;
-        toast.error(
-          `Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
-        );
+        toast.error(`Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`);
       }
     }
   };
 
   const roleContent = {
     [ROLES.STUDENT]: {
-      title: 'Learn & Grow',
-      subtitle: 'Access thousands of courses and earn certificates',
+      title: 'Learn & Grow', subtitle: 'Access thousands of courses and earn certificates',
       gradient: 'from-primary-500 to-primary-700',
-      icon: (
-        <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
-          <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
-          <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
-          <rect x="160" y="220" width="80" height="60" rx="5" fill="#7c3aed" opacity="0.8" />
-          <path d="M 180 240 L 220 240 L 220 250 L 180 250 Z" fill="white" />
-        </svg>
-      ),
+      icon: (<svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none"><circle cx="200" cy="120" r="60" fill="white" opacity="0.9" /><rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" /><rect x="160" y="220" width="80" height="60" rx="5" fill="#7c3aed" opacity="0.8" /><path d="M 180 240 L 220 240 L 220 250 L 180 250 Z" fill="white" /></svg>),
     },
     [ROLES.TUTOR]: {
-      title: 'Teach & Inspire',
-      subtitle: 'Create courses and empower learners worldwide',
+      title: 'Teach & Inspire', subtitle: 'Create courses and empower learners worldwide',
       gradient: 'from-primary-500 to-primary-700',
-      icon: (
-        <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
-          <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
-          <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
-          <rect x="100" y="280" width="200" height="100" rx="8" fill="white" opacity="0.7" />
-          <path d="M 150 310 L 180 330 L 150 350 Z" fill="#7c3aed" />
-        </svg>
-      ),
+      icon: (<svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none"><circle cx="200" cy="120" r="60" fill="white" opacity="0.9" /><rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" /><rect x="100" y="280" width="200" height="100" rx="8" fill="white" opacity="0.7" /><path d="M 150 310 L 180 330 L 150 350 Z" fill="#7c3aed" /></svg>),
     },
   };
 
@@ -165,216 +106,100 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side */}
-      <div
-        className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}
-      >
+      <div className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}>
         <div className="text-center text-white">
           <div className="mb-8 transition-all duration-500">{currentContent.icon}</div>
-          <h1 className="text-4xl font-bold mb-4 transition-all duration-300">
-            {currentContent.title}
-          </h1>
-          <p className="text-xl opacity-90 transition-all duration-300">
-            {currentContent.subtitle}
-          </p>
+          <h1 className="text-4xl font-bold mb-4">{currentContent.title}</h1>
+          <p className="text-xl opacity-90">{currentContent.subtitle}</p>
           <div className="mt-8 flex justify-center gap-2">
-            <div
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                activeRole === ROLES.STUDENT ? 'bg-white scale-110' : 'bg-white/30'
-              }`}
-            ></div>
-            <div
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                activeRole === ROLES.TUTOR ? 'bg-white scale-110' : 'bg-white/30'
-              }`}
-            ></div>
+            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.STUDENT ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
+            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.TUTOR ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
-          {/* Logo - Mobile */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
-
-          {/* Welcome Text */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon..!</h2>
-            <p className="text-gray-600">
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
-            </p>
+            <p className="text-gray-600">Lorem Ipsum is simply dummy text of the printing and typesetting industry.</p>
           </div>
 
-          {/* Role Tabs */}
           <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
-            <Button
-              type="button"
-              onClick={() => handleRoleChange(ROLES.STUDENT)}
-              className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
-                activeRole === ROLES.STUDENT
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
+            <button type="button" onClick={() => handleRoleChange(ROLES.STUDENT)}
+              className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${activeRole === ROLES.STUDENT ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
               STUDENT
-            </Button>
-            <Button
-              type="button"
-              onClick={() => handleRoleChange(ROLES.TUTOR)}
-              className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
-                activeRole === ROLES.TUTOR
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
+            </button>
+            <button type="button" onClick={() => handleRoleChange(ROLES.TUTOR)}
+              className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${activeRole === ROLES.TUTOR ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
               TUTOR
-            </Button>
+            </button>
           </div>
 
-          {/* Role Badge */}
           <div className="mb-6 text-center">
             <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-700">
               Logging in as {activeRole === ROLES.STUDENT ? 'Student' : 'Tutor'}
             </span>
           </div>
 
-          {/* Lockout Warning Banner — only visible after 3 failures */}
           {isLocked && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start gap-3">
-                <svg
-                  className="w-5 h-5 text-red-500 mt-0.5 shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-                  />
+                <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 </svg>
                 <div>
-                  <p className="text-sm font-medium text-red-800">
-                    Too many failed attempts
-                  </p>
-                  <p className="text-sm text-red-600 mt-1">
-                    Your login has been temporarily disabled. Reset your password to
-                    continue.
-                  </p>
+                  <p className="text-sm font-medium text-red-800">Too many failed attempts</p>
+                  <p className="text-sm text-red-600 mt-1">Login disabled for this account. Reset your password to continue.</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Attempts remaining warning — shows from attempt 1 onwards */}
           {!isLocked && failedAttempts > 0 && (
             <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm text-amber-700 text-center">
-                {attemptsRemaining} attempt{attemptsRemaining === 1 ? '' : 's'} remaining
-                before your login is disabled
+                {attemptsRemaining} attempt{attemptsRemaining === 1 ? '' : 's'} remaining before login is disabled
               </p>
             </div>
           )}
 
-          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <Input
-              label="Email"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              error={formErrors.email}
-              disabled={isLocked}
-              required
-            />
+            <Input label="Email" type="email" name="email" value={formData.email}
+              onChange={handleChange} placeholder="Enter your email" error={formErrors.email} required />
 
-            <Input
-              label="Password"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your Password"
-              error={formErrors.password}
-              disabled={isLocked}
-              required
-            />
+            <Input label="Password" type="password" name="password" value={formData.password}
+              onChange={handleChange} placeholder="Enter your Password"
+              error={formErrors.password} disabled={isLocked} required />
 
-            {/* Forgot Password — becomes prominent when locked */}
             <div className="flex items-center justify-end">
-              {isLocked ? (
-                <Link
-                  to="/forgot-password"
-                  className="text-sm font-medium px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  Reset your password →
-                </Link>
-              ) : (
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  Forgot Password?
-                </Link>
-              )}
+              <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                Forgot Password?
+              </Link>
             </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={loading || isLocked}
-              className={`w-full py-3 px-4 font-medium rounded-lg transition-colors
-                ${
-                  isLocked
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed'
-                }`}
-            >
+            <button ref={submitBtnRef} type="submit" disabled={loading || isLocked}
+              className={`w-full py-3 px-4 font-medium rounded-lg transition-colors ${isLocked ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed'}`}>
               {loading ? 'Loading...' : isLocked ? 'Login disabled' : 'Login'}
-            </Button>
+            </button>
           </form>
 
-          {/* Sign Up Link */}
           <p className="mt-6 text-center text-gray-600">
             Don't have an account?{' '}
-            <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
-              Sign up for free!
-            </Link>
+            <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">Sign up for free!</Link>
           </p>
 
-          {/* Google Sign In */}
           <div className="mt-6">
             <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-gray-50 text-gray-500">Sign in with</span>
-              </div>
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300"></div></div>
+              <div className="relative flex justify-center text-sm"><span className="px-4 bg-gray-50 text-gray-500">Sign in with</span></div>
             </div>
-            <button
-              type="button"
-              disabled={isLocked}
-              onClick={() => {
-                if (isLocked) return;
-                const API_URL =
-                  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-                window.location.href = `${API_URL}/auth/google?role=${activeRole}`;
-              }}
-              className={`mt-4 w-full flex items-center justify-center px-4 py-3 border rounded-lg font-medium transition-colors
-                ${
-                  isLocked
-                    ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-            >
+            <button type="button" disabled={isLocked}
+              onClick={() => { if (isLocked) return; const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; window.location.href = `${API_URL}/auth/google?role=${activeRole}`; }}
+              className={`mt-4 w-full flex items-center justify-center px-4 py-3 border rounded-lg font-medium transition-colors ${isLocked ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />

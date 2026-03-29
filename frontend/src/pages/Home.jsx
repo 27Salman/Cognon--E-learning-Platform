@@ -1,8 +1,19 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ROUTES } from '../utils/constants';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { ROUTES, ROLES } from '../utils/constants';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  // Logged-in users should not see the home page — send them to their dashboard
+  if (isAuthenticated && user) {
+    const dashboard =
+      user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
+      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
+      : ROUTES.STUDENT_DASHBOARD;
+    return <Navigate to={dashboard} replace />;
+  }
 
   const features = [
     { icon: '📚', title: 'Learn Anything', description: 'Explore thousands of courses in various subjects' },
