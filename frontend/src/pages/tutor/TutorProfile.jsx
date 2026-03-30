@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Camera, Lock, Pencil } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import ChangeEmailModal from '../../components/tutor/ChangeEmailModal';
 import ChangePasswordModal from '../../components/tutor/ChangePasswordModal';
 import { tutorAPI } from '../../api/tutorAPI';
+import { validateImageFile } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
-export default function TutorProfile({ tutorInfo, onUpdateProfile }) {
+export default function TutorProfile() {
+    const { tutorInfo, onUpdateProfile } = useOutletContext();
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false); 
     const selectedFileRef = useRef(null);
@@ -50,14 +53,21 @@ export default function TutorProfile({ tutorInfo, onUpdateProfile }) {
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            selectedFileRef.current = file; 
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData(prev => ({ ...prev, profileImage: reader.result }));
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        const error = validateImageFile(file);
+        if (error) {
+            toast.error(error);
+            e.target.value = '';
+            return;
         }
+
+        selectedFileRef.current = file;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFormData(prev => ({ ...prev, profileImage: reader.result }));
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSave = async () => {

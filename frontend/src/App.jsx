@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setAuthFromStorage, logoutUser } from './store/slices/authSlice';
@@ -15,15 +15,18 @@ import AdminResetPassword from './pages/auth/AdminResetPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import GoogleAuthSuccess from './pages/auth/GoogleAuthSuccess';
 import StudentDashboard from './pages/student/StudentDashboard';
-//import TutorDashboard from './pages/tutor/TutorDashboard';
 import AdminLayout from './components/layouts/AdminLayout';
+import AdminProfile from './pages/admin/AdminProfile';
+import TutorManagement from './pages/admin/TutorManagement';
+import StudentManagement from './pages/admin/StudentManagement';
 import TutorLayout from './components/layouts/TutorLayout';
+import TutorProfile from './pages/tutor/TutorProfile';
+import TutorDashboard from './pages/tutor/TutorDashboard';
 import StudentLayout from './components/layouts/StudentLayout';
+import StudentProfile from './pages/student/StudentProfile';
 import { ROUTES, ROLES } from './utils/constants';
 import NotFound from './pages/NotFound';
 import VerifyOTP from './pages/auth/VerifyOTP';
-
-
 
 function App() {
   const dispatch = useDispatch();
@@ -56,7 +59,6 @@ function App() {
       <Route path="/verify-otp" element={<VerifyOTP />} />
       <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
 
-
       {/* Protected Student Routes */}
       <Route
         path="/student/dashboard"
@@ -80,7 +82,7 @@ function App() {
         }
       >
         <Route index element={<Navigate to="/student/dashboard" replace />} />
-        <Route path="profile" element={<></>} />
+        <Route path="profile" element={<StudentProfile />} />
       </Route>
 
       {/* Protected Tutor Routes */}
@@ -94,8 +96,9 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/tutor/profile" replace />} />
-        <Route path="profile" element={<></>} />
+        <Route index element={<Navigate to="/tutor/dashboard" replace />} />
+        <Route path="dashboard" element={<TutorDashboard />} />
+        <Route path="profile" element={<TutorProfile />} />
       </Route>
 
       {/* Protected Admin Routes */}
@@ -111,7 +114,9 @@ function App() {
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<></>} />
-        <Route path="profile" element={<></>} />
+        <Route path="profile" element={<AdminProfile />} />
+        <Route path="tutors" element={<TutorManagement />} />
+        <Route path="students" element={<StudentManagement />} />
       </Route>
 
       {/* Fallback */}

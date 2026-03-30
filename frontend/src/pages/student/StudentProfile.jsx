@@ -1,29 +1,31 @@
 import { useState, useRef, useEffect } from 'react';
 import { Camera, Lock, Pencil } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import StudentChangePasswordModal from '../../components/student/StudentChangePasswordModal';
 import { studentAPI } from '../../api/studentAPI';
 import toast from 'react-hot-toast';
-import { validatePhone } from '../../utils/helpers';
+import { validatePhone, validateImageFile } from '../../utils/helpers';
 
 const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
 
 const getAvatarColors = (name) => {
     const palettes = [
-        ['#7c3aed', '#a855f7'], // purple
-        ['#2563eb', '#60a5fa'], // blue
-        ['#059669', '#34d399'], // green
-        ['#d97706', '#fbbf24'], // amber
-        ['#dc2626', '#f87171'], // red
-        ['#0891b2', '#22d3ee'], // cyan
-        ['#7c3aed', '#ec4899'], // purple-pink
-        ['#ea580c', '#fb923c'], // orange
+        ['#7c3aed', '#a855f7'],
+        ['#2563eb', '#60a5fa'],
+        ['#059669', '#34d399'],
+        ['#d97706', '#fbbf24'],
+        ['#dc2626', '#f87171'],
+        ['#0891b2', '#22d3ee'],
+        ['#7c3aed', '#ec4899'],
+        ['#ea580c', '#fb923c'],
     ];
     if (!name) return palettes[0];
     const index = name.charCodeAt(0) % palettes.length;
     return palettes[index];
 };
 
-export default function StudentProfile({ studentInfo, onUpdateProfile }) {
+export default function StudentProfile() {
+    const { studentInfo, onUpdateProfile } = useOutletContext();
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
     const selectedFileRef = useRef(null);
@@ -58,6 +60,14 @@ export default function StudentProfile({ studentInfo, onUpdateProfile }) {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        const error = validateImageFile(file);
+        if (error) {
+            toast.error(error);
+            e.target.value = '';
+            return;
+        }
+
         selectedFileRef.current = file;
         const reader = new FileReader();
         reader.onloadend = () => setFormData(prev => ({ ...prev, profileImage: reader.result }));
@@ -165,7 +175,7 @@ export default function StudentProfile({ studentInfo, onUpdateProfile }) {
                         {isEditing && (
                             <label className="absolute bottom-0 right-0 bg-purple-600 rounded-full p-1.5 cursor-pointer hover:bg-purple-700 transition-colors shadow-lg">
                                 <Camera className="w-4 h-4 text-white" />
-                                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                                <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleImageChange} className="hidden" />
                             </label>
                         )}
                     </div>

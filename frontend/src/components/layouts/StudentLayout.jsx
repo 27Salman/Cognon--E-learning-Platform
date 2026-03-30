@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import StudentNavbar from '../student/StudentNavbar';
 import StudentSidebar from '../student/StudentSidebar';
 import Footer from '../common/Footer';
-import StudentProfile from '../../pages/student/StudentProfile';
 import { studentAPI } from '../../api/studentAPI';
 
 export default function StudentLayout() {
-    const location = useLocation();
     const { user } = useSelector((state) => state.auth);
 
     const [studentInfo, setStudentInfo] = useState(() => {
@@ -27,8 +25,10 @@ export default function StudentLayout() {
 
     useEffect(() => {
         if (!user) return;
+        let cancelled = false;
         studentAPI.getProfile()
             .then((res) => {
+                if (cancelled) return;
                 const data = res.data || res;
                 const profile = {
                     _id: data._id,
@@ -43,6 +43,7 @@ export default function StudentLayout() {
                 localStorage.setItem('studentInfo', JSON.stringify(profile));
             })
             .catch(() => {
+                if (cancelled) return;
                 if (user) {
                     setStudentInfo(prev => ({
                         ...prev,
@@ -53,6 +54,7 @@ export default function StudentLayout() {
                     }));
                 }
             });
+        return () => { cancelled = true; };
     }, [user?._id]);
 
     const handleUpdateProfile = (updatedData) => {
@@ -62,8 +64,6 @@ export default function StudentLayout() {
         localStorage.setItem('studentInfo', JSON.stringify(toStore));
     };
 
-    const isProfileRoute = location.pathname === '/student/profile';
-
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <StudentNavbar studentInfo={studentInfo} />
@@ -72,10 +72,7 @@ export default function StudentLayout() {
                 <StudentSidebar studentInfo={studentInfo} />
 
                 <main className="flex-1 overflow-y-auto">
-                    {isProfileRoute
-                        ? <StudentProfile studentInfo={studentInfo} onUpdateProfile={handleUpdateProfile} />
-                        : <Outlet />
-                    }
+                    <Outlet context={{ studentInfo, onUpdateProfile: handleUpdateProfile }} />
                 </main>
             </div>
 

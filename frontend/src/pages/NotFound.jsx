@@ -30,18 +30,12 @@ export default function NotFound() {
                     It may have been moved, deleted, or you may have mistyped the URL.
                 </p>
 
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <div className="flex justify-center">
                     <button
                         onClick={() => navigate(-1)}
                         className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
                     >
                         Go Back
-                    </button>
-                    <button
-                        onClick={() => navigate('/', { replace: true })}
-                        className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
-                    >
-                        Go to Home
                     </button>
                 </div>
             </div>

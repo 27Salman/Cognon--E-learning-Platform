@@ -100,3 +100,17 @@ export const getErrorMessage = (error) => {
   if (error.message) return error.message;
   return 'Something went wrong. Please try again.';
 };
+
+// Image upload validation
+export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+export const MAX_IMAGE_SIZE_MB = 5;
+
+export const validateImageFile = (file) => {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return 'Only JPEG, PNG, and WebP images are allowed';
+  }
+  if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+    return `Image must be smaller than ${MAX_IMAGE_SIZE_MB}MB`;
+  }
+  return null; // null means valid
+};

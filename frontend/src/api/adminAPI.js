@@ -1,22 +1,32 @@
 import api from './axios';
 
 export const adminAPI = {
-    getProfile: () => api.get('/admin/profile'),
-  
-    updateProfile: (formData) => {
-        const config = { headers: { 'Content-Type': 'multipart/form-data' } };
-        return api.put('/admin/profile', formData, config);
-    },
-  
-    requestEmailChange: (newEmail) => 
-        api.post('/admin/change-email/request', { newEmail }),
-    
-    verifyEmailChange: (newEmail, otp) => 
-        api.post('/admin/change-email/verify', { newEmail, otp }),
-    
-    requestPasswordChange: () => 
+
+    // Profile
+    getProfile: () =>
+        api.get('/admin/profile'),
+
+    updateProfile: (formData) =>
+        api.put('/admin/profile', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+
+    requestPasswordChange: () =>
         api.post('/admin/change-password/request'),
-    
-    verifyPasswordChange: (newPassword, otp) => 
-        api.post('/admin/change-password/verify', { newPassword, otp })
+
+    verifyPasswordChange: (newPassword, otp) =>
+        api.post('/admin/change-password/verify', { newPassword, otp }),
+
+    // User Management
+    getTutors: (params = {}) =>
+        api.get('/admin/tutors', { params }),
+
+    getStudents: (params = {}) =>
+        api.get('/admin/students', { params }),
+
+    blockUser: (userId) =>
+        api.patch(`/admin/users/${userId}/block`),
+
+    unblockUser: (userId) =>
+        api.patch(`/admin/users/${userId}/unblock`),
 };

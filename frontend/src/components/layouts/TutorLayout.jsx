@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import TutorNavbar from '../tutor/TutorNavbar';
 import TutorSidebar from '../tutor/TutorSidebar';
 import Footer from '../common/Footer';
-import TutorProfile from '../../pages/tutor/TutorProfile';
 import { tutorAPI } from '../../api/tutorAPI';
 
 export default function TutorLayout() {
-    const location = useLocation();
     const { user } = useSelector((state) => state.auth);
 
     const [tutorInfo, setTutorInfo] = useState(() => {
@@ -22,8 +20,10 @@ export default function TutorLayout() {
 
     useEffect(() => {
         if (!user) return;
+        let cancelled = false;
         tutorAPI.getProfile()
             .then((res) => {
+                if (cancelled) return;
                 const data = res.data || res;
                 const profile = {
                     _id: data._id,
@@ -39,6 +39,7 @@ export default function TutorLayout() {
                 localStorage.setItem('tutorInfo', JSON.stringify(profile));
             })
             .catch(() => {
+                if (cancelled) return;
                 if (user) {
                     setTutorInfo(prev => ({
                         ...prev,
@@ -49,6 +50,7 @@ export default function TutorLayout() {
                     }));
                 }
             });
+        return () => { cancelled = true; };
     }, [user?._id]);
 
     const handleUpdateProfile = (updatedData) => {
@@ -58,8 +60,6 @@ export default function TutorLayout() {
         localStorage.setItem('tutorInfo', JSON.stringify(toStore));
     };
 
-    const isProfileRoute = location.pathname === '/tutor/profile' || location.pathname === '/tutor';
-
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <TutorNavbar tutorInfo={tutorInfo} />
@@ -68,10 +68,7 @@ export default function TutorLayout() {
                 <TutorSidebar tutorInfo={tutorInfo} />
 
                 <main className="flex-1 overflow-y-auto">
-                    {isProfileRoute
-                        ? <TutorProfile tutorInfo={tutorInfo} onUpdateProfile={handleUpdateProfile} />
-                        : <Outlet />
-                    }
+                    <Outlet context={{ tutorInfo, onUpdateProfile: handleUpdateProfile }} />
                 </main>
             </div>
 
