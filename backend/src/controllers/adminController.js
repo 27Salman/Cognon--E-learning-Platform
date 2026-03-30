@@ -1,164 +1,46 @@
-const User = require('../models/User');
-const { deleteOldProfileImage } = require('../services/fileService');
-const { createOTP, verifyOTP } = require('../services/otpService');
-const { sendOTPEmail } = require('../services/emailService');
+const asyncHandler = require('../middleware/asyncHandler');
+const adminService = require('../services/adminService');
+const { HTTP_STATUS } = require('../config/constants');
 
-const buildImageURL = (profileImage) => {
-    if (!profileImage) return null;
-    if (profileImage.startsWith('http')) return profileImage;
-    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    return `${BASE_URL}/uploads/${profileImage}`;
-};
+exports.getProfile = asyncHandler(async (req, res) => {
+    const data = await adminService.getProfile(req.user.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data });
+});
 
-exports.getProfile = async (req, res) => {
-  try {
-    const admin = await User.findById(req.user.id).select('-password');
-    res.status(200).json({
-      success: true,
-      data: {
-        _id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        phone: admin.phone,
-        profileImage: admin.profileImage,
-        profileImageURL: buildImageURL(admin.profileImage),
-        role: admin.role,
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+exports.updateProfile = asyncHandler(async (req, res) => {
+    const data = await adminService.updateProfile(req.user.id, req.body, req.file);
+    res.status(HTTP_STATUS.OK).json({ success: true, message: 'Profile updated successfully', data });
+});
 
-exports.updateProfile = async (req, res) => {
-  try {
-    const { name, phone } = req.body;
-    const admin = await User.findById(req.user.id);
+exports.requestPasswordChange = asyncHandler(async (req, res) => {
+    const message = await adminService.requestPasswordChange(req.user.email);
+    res.status(HTTP_STATUS.OK).json({ success: true, message });
+});
 
-    if (name) admin.name = name.trim();
-    if (phone !== undefined) admin.phone = phone.trim() || null;
+exports.verifyPasswordChange = asyncHandler(async (req, res) => {
+    const { newPassword, otp } = req.body;
+    await adminService.verifyPasswordChange(req.user.id, req.user.email, newPassword, otp);
+    res.status(HTTP_STATUS.OK).json({ success: true, message: 'Password changed successfully. Please login again.' });
+});
 
-    if (req.file) {
-      if (admin.profileImage && !admin.profileImage.startsWith('http')) {
-        await deleteOldProfileImage(admin.profileImage);
-      }
-      admin.profileImage = req.file.filename;
-    }
+exports.getTutors = asyncHandler(async (req, res) => {
+    const { status, search, page, limit } = req.query;
+    const result = await adminService.getTutors({ status, search, page, limit });
+    res.status(HTTP_STATUS.OK).json({ success: true, data: result });
+});
 
-    await admin.save();
+exports.getStudents = asyncHandler(async (req, res) => {
+    const { status, search, page, limit } = req.query;
+    const result = await adminService.getStudents({ status, search, page, limit });
+    res.status(HTTP_STATUS.OK).json({ success: true, data: result });
+});
 
-    res.status(200).json({
-      success: true,
-      message: 'Profile updated successfully',
-      data: {
-        _id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        phone: admin.phone,
-        profileImage: admin.profileImage,
-        profileImageURL: buildImageURL(admin.profileImage),
-        role: admin.role,
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+exports.blockUser = asyncHandler(async (req, res) => {
+    const user = await adminService.blockUser(req.params.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, message: 'User blocked successfully', data: user });
+});
 
-exports.requestEmailChange = async (req, res) => {
-    try {
-        const { newEmail } = req.body;
-        
-        const existingUser = await User.findOne({ email: newEmail });
-        if (existingUser) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email already in use'
-        });
-        }
-        
-        const otp = await createOTP(req.user.email, 'email_change', newEmail);
-        
-        await sendOTPEmail(newEmail, otp, 'email_change');
-        
-        res.status(200).json({
-        success: true,
-        message: `OTP sent to ${newEmail}`
-        });
-    } catch (error) {
-        res.status(500).json({
-        success: false,
-        message: error.message
-        });
-    }
-};
-
-exports.verifyEmailChange = async (req, res) => {
-    try {
-        const { newEmail, otp } = req.body;
-        
-        const otpDoc = await verifyOTP(req.user.email, otp, 'email_change');
-        
-        if (otpDoc.newEmail !== newEmail) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email mismatch'
-        });
-        }
-        
-        const admin = await User.findById(req.user.id);
-        admin.email = newEmail;
-        await admin.save();
-        
-        res.status(200).json({
-        success: true,
-        message: 'Email updated successfully',
-        data: admin
-        });
-    } catch (error) {
-        res.status(400).json({
-        success: false,
-        message: error.message
-        });
-    }
-};
-
-exports.requestPasswordChange = async (req, res) => {
-    try {
-        const otp = await createOTP(req.user.email, 'password_change');
-        
-        await sendOTPEmail(req.user.email, otp, 'password_change');
-        
-        res.status(200).json({
-        success: true,
-        message: `OTP sent to ${req.user.email}`
-        });
-    } catch (error) {
-        res.status(500).json({
-        success: false,
-        message: error.message
-        });
-    }
-};
-
-exports.verifyPasswordChange = async (req, res) => {
-    try {
-        const { newPassword, otp } = req.body;
-        
-        await verifyOTP(req.user.email, otp, 'password_change');
-        
-        const admin = await User.findById(req.user.id);
-        admin.password = newPassword; 
-        await admin.save();
-        
-        res.status(200).json({
-        success: true,
-        message: 'Password changed successfully. Please login again.'
-        });
-    } catch (error) {
-        res.status(400).json({
-        success: false,
-        message: error.message
-        });
-    }
-};
+exports.unblockUser = asyncHandler(async (req, res) => {
+    const user = await adminService.unblockUser(req.params.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, message: 'User unblocked successfully', data: user });
+});

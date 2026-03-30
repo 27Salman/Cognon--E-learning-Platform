@@ -6,10 +6,12 @@ const upload = require('../config/multer');
 const {
     getProfile,
     updateProfile,
-    requestEmailChange,
-    verifyEmailChange,
     requestPasswordChange,
-    verifyPasswordChange
+    verifyPasswordChange,
+    getTutors,
+    getStudents,
+    blockUser,
+    unblockUser
 } = require('../controllers/adminController');
 
 router.use(protect);
@@ -18,10 +20,12 @@ router.use(restrictTo('admin'));
 router.get('/profile', getProfile);
 router.put('/profile', upload.single('profileImage'), updateProfile);
 
-router.post('/change-email/request', requestEmailChange);
-router.post('/change-email/verify', verifyEmailChange);
-
 router.post('/change-password/request', requestPasswordChange);
 router.post('/change-password/verify', verifyPasswordChange);
+
+router.get('/tutors', getTutors);
+router.get('/students', getStudents);
+router.patch('/users/:id/block', blockUser);
+router.patch('/users/:id/unblock', unblockUser);
 
 module.exports = { adminRoutes: router };
