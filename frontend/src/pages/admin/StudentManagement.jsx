@@ -4,7 +4,7 @@ import { adminAPI } from '../../api/adminAPI';
 import toast from 'react-hot-toast';
 import ConfirmActionModal from '../../components/admin/ConfirmActionModal';
 
-const LIMIT = 10;
+const LIMIT = 5;
 
 export default function StudentManagement() {
     const [students, setStudents] = useState([]);
@@ -65,7 +65,11 @@ export default function StudentManagement() {
                 ? await adminAPI.blockUser(userId)
                 : await adminAPI.unblockUser(userId);
 
-            setStudents(prev => prev.map(s => s._id === userId ? res.data : s));
+            setStudents(prev => {
+                const updated = prev.map(s => s._id === userId ? res.data : s);
+                if (filter) return updated.filter(s => s.status === filter);
+                return updated;
+            });
 
             if (action === 'block') {
                 setSummary(prev => ({ ...prev, active: prev.active - 1, blocked: prev.blocked + 1 }));
@@ -222,7 +226,7 @@ export default function StudentManagement() {
                                             <button
                                                 onClick={() => openConfirm('unblock', student)}
                                                 disabled={actionLoading === student._id}
-                                                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 transition-colors disabled:opacity-50"
                                             >
                                                 {actionLoading === student._id ? '...' : 'Unblock'}
                                             </button>
@@ -236,7 +240,7 @@ export default function StudentManagement() {
 
                 {/* Pagination Controls */}
                 {!loading && pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100">
+                    <div className="flex flex-col items-center gap-3 px-5 py-4 border-t border-gray-100">
                         <p className="text-sm text-gray-500">
                             Showing {((pagination.currentPage - 1) * LIMIT) + 1}–{Math.min(pagination.currentPage * LIMIT, pagination.totalFiltered)} of {pagination.totalFiltered} students
                         </p>

@@ -21,7 +21,7 @@ export default function ConfirmActionModal({ isOpen, action, userName, onConfirm
                     </div>
 
                     <h2 className="text-lg font-semibold text-gray-800 text-center">
-                        {iIsBlock ? 'Block User' : 'Unblock User'}
+                        {isBlock ? 'Block User' : 'Unblock User'}
                     </h2>
 
                     <p className="text-sm text-gray-500 text-center mt-2">
