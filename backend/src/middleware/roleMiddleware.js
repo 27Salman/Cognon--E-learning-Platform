@@ -1,4 +1,4 @@
-const { HTTP_STATUS, USER_ROLES } = require('../config/constants');
+const { HTTP_STATUS, USER_ROLES, TUTOR_APPROVAL_STATUS } = require('../config/constants');
 
 exports.restrictTo = (...roles) => {
     return (req, res, next) => {
@@ -55,11 +55,11 @@ exports.tutorOnly = (req, res, next) => {
         });
     }
 
-    if (!req.user.tutorProfile?.isApproved) {
+    if(req.user.tutorProfile?.approvalStatus !== TUTOR_APPROVAL_STATUS.APPROVED){
         return res.status(HTTP_STATUS.FORBIDDEN).json({
             success: false,
-            message: 'Your tutor account is pending admin approval.'
-        });
+            message: 'Your account is pending for admin approval'
+        })
     }
 
     next();

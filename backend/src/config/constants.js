@@ -8,7 +8,8 @@ const USER_STATUS = {
     ACTIVE: 'active',       
     PENDING: 'pending',         
     BLOCKED: 'blocked',         
-    INACTIVE: 'inactive'       
+    INACTIVE: 'inactive',
+    APPROVAL : 'pending'       
 };
 
 const COURSE_STATUS = {
