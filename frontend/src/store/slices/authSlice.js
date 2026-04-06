@@ -1,6 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as authAPI from '../../api/authAPI';
 import { setToken, setUser, clearAuthData, getToken, getUser } from '../../utils/helpers';
+import { STORAGE_KEYS } from '../../utils/constants';
+
+const broadcastLogout = () => {
+  localStorage.setItem(STORAGE_KEYS.LOGOUT_SIGNAL, Date.now().toString());
+  localStorage.removeItem(STORAGE_KEYS.LOGOUT_SIGNAL);
+};
 
 const initialState = {
   user: getUser(),
@@ -92,15 +98,9 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(signupUser.fulfilled, (state, action) => {
+      .addCase(signupUser.fulfilled, (state) => {
         state.loading = false;
-        state.isAuthenticated = true;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
         state.error = null;
-        
-        setToken(action.payload.token);
-        setUser(action.payload.user);
       })
       .addCase(signupUser.rejected, (state, action) => {
         state.loading = false;
@@ -139,22 +139,21 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.error = null;
-        
         clearAuthData();
+        broadcastLogout();
       })
       .addCase(logoutUser.rejected, (state) => {
         state.loading = false;
         state.isAuthenticated = false;
         state.user = null;
         state.token = null;
-        
         clearAuthData();
+        broadcastLogout();
       });
 
     // Get Current User
     builder
       .addCase(fetchCurrentUser.pending, (state) => {
-        state.loading = true;
       })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.loading = false;

@@ -4,38 +4,42 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import toast from 'react-hot-toast';
 import { FiArrowLeft } from 'react-icons/fi';
+import { validatePassword } from '../../utils/helpers';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email;
 
-  const [step, setStep] = useState('otp'); // 'otp' or 'password'
+  const [step, setStep] = useState('otp'); 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(120); // 2 minutes
+  const [resendTimer, setResendTimer] = useState(120);
+  const [expiryTimer, setExpiryTimer] = useState(300);
   const inputRefs = useRef([]);
+  const resendIntervalRef = useRef(null);
+  const expiryIntervalRef = useRef(null);
+
+  const startTimers = (resendSecs = 120, expirySecs = 300) => {
+    clearInterval(resendIntervalRef.current);
+    clearInterval(expiryIntervalRef.current);
+    setResendTimer(resendSecs);
+    setExpiryTimer(expirySecs);
+    resendIntervalRef.current = setInterval(() => {
+      setResendTimer(prev => { if (prev <= 1) { clearInterval(resendIntervalRef.current); return 0; } return prev - 1; });
+    }, 1000);
+    expiryIntervalRef.current = setInterval(() => {
+      setExpiryTimer(prev => { if (prev <= 1) { clearInterval(expiryIntervalRef.current); return 0; } return prev - 1; });
+    }, 1000);
+  };
 
   useEffect(() => {
-    if (!email) {
-      navigate('/forgot-password');
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setTimer((prev) => {
-        if (prev <= 0) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
+    if (!email) { navigate('/forgot-password'); return; }
+    startTimers();
+    return () => { clearInterval(resendIntervalRef.current); clearInterval(expiryIntervalRef.current); };
   }, [email, navigate]);
 
   const handleOtpChange = (index, value) => {
@@ -60,15 +64,8 @@ const ResetPassword = () => {
     e.preventDefault();
 
     const otpString = otp.join('');
-    if (otpString.length !== 6) {
-      toast.error('Please enter complete OTP');
-      return;
-    }
-
-    if (timer <= 0) {
-      toast.error('OTP has expired. Please request a new one.');
-      return;
-    }
+    if (otpString.length !== 6) { toast.error('Please enter complete OTP'); return; }
+    if (expiryTimer <= 0) { toast.error('OTP has expired. Please request a new one.'); return; }
 
     setLoading(true);
     try {
@@ -106,8 +103,13 @@ const ResetPassword = () => {
       return;
     }
 
-    if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    if (/\s/.test(newPassword)) {
+      toast.error('Password must not contain spaces');
+      return;
+    }
+
+    if (!validatePassword(newPassword)) {
+      toast.error('Min 8 chars, must include uppercase, lowercase, number & special character (@$!%*?&)');
       return;
     }
 
@@ -132,7 +134,7 @@ const ResetPassword = () => {
       if (response.ok) {
         toast.success('Password reset successful! Redirecting to login...');
         setTimeout(() => {
-          navigate('/login');
+          navigate('/login', { replace: true });
         }, 2000);
       } else {
         toast.error(data.message || 'Failed to reset password');
@@ -146,25 +148,18 @@ const ResetPassword = () => {
   };
 
   const handleResendOtp = async () => {
-    if (timer > 0) {
-      toast.error('Please wait for the timer to expire');
-      return;
-    }
-
+    if (resendTimer > 0) return;
     setLoading(true);
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${API_URL}/auth/forgot-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-
       if (response.ok) {
         toast.success('New OTP sent to your email!');
-        setTimer(120); // Reset to 2 minutes
+        startTimers();
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
@@ -175,11 +170,9 @@ const ResetPassword = () => {
     }
   };
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const isOtpExpired = expiryTimer <= 0;
+  const canResend = resendTimer <= 0;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -213,46 +206,39 @@ const ResetPassword = () => {
                   value={digit}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:outline-none transition-colors"
+                  className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg focus:outline-none transition-colors ${
+                    isOtpExpired ? 'border-red-300 bg-red-50 cursor-not-allowed' : 'border-gray-300 focus:border-primary-500'
+                  }`}
                   autoFocus={index === 0}
-                  disabled={timer === 0}
+                  disabled={isOtpExpired}
                 />
               ))}
             </div>
 
             <div className="text-center mb-6">
-              {timer > 0 ? (
-                <p className="text-gray-600">
-                  Time remaining: <span className="font-medium text-primary-600">{formatTime(timer)}</span>
-                </p>
-              ) : (
+              {isOtpExpired ? (
                 <p className="text-red-600 font-medium">OTP expired!</p>
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  OTP valid for: <span className="font-semibold text-gray-700">{formatTime(expiryTimer)}</span>
+                </p>
               )}
             </div>
 
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={loading}
-              disabled={loading || timer === 0}
-            >
+            <Button type="submit" variant="primary" fullWidth loading={loading} disabled={loading || isOtpExpired}>
               Verify OTP
             </Button>
 
             <div className="mt-6 text-center">
               <p className="text-gray-600 mb-2">Didn't receive the code?</p>
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={loading || timer > 0}
-                className="text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Resend OTP
-              </button>
-              {timer > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Available after timer expires
+              {canResend ? (
+                <button type="button" onClick={handleResendOtp} disabled={loading}
+                  className="text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                  {loading ? 'Sending...' : 'Resend OTP'}
+                </button>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  Resend available in <span className="font-semibold text-primary-600">{formatTime(resendTimer)}</span>
                 </p>
               )}
             </div>

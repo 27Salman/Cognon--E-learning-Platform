@@ -5,41 +5,40 @@ import { getToken, clearAuthData } from '../utils/helpers';
 const api = axios.create({
   baseURL: API_URL,
   timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
-
 
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
+  (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
       clearAuthData();
-      window.location.href = '/login';
+
+      import('../store/store').then(({ default: store }) => {
+        import('../store/slices/authSlice').then(({ logoutUser }) => {
+          store.dispatch(logoutUser());
+        });
+      });
+
+      const path = window.location.pathname;
+      window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
     }
 
     if (error.response?.status === 403) {
-      console.error('Access forbidden:', error.response.data.message);
+      console.error('Access forbidden:', error.response?.data?.message);
     }
 
     if (error.response?.status === 500) {
-      console.error('Server error:', error.response.data.message);
+      console.error('Server error:', error.response?.data?.message);
     }
 
     return Promise.reject(error);

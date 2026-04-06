@@ -26,10 +26,11 @@ const userSchema = new mongoose.Schema(
         },
         phone: {
             type: String,
-            required: [true, 'Phone number is required'],
+            required: false,
+            default: null,
             validate: {
                 validator: function(v) {
-                    // Must match Indian phone format
+                    if (!v) return true; // allow null/empty
                     return /^[6-9]\d{9}$/.test(v);
                 },
                 message: 'Please provide a valid phone number (10 digits starting with 6-9)'
@@ -55,12 +56,18 @@ const userSchema = new mongoose.Schema(
 
         profileImage: {
             type: String,
-            default: 'https://via.placeholder.com/150'
+            default: null
         },
 
         isVerified: {
             type: Boolean,
             default: false
+        },
+
+        authProvider: {
+            type: String,
+            enum: ['local', 'google'],
+            default: 'local'
         },
 
         verificationToken: {
@@ -112,7 +119,12 @@ const userSchema = new mongoose.Schema(
         tutorProfile: {
             bio: {
                 type: String,
-                maxlength: [500, 'Bio cannot exceed 500 characters']
+                maxlength: [500, 'Bio cannot exceed 500 characters'],
+                default: ''
+            },
+            subject: {
+                type: String,
+                default: ''
             },
             expertise: [String],
             experience: {
@@ -157,11 +169,28 @@ userSchema.methods.comparePassword = async function(candidatePassword){
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
+userSchema.methods.getProfileImageURL = function() {
+    if (!this.profileImage) return null;
+    if (this.profileImage.startsWith('http')) return this.profileImage;
+    return `${process.env.API_URL || 'http://localhost:5000'}/uploads/${this.profileImage}`;
+};
+
+userSchema.methods.toJSON = function() {
+    const user = this.toObject();
+    delete user.password;
+    delete user.__v;
+    
+    if (user.profileImage) {
+        user.profileImageURL = this.getProfileImageURL();
+    }
+    
+    return user;
+};
+
 userSchema.methods.hasRole = function(role){
     return this.role === role;
 };
 
-// Compound unique index: same email can exist with different roles
 userSchema.index({ email: 1, role: 1 }, { unique: true });
 
 module.exports = mongoose.model('User', userSchema);

@@ -27,4 +27,4 @@ router.post('/upgrade-to-tutor', protect, authController.upgradeToTutor);
 router.get('/google', googleAuth);
 router.get('/google/callback', googleAuthCallback);
 
-module.exports = router;
+module.exports = { authRoutes: router };

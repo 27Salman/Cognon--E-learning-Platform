@@ -1,8 +1,18 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ROUTES } from '../utils/constants';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { ROUTES, ROLES } from '../utils/constants';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  if (isAuthenticated && user) {
+    const dashboard =
+      user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
+      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
+      : ROUTES.STUDENT_DASHBOARD;
+    return <Navigate to={dashboard} replace />;
+  }
 
   const features = [
     { icon: '📚', title: 'Learn Anything', description: 'Explore thousands of courses in various subjects' },
@@ -168,13 +178,13 @@ const Home = () => {
             </div>
             <div className="flex gap-4">
               <button
-                onClick={() => navigate(ROUTES.SIGNUP, { state: { role: 'tutor' } })}
+                onClick={() => navigate('/tutor/register')}
                 className="px-8 py-3 bg-white text-purple-600 rounded-md hover:bg-gray-100 transition font-medium text-sm whitespace-nowrap"
               >
                 Register as Tutor
               </button>
               <button
-                onClick={() => navigate(ROUTES.LOGIN, { state: { role: 'tutor' } })}
+                onClick={() => navigate('/tutor/login')}
                 className="px-8 py-3 border-2 border-white text-white rounded-md hover:bg-purple-700 transition font-medium text-sm whitespace-nowrap"
               >
                 Tutor Login
@@ -352,8 +362,8 @@ const Home = () => {
             <div>
               <h4 className="font-semibold mb-4 text-sm">For Tutors</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link to={ROUTES.SIGNUP} className="hover:text-white transition">Become a Tutor</Link></li>
-                <li><Link to={ROUTES.LOGIN} className="hover:text-white transition">Tutor Login</Link></li>
+                <li><Link to="/tutor/register" className="hover:text-white transition">Become a Tutor</Link></li>
+                <li><Link to="/tutor/login" className="hover:text-white transition">Tutor Login</Link></li>
                 <li><a href="#" className="hover:text-white transition">Resources</a></li>
                 <li><a href="#" className="hover:text-white transition">Support</a></li>
               </ul>

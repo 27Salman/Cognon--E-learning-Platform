@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
 import Input from '../../components/common/Input';
@@ -9,106 +9,64 @@ import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
 const AdminLogin = () => {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [formErrors, setFormErrors] = useState({});
+
+  useEffect(() => {
+    return () => { dispatch(clearError()); };
+  }, [dispatch]);
+
+  if (isAuthenticated && user) {
+    const dashboard =
+      user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD :
+      user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD :
+      ROUTES.STUDENT_DASHBOARD;
+    const from = location.state?.from?.pathname || dashboard;
+    return <Navigate to={from} replace />;
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-    if (formErrors[name]) {
-      setFormErrors({ ...formErrors, [name]: '' });
-    }
+    setFormData({ ...formData, [name]: value });
+    if (formErrors[name]) setFormErrors({ ...formErrors, [name]: '' });
   };
 
   const validateForm = () => {
     const errors = {};
-
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!validateEmail(formData.email)) {
-      errors.email = 'Invalid email format';
-    }
-
-    if (!formData.password) {
-      errors.password = 'Password is required';
-    }
-
+    if (!formData.email.trim()) errors.email = 'Email is required';
+    else if (!validateEmail(formData.email)) errors.email = 'Invalid email format';
+    if (!formData.password) errors.password = 'Password is required';
     return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
+    if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
 
-    const resultAction = await dispatch(
-      loginUser({
-        email: formData.email,
-        password: formData.password,
-      })
-    );
+    const resultAction = await dispatch(loginUser({
+      email: formData.email,
+      password: formData.password,
+      role: ROLES.ADMIN,
+    }));
 
     if (loginUser.fulfilled.match(resultAction)) {
-      const loggedInUser = resultAction.payload.user;
-      if (loggedInUser.role !== ROLES.ADMIN) {
-        toast.error('Unauthorized access. Admin only.');
-        dispatch(clearError());
-        return;
-      }
       toast.success('Admin login successful!');
     } else {
       toast.error(resultAction.payload || 'Login failed');
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.role === ROLES.ADMIN) {
-        navigate(ROUTES.ADMIN_DASHBOARD);
-      } else {
-        toast.error('Unauthorized access');
-        if (user.role === ROLES.STUDENT) {
-          navigate(ROUTES.STUDENT_DASHBOARD);
-        } else if (user.role === ROLES.TUTOR) {
-          navigate(ROUTES.TUTOR_DASHBOARD);
-        }
-      }
-    }
-  }, [isAuthenticated, user, navigate]);
-
-  useEffect(() => {
-    return () => {
-      dispatch(clearError());
-    };
-  }, [dispatch]);
-
   return (
     <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-900 to-gray-700 items-center justify-center p-12">
         <div className="text-center text-white">
           <div className="mb-8">
-            <svg
-              className="w-64 h-64 mx-auto"
-              viewBox="0 0 400 400"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* Admin icon */}
+            <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
               <circle cx="200" cy="100" r="50" fill="white" opacity="0.9" />
               <rect x="150" y="170" width="100" height="120" rx="8" fill="white" opacity="0.9" />
               <rect x="160" cy="240" width="80" height="60" rx="5" fill="#6d28d9" opacity="0.8" />
@@ -136,16 +94,15 @@ const AdminLogin = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
-              label="User name"
+              label="Email"
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your User name"
+              placeholder="Enter your email"
               error={formErrors.email}
               required
             />
-
             <Input
               label="Password"
               type="password"
@@ -156,31 +113,19 @@ const AdminLogin = () => {
               error={formErrors.password}
               required
             />
-
             <div className="flex justify-end">
-              <Link
-                to="/admin/forgot-password"
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-              >
+              <Link to="/admin/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                 Forgot Password?
               </Link>
             </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={loading}
-              disabled={loading}
-            >
+            <Button type="submit" variant="primary" fullWidth loading={loading} disabled={loading}>
               Login
             </Button>
           </form>
 
-          {/* Warning */}
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800 text-center">
-              This is a restricted area!. Unauthorized access attempts will be logged!.
+              This is a restricted area. Unauthorized access attempts will be logged.
             </p>
           </div>
         </div>

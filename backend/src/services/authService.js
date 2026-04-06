@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const { USER_ROLES } = require("../config/constants");
 const { sendVerificationOTP } = require('./emailService');
-const { generateOTP, storeOTP } = require('../utils/otpGenerator');
+const { generateOTP, createOTP } = require('./otpService');
 
 const authService = {
     async registerUser(userData) {
@@ -13,7 +13,6 @@ const authService = {
 
             console.log('Registration attempt for:', normalizedEmail, 'as', role);
 
-            // Delete unverified users with same email AND role
             const deletedUsers = await User.deleteMany({
                 email: normalizedEmail,
                 role: role,
@@ -24,7 +23,6 @@ const authService = {
                 console.log(`Deleted ${deletedUsers.deletedCount} unverified user(s) with role ${role}`);
             }
 
-            // Check if verified user exists with same email AND role
             const verifiedUser = await User.findOne({
                 email: normalizedEmail,
                 role: role,
@@ -48,7 +46,8 @@ const authService = {
                 phone: normalizedPhone,
                 role: userRole,
                 status: 'active',
-                isVerified: false
+                isVerified: false,
+                authProvider: 'local'
             });
 
             if (userRole === USER_ROLES.TUTOR) {
@@ -57,7 +56,7 @@ const authService = {
                     expertise: expertise || [],
                     experience: 0,
                     coursesCreated: [],
-                    isApproved: false
+                    isApproved: true  
                 };
             } else if (userRole === USER_ROLES.STUDENT) {
                 newUser.studentProfile = {
@@ -94,8 +93,7 @@ const authService = {
                 throw new Error('Failed to create user after multiple attempts');
             }
 
-            const otp = generateOTP();
-            storeOTP(normalizedEmail, otp, 2); // 2 minutes
+            const otp = await createOTP(normalizedEmail, 'email_verification');
 
             try {
                 await sendVerificationOTP(normalizedEmail, name, otp);
@@ -118,34 +116,34 @@ const authService = {
     async loginUser(email, password, role) {
         const normalizedEmail = email.toLowerCase().trim();
         
-        // Find user by email AND role
         const user = await User.findOne({ 
             email: normalizedEmail,
             role: role 
         }).select('+password');
-        
+    
+
         if (!user) {
+            if (role === USER_ROLES.ADMIN) {
+                throw new Error('Invalid admin credentials');
+            }
             throw new Error(`No ${role} account found with this email. Please check your credentials or register.`);
         }
 
         const isPasswordMatch = await user.comparePassword(password);
 
         if (!isPasswordMatch) {
+
             throw new Error('Invalid email or password');
         }
 
         if (user.status === 'blocked') {
-            throw new Error('Your account has been blocked. Please contact admin.');
+            const error =  new Error('Your account has been blocked. Please contact admin.');
+            error.statusCode = 400;
+            throw error;
         }
 
         if (!user.isVerified && user.role !== USER_ROLES.ADMIN) {
             throw new Error('Please verify your email before logging in');
-        }
-
-        if (user.role === USER_ROLES.TUTOR) {
-            if (user.tutorProfile && !user.tutorProfile.isApproved) {
-                throw new Error('Your tutor account is pending admin approval');
-            }
         }
 
         user.lastLogin = new Date();

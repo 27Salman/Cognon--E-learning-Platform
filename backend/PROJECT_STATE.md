@@ -2,415 +2,352 @@
 
 ## Project Overview
 
-**Name:** Cognon E-Learning Platform  
-**Type:** Full-stack MERN e-learning application  
-**Purpose:** Educational platform with three user roles (Student, Tutor, Admin)  
-**Status:** Week 1 Complete - Authentication with OTP verification implemented  
-**Developer:** Learning full-stack development through structured project building
-
----
+**Name:** Cognon  
+**Type:** E-Learning Platform (MERN Stack)  
+**Timeline:** 4 weeks development + Week 5 deployment  
+**Current Week:** Week 1 - Core Authentication & Profile Management  
+**Ports:** Backend: 5000, Frontend: 3001  
+**Database:** MongoDB Atlas (database: cognon)
 
 ## Tech Stack
 
-### Backend
-- **Runtime:** Node.js v18+
-- **Framework:** Express.js 5.2.1
-- **Database:** MongoDB Atlas (Cloud) with Mongoose ODM
-- **Authentication:** JWT (jsonwebtoken) with bcrypt password hashing
-- **Validation:** express-validator
-- **Security:** cors, helmet, express-rate-limit
-- **Email:** Nodemailer (Gmail SMTP)
-- **Environment:** dotenv
-
 ### Frontend
-- **Library:** React 18.3.1
-- **Build Tool:** Vite 5.4.11
-- **State Management:** Redux Toolkit 2.2.7
-- **Routing:** React Router DOM 6.26.0
-- **Styling:** Tailwind CSS 3.4.17
-- **HTTP Client:** Axios 1.7.2
-- **UI Utilities:** react-hot-toast 2.4.1, react-icons 5.2.1
+- React 18+ with Vite
+- React Router DOM
+- Redux (auth state management)
+- Tailwind CSS
+- Axios (API calls)
+- Lucide React (icons)
 
-### Development Tools
-- **API Testing:** Postman
-- **Version Control:** Git/GitHub
-- **Database Management:** MongoDB Atlas
+### Backend
+- Node.js + Express
+- MongoDB + Mongoose
+- JWT authentication (7-day expiry)
+- Bcrypt (password hashing)
+- Multer (file uploads)
+- Nodemailer (email service)
+- CORS enabled
 
----
+### Storage
+- Development: Local disk (`/backend/uploads/profiles/`)
+- Production: AWS S3/Cloudinary (future migration)
 
-## Architecture Overview
+## Architecture
 
-### System Architecture
-- **Pattern:** Monorepo with separate `/backend` and `/frontend` folders
-- **API Style:** RESTful JSON API
-- **Auth Method:** JWT tokens (7-day expiry) stored in localStorage
-- **Communication:** Frontend (port 3000) → Backend (port 5000)
+### Authentication
+- JWT tokens stored in `localStorage` as `cognon_token`
+- Single User model with role field: `student`, `tutor`, `admin`
+- Token included in all API requests via Axios interceptor
+- Auto-logout on 401 responses
 
-### Key Architectural Decisions
-1. **Single User Model:** One unified User schema with `role` field (student/tutor/admin)
-2. **Role-Based Profiles:** Students have `studentProfile`, Tutors have `tutorProfile`
-3. **Student-to-Tutor Upgrade:** Students can become tutors (retain both profiles)
-4. **Email Verification:** OTP-based verification (5-minute expiry)
-5. **Separate Admin Login:** `/admin/login` as hidden URL for security
-6. **Role-Based Routing:** Client-side route guards (ProtectedRoute, RoleRoute)
-7. **Token Storage:** localStorage (keys: `cognon_token`, `cognon_user`)
-8. **Auto-Redirect:** Based on user role after successful login
-9. **Color Scheme:** Primary purple (#8b5cf6) for all roles
+### File Upload Strategy
+- Profile images: FormData → Multer → Local disk
+- Filename format: `userId_timestamp.ext`
+- Stored in MongoDB: filename only
+- Served via Express static middleware at `/uploads/profiles/`
+- Response includes full URL: `http://localhost:5000/uploads/profiles/...`
 
----
+### OTP System
+- MongoDB collection with TTL index (10-minute expiry)
+- Purposes: `email_change`, `password_change`, `email_verification`
+- Email change: OTP sent to NEW email
+- Password change: OTP sent to CURRENT email
+- Auto-delete from DB after expiry
+
+## Frontend Structure
+```
+src/
+├── api/
+│   ├── axios.js              # Axios instance with interceptors
+│   ├── constants.js          # API_URL, endpoints, routes
+│   ├── authAPI.js            # Auth endpoints
+│   ├── adminAPI.js           # Admin endpoints (with api import)
+│   └── tutorAPI.js           # Tutor endpoints (with api import)
+│
+├── layouts/
+│   ├── AdminLayout.jsx       # Admin wrapper (purple theme)
+│   └── TutorLayout.jsx       # Tutor wrapper (sky blue theme)
+│
+├── components/
+│   ├── admin/
+│   │   ├── AdminNavbar.jsx
+│   │   ├── AdminSidebar.jsx
+│   │   └── DummySection.jsx
+│   ├── tutor/
+│   │   ├── TutorNavbar.jsx
+│   │   ├── TutorSidebar.jsx
+│   │   ├── ChangeEmailModal.jsx
+│   │   └── DummySection.jsx
+│   └── Common/
+│       └── Footer.jsx         # Shared footer
+│
+├── pages/
+│   ├── admin/
+│   │   └── AdminProfile.jsx   # Profile management
+│   └── tutor/
+│       ├── TutorProfile.jsx   # Profile + Bio (500 char limit)
+│       └── ChangePassword.jsx # Password change with auto-logout
+│
+└── utils/
+    └── helpers.js             # getToken, clearAuthData
+```
+
+### Frontend Color Schemes
+- **Admin:** Purple (#7C3AED primary, #6D28D9 hover)
+- **Tutor:** Sky Blue (#0EA5E9 primary, #0284C7 hover)
+- **Student:** TBD
+
+### localStorage Keys
+- `cognon_token`: JWT token
+- `cognon_user`: User object
+- `adminInfo`: Admin profile data
+- `tutorInfo`: Tutor profile data
 
 ## Backend Structure
 ```
 backend/
-├── server.js
-├── .env
 ├── src/
 │   ├── config/
-│   │   ├── db.js
-│   │   └── constants.js
+│   │   ├── database.js       # MongoDB connection
+│   │   └── multer.js         # File upload config (5MB max)
+│   │
 │   ├── models/
-│   │   ├── User.js
-│   │   └── Course.js
-│   ├── routes/
-│   │   ├── index.js
-│   │   ├── authRoutes.js
-│   │   ├── userRoutes.js
-│   │   └── devRoutes.js (development only)
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   └── userController.js
-│   ├── services/
-│   │   ├── authService.js
-│   │   └── emailService.js
+│   │   ├── User.js           # Single model with role field
+│   │   └── OTP.js            # OTP storage with TTL
+│   │
 │   ├── middleware/
-│   │   ├── authMiddleware.js
-│   │   ├── roleMiddleware.js
-│   │   ├── errorMiddleware.js
-│   │   ├── asyncHandler.js
-│   │   └── validation.js
-│   ├── validators/
-│   │   └── authValidator.js
-│   └── utils/
-│       ├── generateToken.js
-│       └── otpGenerator.js
-└── package.json
-```
-
-### Backend API Endpoints
-
-**Auth Routes** (`/api/auth`)
-- `POST /signup` - Register student/tutor with OTP email
-- `POST /login` - Login with email verification check
-- `POST /verify-otp` - Verify email with 6-digit OTP
-- `POST /resend-otp` - Resend verification OTP
-- `POST /forgot-password` - Request password reset OTP
-- `POST /verify-reset-otp` - Verify reset OTP
-- `POST /reset-password` - Reset password with token
-- `POST /logout` - Logout (requires auth)
-- `GET /me` - Get current user (requires auth)
-
-**User Routes** (`/api/users`)
-- `POST /upgrade-to-tutor` - Upgrade student to tutor (requires auth)
-
-**Dev Routes** (`/api/dev` - development only)
-- `GET /users` - List all users
-- `DELETE /users/clear` - Delete all users
-- `DELETE /users/unverified` - Delete unverified users
-- `DELETE /users/email/:email` - Delete by email
-
----
-
-## Frontend Structure
-```
-frontend/
-├── public/
-├── src/
-│   ├── api/
-│   │   ├── axios.js
-│   │   └── authAPI.js
-│   ├── components/
-│   │   └── common/
-│   │       ├── Button.jsx
-│   │       ├── Input.jsx
-│   │       └── Loader.jsx
-│   ├── pages/
-│   │   ├── auth/
-│   │   │   ├── Login.jsx
-│   │   │   ├── Signup.jsx
-│   │   │   ├── VerifyOTP.jsx
-│   │   │   ├── AdminLogin.jsx
-│   │   │   ├── ForgotPassword.jsx
-│   │   │   └── AdminForgotPassword.jsx
-│   │   ├── student/
-│   │   │   └── StudentDashboard.jsx
-│   │   ├── tutor/
-│   │   │   └── TutorDashboard.jsx
+│   │   ├── auth.js           # JWT verification (protect)
+│   │   └── roleCheck.js      # Role-based access (restrictTo)
+│   │
+│   ├── controllers/
 │   │   ├── admin/
-│   │   │   └── AdminDashboard.jsx
-│   │   └── Home.jsx
+│   │   │   └── profileController.js
+│   │   └── tutor/
+│   │       └── profileController.js
+│   │
+│   ├── services/
+│   │   ├── emailService.js   # Nodemailer OTP emails
+│   │   ├── otpService.js     # Generate/verify OTP
+│   │   └── fileService.js    # Delete old images
+│   │
 │   ├── routes/
-│   │   ├── ProtectedRoute.jsx
-│   │   └── RoleRoute.jsx
-│   ├── store/
-│   │   ├── store.js
-│   │   └── slices/
-│   │       └── authSlice.js
-│   ├── utils/
-│   │   ├── constants.js
-│   │   └── helpers.js
-│   ├── App.jsx
-│   ├── main.jsx
-│   └── index.css
+│   │   ├── adminRoutes.js    # /api/admin/*
+│   │   └── tutorRoutes.js    # /api/tutor/*
+│   │
+│   └── utils/
+│       └── emailTemplates.js # HTML email templates
+│
+├── uploads/
+│   └── profiles/             # Profile images
+│
 ├── .env
-├── vite.config.js
-├── tailwind.config.js
-└── package.json
+└── server.js
 ```
 
-### Frontend Routes
+## Database Models
 
-**Public:**
-- `/` - Home
-- `/login` - Student/Tutor login (tabbed)
-- `/signup` - Student/Tutor signup (tabbed)
-- `/verify-otp` - OTP verification
-- `/forgot-password` - Password reset
-- `/admin/login` - Admin login (hidden)
-
-**Protected (Student):**
-- `/student/dashboard`
-
-**Protected (Tutor):**
-- `/tutor/dashboard`
-
-**Protected (Admin):**
-- `/admin/dashboard`
-
----
-
-## Authentication Strategy
-
-### Registration Flow
-1. User submits signup form (role selection: Student/Tutor)
-2. Frontend validates input, dispatches `signupUser()` thunk
-3. Backend validates, creates user with `isVerified: false`
-4. Backend generates 6-digit OTP, stores in-memory (5-minute expiry)
-5. Backend sends OTP via email (Nodemailer + Gmail SMTP)
-6. User redirected to `/verify-otp` with email and timestamp
-7. User enters OTP, backend verifies
-8. Backend sets `isVerified: true`
-9. User redirected to `/login`
-
-### Login Flow
-1. User submits credentials
-2. Backend checks `isVerified` flag
-3. If not verified, throws error
-4. If tutor, checks `tutorProfile.isApproved`
-5. Returns JWT token + user object
-6. Frontend stores in localStorage
-7. Auto-redirect based on role
-
-### OTP System
-- **Storage:** In-memory Map (resets on server restart)
-- **Expiry:** 5 minutes
-- **Attempts:** Max 3 attempts per OTP
-- **Resend:** Available after 60 seconds
-- **Timer:** Client-side countdown with timestamp tracking
-
-### Security Features
-- Passwords hashed with bcrypt (10 rounds)
-- JWT tokens with 7-day expiry
-- Unverified users auto-deleted on re-registration
-- Role verification on protected routes (frontend + backend)
-- CORS enabled for `http://localhost:3000`
-- Multi-database cleanup (prevents ghost users in `test` database)
-
----
-
-## User Model Schema
+### User Model
 ```javascript
 {
-  name: String (required, 3-50 chars),
-  email: String (required, unique, lowercase),
-  phone: String (required, 10 digits, starts 6-9),
-  password: String (required, bcrypt hashed, min 8 chars),
-  role: String (enum: ['student', 'tutor', 'admin'], default: 'student'),
-  status: String (enum: ['active', 'inactive', 'blocked'], default: 'active'),
-  isVerified: Boolean (default: false),
-  
-  studentProfile: {
-    enrolledCourses: [{ courseId, enrolledAt, progress, completedLessons }],
-    certificates: [ObjectId]
-  },
-  
-  tutorProfile: {
-    bio: String (max 500 chars),
-    expertise: [String],
-    experience: Number,
-    coursesCreated: [ObjectId],
-    isApproved: Boolean (default: false)
-  },
-  
-  profileImage: String (default placeholder),
-  lastLogin: Date,
-  createdAt: Date,
-  updatedAt: Date
+  name: String,
+  email: String (unique, lowercase),
+  password: String (bcrypt hashed),
+  phone: String,
+  role: enum['student', 'tutor', 'admin'],
+  profileImage: String,        // Filename
+  subject: String,             // Tutor only
+  bio: String (max 500),       // Tutor only
+  isEmailVerified: Boolean,
+  isActive: Boolean,
+  isBlocked: Boolean,
+  googleAuth: Boolean,
+  timestamps: true
 }
 ```
 
-### User Role Architecture
-- **Student Only:** Has `studentProfile`, no `tutorProfile`
-- **Tutor Only:** Has `tutorProfile`, no `studentProfile`
-- **Student → Tutor:** Has both profiles (role changes to 'tutor')
-
----
-
-## Environment Variables
-
-### Backend (.env)
-```env
-NODE_ENV=development
-PORT=5000
-MONGO_URI=mongodb+srv://cognonuser:Cognon123@cognon.unc0blb.mongodb.net/cognon?retryWrites=true&w=majority
-JWT_SECRET=mySecretKey123
-JWT_EXPIRE=7d
-CLIENT_URL=http://localhost:3000
-
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=cognon.elearning@gmail.com
-SMTP_PASS=muxlrhrnfyfzjnuj
+### OTP Model
+```javascript
+{
+  email: String,
+  otp: String (6-digit),
+  purpose: enum['email_change', 'password_change', 'email_verification'],
+  newEmail: String,            // For email_change only
+  expiresAt: Date (10 minutes),
+  verified: Boolean,
+  timestamps: true
+}
 ```
 
-### Frontend (.env)
-```env
+## API Endpoints
+
+### Admin
+- `GET /api/admin/profile` - Get profile
+- `PUT /api/admin/profile` - Update profile + image (multipart/form-data)
+- `POST /api/admin/change-email/request` - Send OTP to new email
+- `POST /api/admin/change-email/verify` - Verify OTP & update email
+- `POST /api/admin/change-password/request` - Send OTP to current email
+- `POST /api/admin/change-password/verify` - Verify OTP & change password
+
+### Tutor
+Same endpoints as Admin with `/api/tutor/` prefix
+
+## Completed Features
+
+### Week 1: Profile Management (Admin & Tutor)
+- ✅ Admin layout components (Navbar, Sidebar, Profile, Footer)
+- ✅ Tutor layout components (Navbar, Sidebar, Profile, Footer)
+- ✅ Profile CRUD with image upload
+- ✅ Email change with OTP verification (OTP to new email)
+- ✅ Password change with OTP verification (OTP to current email)
+- ✅ Auto-logout after password change (2 seconds delay)
+- ✅ Backend: User & OTP models
+- ✅ Backend: Multer file upload (5MB max, jpg/png/gif/webp)
+- ✅ Backend: Email service with HTML templates
+- ✅ Backend: Profile controllers for Admin & Tutor
+- ✅ Backend: JWT authentication middleware
+- ✅ Backend: Role-based access control
+
+### Frontend-Backend Integration Status
+- ✅ API structure defined (adminAPI.js, tutorAPI.js)
+- ✅ Axios interceptors configured
+- ⚠️ **Pending:** Import statements added to API files
+- ⚠️ **Pending:** Profile components updated with real API calls
+- ⚠️ **Pending:** Email/Password modals connected to backend
+
+## Current Phase
+
+**Week 1 Day 5-6:** Finalizing profile management integration
+
+### Integration Requirements
+1. Add `import api from './axios';` to adminAPI.js
+2. Add `import api from './axios';` to tutorAPI.js
+3. Update TutorProfile.jsx handleSave with FormData API call
+4. Update AdminProfile.jsx handleSave with FormData API call
+5. Update ChangeEmailModal.jsx with tutorAPI calls
+6. Update ChangePassword.jsx with tutorAPI calls + auto-logout
+
+## Next Immediate Tasks
+
+### Week 1 Remaining (1-2 days)
+1. Complete frontend-backend integration (6 files)
+2. Test profile update with image upload
+3. Test email change with real OTP emails
+4. Test password change with auto-logout
+5. Student profile management system
+
+### Week 2 (Critical - Database Design First)
+**Day 1:** Database schema design (MUST complete first)
+- Course model
+- Lesson model
+- Enrollment model
+- Category model
+- Quiz model
+- Certificate model
+
+**Day 2-6:** Course CRUD operations
+- Course creation (Admin & Tutor)
+- Lesson management
+- Quiz management
+- Course enrollment
+
+## Important Architectural Rules
+
+### File Upload
+- Always convert base64 to blob before sending to backend
+- Delete old image when updating profile
+- Use FormData with `Content-Type: multipart/form-data`
+- Images served via Express static: `app.use('/uploads', express.static(...))`
+
+### OTP Flow
+- Email change: OTP → NEW email (verify ownership)
+- Password change: OTP → CURRENT email (verify identity)
+- 10-minute expiry, one-time use
+- Auto-delete via MongoDB TTL index
+
+### Password Change Flow
+1. Verify OTP
+2. Hash password (bcrypt pre-save hook)
+3. Save to database
+4. Frontend: Show success (2 seconds)
+5. Frontend: Clear localStorage
+6. Frontend: Redirect to login
+7. User must re-login with new password
+
+### Design Patterns
+- Children prop pattern for layouts (simpler than Outlet)
+- Role-based components (AdminLayout, TutorLayout, StudentLayout)
+- Shared components in Common folder
+- DummySection placeholders for unimplemented features
+
+### Security
+- JWT in Authorization header: `Bearer <token>`
+- 401 → Auto-logout and redirect
+- Role middleware: `restrictTo('admin', 'tutor')`
+- Password hashing on pre-save hook
+- OTP verification before sensitive changes
+
+### Environment Variables
+**Frontend (.env.local):**
+```
 VITE_API_URL=http://localhost:5000/api
 VITE_APP_NAME=Cognon
 ```
 
----
+**Backend (.env):**
+```
+PORT=5000
+MONGO_URI=mongodb+srv://...
+JWT_SECRET=...
+JWT_EXPIRE=7d
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=...
+EMAIL_PASS=...
+API_URL=http://localhost:5000
+CLIENT_URL=http://localhost:3001
+```
 
-## Completed Features
+## Known Issues & Decisions
 
-### Backend
-- MongoDB connection with retry logic
-- User model with role-based profiles
-- Auth controller (signup, login, logout, getCurrentUser)
-- JWT authentication middleware
-- Role-based access middleware
-- Input validation with express-validator
-- Password hashing with bcrypt
-- Error handling middleware
-- CORS configuration
-- OTP generation and storage (in-memory Map)
-- Email service (Nodemailer + Gmail)
-- OTP verification endpoints
-- Password reset with OTP
-- Multi-database cleanup (prevents ghost users)
-- Student-to-tutor upgrade endpoint
-- Dev routes for testing
+### Avatar Storage
+- Current: Local disk storage
+- Future: Migrate to AWS S3/Cloudinary
+- Filename stored in MongoDB, not full path
+- Easy migration path: just change file service
 
-### Frontend
-- Vite + React 18 setup
-- Redux Toolkit state management
-- Axios configuration with interceptors
-- Protected route guards (auth + role-based)
-- Login page (Student/Tutor tabs)
-- Signup page (Student/Tutor tabs)
-- OTP verification page with timer
-- Admin login page
-- Forgot password pages
-- Dashboard placeholders (Student, Tutor, Admin)
-- Reusable components (Button, Input, Loader)
-- Token management utilities
-- Form validation
-- Toast notifications
-- Tailwind CSS with purple theme
-- Responsive design
-- Password strength indicator
+### Layout Architecture
+- Decision: Children prop pattern (not React Router Outlet)
+- Reason: Simpler state management, direct control
+- Each role has dedicated layout component
 
----
+### Role Management
+- Single User model with role field
+- No separate Admin/Tutor/Student models
+- Simplifies authentication and profile management
 
-## Current Phase
+### Bio Character Limit
+- Tutor only: 500 characters maximum
+- Counter displayed: `{bio.length}/500`
+- Frontend validation + backend validation
 
-**Status:** Authentication complete and functional  
-**Working:** Signup → OTP verification → Login → Dashboard redirect  
-**Email System:** Configured with Gmail SMTP, OTP delivery working  
-**Database:** MongoDB Atlas (cognon database)
+### No Share Profile Button
+- Explicitly removed from Tutor sidebar
+- User requirement from reference design
 
----
+## File Locations Reference
 
-## Known Issues & Fixes Applied
+**Frontend components:** All in `/mnt/user-data/outputs/`
+**Backend guides:** BACKEND_PROFILE_MANAGEMENT_PART1.md, PART2.md
+**Integration guide:** FRONTEND_BACKEND_INTEGRATION_GUIDE.md
+**Visual diagrams:** VISUAL_FLOW_DIAGRAM.md
+**Quick reference:** QUICK_REFERENCE.md
 
-### Issue: Ghost Users in Multiple Databases
-**Problem:** Users created in both `cognon` and `test` databases  
-**Cause:** Connection string missing database name at one point  
-**Fix:** authService now cleans unverified users from ALL databases
+## Context for Next Chat
 
-### Issue: Role Not Saving Correctly
-**Problem:** Tutor registration saving as student  
-**Cause:** Backend not using role parameter from request  
-**Fix:** authService properly uses `role || USER_ROLES.STUDENT`
-
-### Issue: Duplicate Index Warning
-**Problem:** Mongoose warning about duplicate email index  
-**Cause:** Index defined in both schema field and schema.index()  
-**Fix:** Remove explicit schema.index() calls
-
----
-
-## Next Immediate Tasks
-
-### Week 2: Complete Auth Polish
-- Implement Google OAuth (Passport.js)
-- Add strong password requirements (8 chars, uppercase, lowercase, number, special)
-- Add username uniqueness validation
-- Test complete auth flow end-to-end
-- Add admin approval workflow for tutors
-
-### Week 3: Course Module
-- Course model (title, description, tutor, price, modules, lessons)
-- Course CRUD endpoints
-- Course listing page
-- Course detail page
-- Enrollment system
-- Tutor course creation interface
-
----
-
-## Important Architectural Rules
-
-### Code Standards
-- React: Functional components with hooks only
-- File Naming: PascalCase for components, camelCase for utilities
-- State Management: Redux for global auth, local state for UI
-- API Calls: Through Redux thunks, never direct in components
-- Error Handling: Try-catch in thunks, display via toast
-- Loading States: Show spinner on async operations
-- Validation: Client-side (instant feedback) + server-side (security)
-
-### Dependency Versions (Critical)
-- React: 18.3.1 (NOT 19.x)
-- Vite: 5.4.11 (NOT 7.x or 8.x)
-- Tailwind: 3.4.17 (NOT 4.x)
-- Express: 5.2.1
-- Mongoose: 9.1.4
-
-### Database Rules
-- Never commit: `node_modules/`, `.env`, `dist/`
-- Backend: Port 5000
-- Frontend: Port 3000
-- MongoDB: Atlas cloud (cognon database)
-- Always specify database name in MONGO_URI
-
-### Common Issues
-- Vite cache errors: Delete `node_modules/.vite` and restart
-- Port busy: `taskkill /PID <number> /F` (Windows)
-- Blank page: Hard refresh `Ctrl+Shift+R`
-- 401 errors: Check backend running, verify token in localStorage
-- Ghost users: Run cleanup script to delete from all databases
-
----
-
-**Last Updated:** March 8, 2026  
-**Next Milestone:** Google OAuth + Strong password validation + Course module planning
+When resuming this project:
+1. Profile management (Admin/Tutor) is complete but needs final integration
+2. Student profile management is next (similar to Tutor but simpler)
+3. Week 2 MUST start with database schema design before Course CRUD
+4. Backend files are documented but not yet created in project
+5. Integration requires 6 small file changes (imports + API calls)
+6. Timeline is strict: Week 1 = Auth & Profiles, Week 2 = Courses

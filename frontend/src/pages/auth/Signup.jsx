@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signupUser, clearError } from '../../store/slices/authSlice';
 import Input from '../../components/common/Input';
@@ -14,21 +14,30 @@ const Signup = () => {
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // Get role from navigation state if provided
-  const initialRole = location.state?.role === 'tutor' ? ROLES.TUTOR : ROLES.STUDENT;
+  const initialRole = location.pathname === '/tutor/register' ? ROLES.TUTOR : ROLES.STUDENT;
   const [activeRole, setActiveRole] = useState(initialRole);
-
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
+    name: '', email: '', phone: '', password: '', confirmPassword: '',
   });
-
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    return () => dispatch(clearError());
+  }, [dispatch]);
+
+  if (isAuthenticated && user) {
+    const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
+      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
+      : ROUTES.STUDENT_DASHBOARD;
+    return <Navigate to={dashboard} replace />;
+  }
+
+  const handleRoleChange = (role) => {
+    setActiveRole(role);
+    const path = role === ROLES.TUTOR ? '/tutor/register' : '/signup';
+    navigate(path, { replace: true });
+  };
 
   const roleContent = {
     [ROLES.STUDENT]: {
@@ -67,7 +76,7 @@ const Signup = () => {
 
     if (!formData.email.trim()) {
       errors.email = 'Email is required';
-    } else if (!validateEmail(formData.email)) {
+    } else if (!validateEmail(formData.email.trim())) {
       errors.email = 'Invalid email format';
     }
 
@@ -80,7 +89,7 @@ const Signup = () => {
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (!validatePassword(formData.password)) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = 'Min 8 chars, must include uppercase, lowercase, number & special character (@$!%*?&), no spaces';
     }
 
     if (!formData.confirmPassword) {
@@ -121,9 +130,10 @@ const Signup = () => {
       if (signupUser.fulfilled.match(resultAction)) {
         toast.success('Registration successful! Please verify your email.');
         navigate('/verify-otp', { 
+          replace: true,
           state: { 
             email: formData.email.trim(),
-            timestamp: Date.now()
+            role: activeRole,
           } 
         });
       } else {
@@ -133,20 +143,6 @@ const Signup = () => {
       setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.role === ROLES.STUDENT) {
-        navigate(ROUTES.STUDENT_DASHBOARD);
-      } else if (user.role === ROLES.TUTOR) {
-        navigate(ROUTES.TUTOR_DASHBOARD);
-      }
-    }
-  }, [isAuthenticated, user, navigate]);
-
-  useEffect(() => {
-    return () => dispatch(clearError());
-  }, [dispatch]);
 
   return (
     <div className="min-h-screen flex">
@@ -195,7 +191,7 @@ const Signup = () => {
           <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
             <button
               type="button"
-              onClick={() => setActiveRole(ROLES.STUDENT)}
+              onClick={() => handleRoleChange(ROLES.STUDENT)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
                 activeRole === ROLES.STUDENT
                   ? 'bg-white text-primary-600 shadow-sm'
@@ -206,7 +202,7 @@ const Signup = () => {
             </button>
             <button
               type="button"
-              onClick={() => setActiveRole(ROLES.TUTOR)}
+              onClick={() => handleRoleChange(ROLES.TUTOR)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
                 activeRole === ROLES.TUTOR
                   ? 'bg-white text-primary-600 shadow-sm'

@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from './constants';
 
+// Token 
 export const setToken = (token) => {
   localStorage.setItem(STORAGE_KEYS.TOKEN, token);
 };
@@ -12,6 +13,7 @@ export const removeToken = () => {
   localStorage.removeItem(STORAGE_KEYS.TOKEN);
 };
 
+// User 
 export const setUser = (user) => {
   localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 };
@@ -25,23 +27,22 @@ export const removeUser = () => {
   localStorage.removeItem(STORAGE_KEYS.USER);
 };
 
-
+// Clear all auth data 
 export const clearAuthData = () => {
   removeToken();
   removeUser();
+  localStorage.removeItem('adminInfo');
+  localStorage.removeItem('tutorInfo');
+  localStorage.removeItem('studentInfo');
 };
 
-
-export const isAuthenticated = () => {
-  return !!getToken();
-};
-
+// Helpers 
+export const isAuthenticated = () => !!getToken();
 
 export const getAuthHeader = () => {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
-
 
 export const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -54,58 +55,62 @@ export const validatePhone = (phone) => {
 };
 
 export const validatePassword = (password) => {
-  return password.length >= 6;
+  if (password.length < 8) return false;
+  if (/\s/.test(password)) return false;
+  if (!/[A-Z]/.test(password)) return false;
+  if (!/[a-z]/.test(password)) return false;
+  if (!/\d/.test(password)) return false;
+  if (!/[@$!%*?&]/.test(password)) return false;
+  return true;
 };
 
 export const getPasswordStrength = (password) => {
   if (password.length === 0) return { strength: 0, text: '', color: '#6b7280' };
-  
   let strength = 0;
   const checks = {
     length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
     number: /\d/.test(password),
-    special: /[@$!%*?&]/.test(password)
+    special: /[@$!%*?&]/.test(password),
   };
-  
   strength = Object.values(checks).filter(Boolean).length;
-  
   const strengthMap = {
-    0: { strength: 0, text: 'Very Weak', color: '#ef4444' },
-    1: { strength: 20, text: 'Weak', color: '#ef4444' },
-    2: { strength: 40, text: 'Fair', color: '#eab308' },
-    3: { strength: 60, text: 'Good', color: '#3b82f6' },
-    4: { strength: 80, text: 'Strong', color: '#22c55e' },
-    5: { strength: 100, text: 'Very Strong', color: '#22c55e' }
+    0: { strength: 0,   text: 'Very Weak',   color: '#ef4444' },
+    1: { strength: 20,  text: 'Weak',         color: '#ef4444' },
+    2: { strength: 40,  text: 'Fair',         color: '#eab308' },
+    3: { strength: 60,  text: 'Good',         color: '#3b82f6' },
+    4: { strength: 80,  text: 'Strong',       color: '#22c55e' },
+    5: { strength: 100, text: 'Very Strong',  color: '#22c55e' },
   };
-  
   return strengthMap[strength];
 };
 
 export const formatDate = (dateString) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-IN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
 export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-  }).format(amount);
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 };
 
-
 export const getErrorMessage = (error) => {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-  if (error.message) {
-    return error.message;
-  }
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.message) return error.message;
   return 'Something went wrong. Please try again.';
+};
+
+// Image upload validation
+export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+export const MAX_IMAGE_SIZE_MB = 5;
+
+export const validateImageFile = (file) => {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return 'Only JPEG, PNG, and WebP images are allowed';
+  }
+  if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+    return `Image must be smaller than ${MAX_IMAGE_SIZE_MB}MB`;
+  }
+  return null; // null means valid
 };

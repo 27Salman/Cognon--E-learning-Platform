@@ -65,6 +65,7 @@ export const ROUTES = {
 export const STORAGE_KEYS = {
   TOKEN: 'cognon_token',
   USER: 'cognon_user',
+  LOGOUT_SIGNAL: 'cognon_logout',
 };
 
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Cognon';

@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { setAuthFromStorage } from './store/slices/authSlice';
+import { setAuthFromStorage, logoutUser } from './store/slices/authSlice';
+import { STORAGE_KEYS } from './utils/constants';
 import ProtectedRoute from './routes/ProtectedRoute';
 import RoleRoute from './routes/RoleRoute';
 import Home from './pages/Home';
@@ -10,19 +11,38 @@ import Signup from './pages/auth/Signup';
 import AdminLogin from './pages/auth/AdminLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import AdminForgotPassword from './pages/auth/AdminForgotPassword';
+import AdminResetPassword from './pages/auth/AdminResetPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import GoogleAuthSuccess from './pages/auth/GoogleAuthSuccess';
 import StudentDashboard from './pages/student/StudentDashboard';
+import AdminLayout from './components/layouts/AdminLayout';
+import AdminProfile from './pages/admin/AdminProfile';
+import TutorManagement from './pages/admin/TutorManagement';
+import StudentManagement from './pages/admin/StudentManagement';
+import TutorLayout from './components/layouts/TutorLayout';
+import TutorProfile from './pages/tutor/TutorProfile';
 import TutorDashboard from './pages/tutor/TutorDashboard';
-import AdminDashboard from './pages/admin/AdminDashboard';
+//import AdminDashboard from './pages/admin/AdminDashboard';
+import StudentLayout from './components/layouts/StudentLayout';
+import StudentProfile from './pages/student/StudentProfile';
 import { ROUTES, ROLES } from './utils/constants';
+import NotFound from './pages/NotFound';
+import Unauthorized from './pages/Unauthorized';
 import VerifyOTP from './pages/auth/VerifyOTP';
-
 
 function App() {
   const dispatch = useDispatch();
+
   useEffect(() => {
     dispatch(setAuthFromStorage());
+
+    const handleStorageEvent = (e) => {
+      if (e.key === STORAGE_KEYS.LOGOUT_SIGNAL) {
+        dispatch(logoutUser());
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+    return () => window.removeEventListener('storage', handleStorageEvent);
   }, [dispatch]);
 
   return (
@@ -30,18 +50,20 @@ function App() {
       {/* Public Routes */}
       <Route path={ROUTES.HOME} element={<Home />} />
       <Route path={ROUTES.LOGIN} element={<Login />} />
+      <Route path="/tutor/login" element={<Login />} />
       <Route path={ROUTES.SIGNUP} element={<Signup />} />
+      <Route path="/tutor/register" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+      <Route path="/admin/reset-password" element={<AdminResetPassword />} />
       <Route path="/verify-otp" element={<VerifyOTP />} />
       <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
 
-
       {/* Protected Student Routes */}
       <Route
-        path={ROUTES.STUDENT_DASHBOARD}
+        path="/student/dashboard"
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.STUDENT]}>
@@ -50,121 +72,58 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
-        path={ROUTES.STUDENT_COURSES}
+        path="/student"
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <div className="p-8">Student Courses - Coming Soon</div>
+              <StudentLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
-      <Route
-        path={ROUTES.STUDENT_PROFILE}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <div className="p-8">Student Profile - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<Navigate to="/student/dashboard" replace />} />
+        <Route path="profile" element={<StudentProfile />} />
+      </Route>
 
       {/* Protected Tutor Routes */}
       <Route
-        path={ROUTES.TUTOR_DASHBOARD}
+        path="/tutor"
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.TUTOR]}>
-              <TutorDashboard />
+              <TutorLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
-      <Route
-        path={ROUTES.TUTOR_COURSES}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.TUTOR]}>
-              <div className="p-8">Tutor Courses - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.TUTOR_PROFILE}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.TUTOR]}>
-              <div className="p-8">Tutor Profile - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.TUTOR_REVENUES}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.TUTOR]}>
-              <div className="p-8">Tutor Revenues - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<Navigate to="/tutor/dashboard" replace />} />
+        <Route path="dashboard" element={<TutorDashboard />} />
+        <Route path="profile" element={<TutorProfile />} />
+      </Route>
 
       {/* Protected Admin Routes */}
       <Route
-        path={ROUTES.ADMIN_DASHBOARD}
+        path="/admin"
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <AdminDashboard />
+              <AdminLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
-      <Route
-        path={ROUTES.ADMIN_USERS}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <div className="p-8">Admin Users - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.ADMIN_COURSES}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <div className="p-8">Admin Courses - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.ADMIN_CATEGORIES}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <div className="p-8">Admin Categories - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.ADMIN_TUTORS}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <div className="p-8">Admin Tutors - Coming Soon</div>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+      >
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="dashboard" element={<></>} />
+        <Route path="profile" element={<AdminProfile />} />
+        <Route path="tutors" element={<TutorManagement />} />
+        <Route path="students" element={<StudentManagement />} />
+      </Route>
+
+      {/* Fallback */}
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
