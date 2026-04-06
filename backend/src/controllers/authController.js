@@ -207,15 +207,11 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
 
     const otp = await createOTP(email.toLowerCase(), 'password_change');
 
-    try {
-        await sendPasswordResetOTP(user.email, user.name, otp);
-        res.status(HTTP_STATUS.OK).json({
-            success: true,
-            message: 'Password reset OTP sent to your email'
-        });
-    } catch (error) {
-        throw new Error('Failed to send reset OTP');
-    }
+    await sendPasswordResetOTP(user.email, user.name, otp);
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Password reset OTP sent to your email'
+    });
 });
 
 exports.verifyResetOTP = asyncHandler(async (req, res) => {

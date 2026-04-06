@@ -137,7 +137,9 @@ const authService = {
         }
 
         if (user.status === 'blocked') {
-            throw new Error('Your account has been blocked. Please contact admin.');
+            const error =  new Error('Your account has been blocked. Please contact admin.');
+            error.statusCode = 400;
+            throw error;
         }
 
         if (!user.isVerified && user.role !== USER_ROLES.ADMIN) {

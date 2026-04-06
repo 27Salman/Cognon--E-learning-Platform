@@ -6,7 +6,6 @@ const Home = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // Logged-in users should not see the home page — send them to their dashboard
   if (isAuthenticated && user) {
     const dashboard =
       user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD

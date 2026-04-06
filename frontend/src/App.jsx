@@ -22,10 +22,12 @@ import StudentManagement from './pages/admin/StudentManagement';
 import TutorLayout from './components/layouts/TutorLayout';
 import TutorProfile from './pages/tutor/TutorProfile';
 import TutorDashboard from './pages/tutor/TutorDashboard';
+//import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentLayout from './components/layouts/StudentLayout';
 import StudentProfile from './pages/student/StudentProfile';
 import { ROUTES, ROLES } from './utils/constants';
 import NotFound from './pages/NotFound';
+import Unauthorized from './pages/Unauthorized';
 import VerifyOTP from './pages/auth/VerifyOTP';
 
 function App() {
@@ -120,6 +122,7 @@ function App() {
       </Route>
 
       {/* Fallback */}
+      <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

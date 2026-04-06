@@ -1,8 +1,20 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { ROLES, ROUTES } from '../utils/constants';
+
+const getDashboard = (role) => {
+    switch (role) {
+        case ROLES.ADMIN:   return ROUTES.ADMIN_DASHBOARD;
+        case ROLES.TUTOR:   return ROUTES.TUTOR_DASHBOARD;
+        case ROLES.STUDENT: return ROUTES.STUDENT_DASHBOARD;
+        default:            return ROUTES.HOME;
+    }
+};
 
 export default function NotFound() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { user } = useSelector((state) => state.auth);
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -32,10 +44,10 @@ export default function NotFound() {
 
                 <div className="flex justify-center">
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate(getDashboard(user?.role), { replace: true })}
                         className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
                     >
-                        Go Back
+                        Go Home
                     </button>
                 </div>
             </div>

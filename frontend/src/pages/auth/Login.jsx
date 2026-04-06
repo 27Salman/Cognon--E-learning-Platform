@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
@@ -27,15 +27,22 @@ const Login = () => {
   const isLocked = failedAttempts >= MAX_ATTEMPTS;
   const attemptsRemaining = MAX_ATTEMPTS - failedAttempts;
 
+  // Blur the submit button the moment it locks
   useEffect(() => {
-    if (isLocked && submitBtnRef.current) submitBtnRef.current.blur();
+    if (isLocked && submitBtnRef.current) {
+      submitBtnRef.current.blur();
+    }
   }, [isLocked]);
 
-  useEffect(() => { return () => dispatch(clearError()); }, [dispatch]);
+  useEffect(() => {
+    return () => dispatch(clearError());
+  }, [dispatch]);
 
   if (isAuthenticated && user) {
-    const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
-      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD : ROUTES.STUDENT_DASHBOARD;
+    const dashboard =
+      user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
+      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
+      : ROUTES.STUDENT_DASHBOARD;
     const from = location.state?.from?.pathname || dashboard;
     return <Navigate to={from} replace />;
   }
@@ -65,6 +72,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLocked) return;
+
     const errors = validateForm();
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
 
@@ -74,7 +82,13 @@ const Login = () => {
       role: activeRole,
     }));
 
+    const errorMsg = resultAction.payload;
+    if (errorMsg?.includes('blocked')) {
+        toast.error(errorMsg);  
+    }
+
     if (loginUser.fulfilled.match(resultAction)) {
+      // Clear this email's counter on success
       setAttemptsByKey(prev => ({ ...prev, [attemptKey]: 0 }));
       toast.success('Login successful!');
     } else {
@@ -91,14 +105,30 @@ const Login = () => {
 
   const roleContent = {
     [ROLES.STUDENT]: {
-      title: 'Learn & Grow', subtitle: 'Access thousands of courses and earn certificates',
+      title: 'Learn & Grow',
+      subtitle: 'Access thousands of courses and earn certificates',
       gradient: 'from-primary-500 to-primary-700',
-      icon: (<svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none"><circle cx="200" cy="120" r="60" fill="white" opacity="0.9" /><rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" /><rect x="160" y="220" width="80" height="60" rx="5" fill="#7c3aed" opacity="0.8" /><path d="M 180 240 L 220 240 L 220 250 L 180 250 Z" fill="white" /></svg>),
+      icon: (
+        <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
+          <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
+          <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
+          <rect x="160" y="220" width="80" height="60" rx="5" fill="#7c3aed" opacity="0.8" />
+          <path d="M 180 240 L 220 240 L 220 250 L 180 250 Z" fill="white" />
+        </svg>
+      ),
     },
     [ROLES.TUTOR]: {
-      title: 'Teach & Inspire', subtitle: 'Create courses and empower learners worldwide',
+      title: 'Teach & Inspire',
+      subtitle: 'Create courses and empower learners worldwide',
       gradient: 'from-primary-500 to-primary-700',
-      icon: (<svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none"><circle cx="200" cy="120" r="60" fill="white" opacity="0.9" /><rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" /><rect x="100" y="280" width="200" height="100" rx="8" fill="white" opacity="0.7" /><path d="M 150 310 L 180 330 L 150 350 Z" fill="#7c3aed" /></svg>),
+      icon: (
+        <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
+          <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
+          <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
+          <rect x="100" y="280" width="200" height="100" rx="8" fill="white" opacity="0.7" />
+          <path d="M 150 310 L 180 330 L 150 350 Z" fill="#7c3aed" />
+        </svg>
+      ),
     },
   };
 
@@ -106,11 +136,12 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex">
+      {/* Left Side */}
       <div className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}>
         <div className="text-center text-white">
           <div className="mb-8 transition-all duration-500">{currentContent.icon}</div>
-          <h1 className="text-4xl font-bold mb-4">{currentContent.title}</h1>
-          <p className="text-xl opacity-90">{currentContent.subtitle}</p>
+          <h1 className="text-4xl font-bold mb-4 transition-all duration-300">{currentContent.title}</h1>
+          <p className="text-xl opacity-90 transition-all duration-300">{currentContent.subtitle}</p>
           <div className="mt-8 flex justify-center gap-2">
             <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.STUDENT ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
             <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.TUTOR ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
@@ -118,16 +149,19 @@ const Login = () => {
         </div>
       </div>
 
+      {/* Right Side */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
+
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon..!</h2>
             <p className="text-gray-600">Lorem Ipsum is simply dummy text of the printing and typesetting industry.</p>
           </div>
 
+          {/* Role Tabs */}
           <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
             <button type="button" onClick={() => handleRoleChange(ROLES.STUDENT)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${activeRole === ROLES.STUDENT ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
@@ -145,6 +179,7 @@ const Login = () => {
             </span>
           </div>
 
+          {/* Lockout banner */}
           {isLocked && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start gap-3">
@@ -159,6 +194,7 @@ const Login = () => {
             </div>
           )}
 
+          {/* Attempts warning */}
           {!isLocked && failedAttempts > 0 && (
             <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm text-amber-700 text-center">
@@ -169,20 +205,30 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input label="Email" type="email" name="email" value={formData.email}
-              onChange={handleChange} placeholder="Enter your email" error={formErrors.email} required />
+              onChange={handleChange} placeholder="Enter your email"
+              error={formErrors.email} required />
 
             <Input label="Password" type="password" name="password" value={formData.password}
               onChange={handleChange} placeholder="Enter your Password"
               error={formErrors.password} disabled={isLocked} required />
 
+            {/* Forgot Password — always same style */}
             <div className="flex items-center justify-end">
               <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                 Forgot Password?
               </Link>
             </div>
 
-            <button ref={submitBtnRef} type="submit" disabled={loading || isLocked}
-              className={`w-full py-3 px-4 font-medium rounded-lg transition-colors ${isLocked ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed'}`}>
+            <button
+              ref={submitBtnRef}
+              type="submit"
+              disabled={loading || isLocked}
+              className={`w-full py-3 px-4 font-medium rounded-lg transition-colors ${
+                isLocked
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed'
+              }`}
+            >
               {loading ? 'Loading...' : isLocked ? 'Login disabled' : 'Login'}
             </button>
           </form>
@@ -195,11 +241,20 @@ const Login = () => {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300"></div></div>
-              <div className="relative flex justify-center text-sm"><span className="px-4 bg-gray-50 text-gray-500">Sign in with</span></div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-gray-50 text-gray-500">Sign in with</span>
+              </div>
             </div>
             <button type="button" disabled={isLocked}
-              onClick={() => { if (isLocked) return; const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; window.location.href = `${API_URL}/auth/google?role=${activeRole}`; }}
-              className={`mt-4 w-full flex items-center justify-center px-4 py-3 border rounded-lg font-medium transition-colors ${isLocked ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
+              onClick={() => {
+                if (isLocked) return;
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                window.location.href = `${API_URL}/auth/google?role=${activeRole}`;
+              }}
+              className={`mt-4 w-full flex items-center justify-center px-4 py-3 border rounded-lg font-medium transition-colors ${
+                isLocked ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />

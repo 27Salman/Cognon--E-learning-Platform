@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchCurrentUser } from '../store/slices/authSlice';
 import Loader from '../components/common/Loader';
 
+
 const ProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
   const location = useLocation();
