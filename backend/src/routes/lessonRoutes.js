@@ -13,7 +13,6 @@ const {
     reorderLessons,
 } = require('../controllers/lessonController');
 
-// Handle both thumbnail and pdf in one request
 const lessonUpload = multer({
     storage: multer.diskStorage({
         destination: (req, file, cb) => {

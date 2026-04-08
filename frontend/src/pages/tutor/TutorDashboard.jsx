@@ -9,10 +9,8 @@ import {
 import { fetchDashboard } from '../../store/slices/courseSlice';
 import { TUTOR_APPROVAL_STATUS } from '../../utils/constants';
 
-// Generate weekly chart data from real course data
 const buildChartData = (courses = []) => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    // Distribute students and revenue across days for visual representation
     return days.map((day, i) => ({
         day,
         students: Math.round((courses.reduce((s, c) => s + (c.studentsCount || 0), 0) / 7) * (0.6 + Math.sin(i) * 0.4)),

@@ -20,11 +20,9 @@ const StudentDashboard = () => {
     dispatch(fetchEnrolledCourses());
   }, [dispatch]);
 
-  // Unenrolled courses for "Best Rated Courses"
   const enrolledIds = new Set(enrolledCourses.map(c => c._id));
   const unenrolled = catalog.filter(c => !enrolledIds.has(c._id)).slice(0, 4);
 
-  // Derive unique categories from catalog
   const uniqueCategories = [...new Set(catalog.map(c => c.category).filter(Boolean))].slice(0, 4);
 
   return (

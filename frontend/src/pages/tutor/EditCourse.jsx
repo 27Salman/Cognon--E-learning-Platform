@@ -44,7 +44,6 @@ export default function EditCourse() {
         setLoading(true);
         try {
             const res = await courseAPI.getCourseById(id);
-            // axios interceptor returns response.data directly: { success, data: {...course, lessons} }
             const course = res?.data || res;
             setForm({
                 title: course.title || '',

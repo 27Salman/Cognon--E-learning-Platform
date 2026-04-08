@@ -196,20 +196,16 @@ export default function CourseCatalog() {
         setShowSuggestions(false);
     };
 
-    // Set of enrolled course IDs for filtering
     const enrolledIds = new Set(enrolledCourses.map(c => c._id));
 
-    // Only unenrolled courses for discovery sections
     const unenrolled = catalog.filter(c => !enrolledIds.has(c._id));
 
-    // Derived sections — all exclude enrolled courses
     const recommended = unenrolled.slice(0, 4);
     const technical = unenrolled.filter(c =>
         ["Development", "Web Development", "Data Science"].includes(c.category)
     ).slice(0, 4);
     const topRated = unenrolled.slice().sort((a, b) => (b.enrolledCount || 0) - (a.enrolledCount || 0)).slice(0, 4);
 
-    // In-progress courses from enrolled (with progress < 100)
     const inProgress = enrolledCourses.filter(c => (c.progress || 0) < 100).slice(0, 6);
 
     return (

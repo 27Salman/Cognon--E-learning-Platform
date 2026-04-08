@@ -7,7 +7,6 @@ import { courseAPI } from '../../api/courseAPI';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
 
-// Toggle matching Figma: Listed = purple solid pill, Unlisted = red/pink with white circle right
 function StatusToggle({ course, onToggle }) {
     const isListed = course.status === 'published';
     const [loading, setLoading] = useState(false);
@@ -85,7 +84,6 @@ export default function TutorCourses() {
             await dispatch(deleteCourse(confirm.id)).unwrap();
             toast.success('Course deleted');
             setConfirm({ open: false, id: null, title: '' });
-            // If last item on page, go back one page
             const newTotal = pagination.totalCourses - 1;
             const newTotalPages = Math.ceil(newTotal / LIMIT);
             const targetPage = currentPage > newTotalPages ? Math.max(1, newTotalPages) : currentPage;

@@ -67,7 +67,6 @@ export default function CategoryPage() {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
 
-    // Support ?category= query param for "See all" links
     const params = new URLSearchParams(location.search);
     const focusCategory = params.get("category") || null;
 
@@ -76,7 +75,6 @@ export default function CategoryPage() {
         dispatch(fetchPublishedCourses({}));
     }, [dispatch]);
 
-    // Search suggestions
     useEffect(() => {
         if (searchValue.trim().length < 2) { setSuggestions([]); return; }
         const matches = catalog.filter(c =>
@@ -85,7 +83,6 @@ export default function CategoryPage() {
         setSuggestions(matches);
     }, [searchValue, catalog]);
 
-    // Debounced search fetch
     const handleSearch = (val) => {
         setSearchValue(val);
     };
@@ -94,7 +91,6 @@ export default function CategoryPage() {
         setSearchValue("");
     };
 
-    // Group courses by category — filter client-side if searching
     const filteredCatalog = searchValue.trim()
         ? catalog.filter(c =>
             c.title.toLowerCase().includes(searchValue.toLowerCase()) ||

@@ -19,7 +19,7 @@ const imageFilter = (req, file, cb) => {
     valid ? cb(null, true) : cb(new Error('Only image files are allowed'));
 };
 
-// Profile image upload (for admin, student, tutor)
+// Profile image upload 
 const profileStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dest = path.join(uploadDir, 'profiles');
@@ -77,7 +77,6 @@ const pdfStorage = multer.diskStorage({
     }
 });
 
-// Export separate upload instances
 module.exports = {
     uploadProfile: multer({ 
         storage: profileStorage, 

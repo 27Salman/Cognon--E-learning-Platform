@@ -38,7 +38,6 @@ export default function LessonViewer() {
     const currentProgressLesson = progressLessons.find(l => l._id?.toString() === currentLesson?._id?.toString());
     const isCompleted = currentProgressLesson?.isCompleted ?? false;
 
-    // "Student also bought" — unenrolled published courses excluding current
     const enrolledIds = new Set((currentCourse?.studentsEnrolled || []).map(s => s._id || s));
     const alsoBoought = catalog.filter(c => c._id !== courseId).slice(0, 4);
 
