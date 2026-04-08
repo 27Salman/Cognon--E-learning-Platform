@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const { restrictTo } = require('../middleware/roleMiddleware');
-const upload = require('../config/multer');
+const { uploadProfile } = require('../config/multer');
 const {
     getProfile,
     updateProfile,
@@ -11,20 +11,26 @@ const {
     getTutors,
     getStudents,
     blockUser,
-    unblockUser
+    unblockUser,
+    approveTutor,
+    rejectTutor,
 } = require('../controllers/adminController');
 
 router.use(protect);
 router.use(restrictTo('admin'));
 
 router.get('/profile', getProfile);
-router.put('/profile', upload.single('profileImage'), updateProfile);
+router.put('/profile', uploadProfile.single('profileImage'), updateProfile);
 
 router.post('/change-password/request', requestPasswordChange);
 router.post('/change-password/verify', verifyPasswordChange);
 
 router.get('/tutors', getTutors);
 router.get('/students', getStudents);
+
+router.patch('/tutors/:id/approve', approveTutor);
+router.patch('/tutors/:id/reject', rejectTutor);
+
 router.patch('/users/:id/block', blockUser);
 router.patch('/users/:id/unblock', unblockUser);
 

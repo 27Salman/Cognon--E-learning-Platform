@@ -29,4 +29,10 @@ export const adminAPI = {
 
     unblockUser: (userId) =>
         api.patch(`/admin/users/${userId}/unblock`),
+
+    approveTutor: (tutorId) =>
+        api.patch(`/admin/tutors/${tutorId}/approve`),
+
+    rejectTutor: (tutorId) =>
+        api.patch(`/admin/tutors/${tutorId}/reject`),
 };

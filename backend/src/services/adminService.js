@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { USER_ROLES, USER_STATUS } = require('../config/constants');
+const { USER_ROLES, USER_STATUS, TUTOR_APPROVAL_STATUS } = require('../config/constants');
 const { deleteOldProfileImage } = require('./fileService');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
@@ -125,6 +125,25 @@ const adminService = {
 
         return { tutors, summary, pagination};
 
+    },
+
+    async approveTutor(tutorId){
+        const tutor = await User.findById(tutorId);
+        if(!tutor || tutor.role !== USER_ROLES.TUTOR) throw new Error('Tutor not found');
+        if(tutor.tutorProfile.approvalStatus === TUTOR_APPROVAL_STATUS.APPROVED) throw new Error("Tutor is already approved");
+
+        tutor.tutorProfile.approvalStatus = TUTOR_APPROVAL_STATUS.APPROVED;
+        await tutor.save();
+        return tutor;
+    },
+
+    async rejectTutor(tutorId){
+        const tutor = await User.findById(tutorId);
+        if(!tutor || tutor.role !== USER_ROLES.TUTOR) throw new Error('tutor not found');
+
+        tutor.tutorProfile.approvalStatus = TUTOR_APPROVAL_STATUS.REJECTED;
+        await tutor.save();
+        return tutor;
     },
 
 

@@ -76,6 +76,12 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    clearAuth: (state) => {
+      state.isAuthenticated = false;
+      state.user = null;
+      state.token = null;
+      state.error = null;
+    },
     setAuthFromStorage: (state) => {
       state.user = getUser();
       state.token = getToken();
@@ -173,5 +179,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setAuthFromStorage, setCredentials } = authSlice.actions;
+export const { clearError, clearAuth, setAuthFromStorage, setCredentials } = authSlice.actions;
 export default authSlice.reducer;

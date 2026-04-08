@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
-import { User, BookOpen, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard } from 'lucide-react';
+import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard } from 'lucide-react';
 
 const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
 
@@ -22,13 +22,12 @@ const getAvatarColors = (name) => {
 };
 
 const menuItems = [
-    { name: 'Dashboard',     path: '/student/dashboard', icon: LayoutDashboard },
-    { name: 'Profile',       path: '/student/profile',   icon: User },
-    { name: 'My Courses',    path: '/student/courses',   icon: BookOpen },
-    { name: 'My Orders',     path: '/student/orders',    icon: ShoppingBag },
-    { name: 'Shopping Cart', path: '/student/cart',      icon: ShoppingCart },
-    { name: 'Wishlist',      path: '/student/wishlist',  icon: Heart },
-    { name: 'Certificates',  path: '/student/certificates', icon: Award },
+    { name: 'Dashboard',    path: '/student/dashboard',    icon: LayoutDashboard },
+    { name: 'Profile',      path: '/student/profile',      icon: User },
+    { name: 'My Courses',   path: '/student/my-courses',   icon: ShoppingBag },
+    { name: 'My Orders',    path: '/student/orders',       icon: ShoppingCart },
+    { name: 'Wishlist',     path: '/student/wishlist',     icon: Heart },
+    { name: 'Certificates', path: '/student/certificates', icon: Award },
 ];
 
 export default function StudentSidebar({ studentInfo }) {
@@ -38,9 +37,9 @@ export default function StudentSidebar({ studentInfo }) {
 
     const isActive = (path) => location.pathname === path;
 
-    const handleLogout = () => {
-        dispatch(logoutUser());
+    const handleLogout = async () => {
         localStorage.removeItem('studentInfo');
+        await dispatch(logoutUser());
         toast.success('Logged out successfully');
         navigate('/login', { replace: true });
     };

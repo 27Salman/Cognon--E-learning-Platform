@@ -38,3 +38,8 @@ exports.verifyPasswordChange = asyncHandler(async (req, res) => {
     await tutorService.verifyPasswordChange(req.user.id, req.user.email, newPassword, otp);
     res.status(HTTP_STATUS.OK).json({ success: true, message: 'Password changed successfully. Please login again.' });
 });
+
+exports.getDashboard = asyncHandler(async (req, res) => {
+    const data = await tutorService.getTutorDashboard(req.user.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data });
+});

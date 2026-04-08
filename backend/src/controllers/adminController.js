@@ -2,6 +2,8 @@ const asyncHandler = require('../middleware/asyncHandler');
 const adminService = require('../services/adminService');
 const { HTTP_STATUS } = require('../config/constants');
 
+// Profile
+
 exports.getProfile = asyncHandler(async (req, res) => {
     const data = await adminService.getProfile(req.user.id);
     res.status(HTTP_STATUS.OK).json({ success: true, data });
@@ -9,7 +11,11 @@ exports.getProfile = asyncHandler(async (req, res) => {
 
 exports.updateProfile = asyncHandler(async (req, res) => {
     const data = await adminService.updateProfile(req.user.id, req.body, req.file);
-    res.status(HTTP_STATUS.OK).json({ success: true, message: 'Profile updated successfully', data });
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Profile updated successfully',
+        data
+    });
 });
 
 exports.requestPasswordChange = asyncHandler(async (req, res) => {
@@ -20,7 +26,21 @@ exports.requestPasswordChange = asyncHandler(async (req, res) => {
 exports.verifyPasswordChange = asyncHandler(async (req, res) => {
     const { newPassword, otp } = req.body;
     await adminService.verifyPasswordChange(req.user.id, req.user.email, newPassword, otp);
-    res.status(HTTP_STATUS.OK).json({ success: true, message: 'Password changed successfully. Please login again.' });
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Password changed successfully. Please login again.'
+    });
+});
+
+// User Management
+
+exports.approveTutor = asyncHandler( async (req, res) => {
+    const tutor = await adminService.approveTutor(req.params.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, message: 'Tutor approved successful', data: tutor });
+});
+exports.rejectTutor = asyncHandler( async (req, res) => {
+    const tutor = await adminService.rejectTutor(req.params.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, message: 'Tutor rejected', data: tutor });
 });
 
 exports.getTutors = asyncHandler(async (req, res) => {
@@ -37,10 +57,18 @@ exports.getStudents = asyncHandler(async (req, res) => {
 
 exports.blockUser = asyncHandler(async (req, res) => {
     const user = await adminService.blockUser(req.params.id);
-    res.status(HTTP_STATUS.OK).json({ success: true, message: 'User blocked successfully', data: user });
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'User blocked successfully',
+        data: user
+    });
 });
 
 exports.unblockUser = asyncHandler(async (req, res) => {
     const user = await adminService.unblockUser(req.params.id);
-    res.status(HTTP_STATUS.OK).json({ success: true, message: 'User unblocked successfully', data: user });
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'User unblocked successfully',
+        data: user
+    });
 });

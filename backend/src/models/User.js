@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const { USER_ROLES, USER_STATUS } = require("../config/constants");
+const { USER_ROLES, USER_STATUS, TUTOR_APPROVAL_STATUS } = require("../config/constants");
 
 const userSchema = new mongoose.Schema(
     {
@@ -137,9 +137,10 @@ const userSchema = new mongoose.Schema(
                     ref: 'Course'
                 }
             ],
-            isApproved: {
-                type: Boolean,
-                default: false 
+            approvalStatus: {
+                type: String,
+                enum: Object.values(TUTOR_APPROVAL_STATUS),
+                default: TUTOR_APPROVAL_STATUS.PENDING,
             }
         },
 

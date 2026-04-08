@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import { useOutletContext } from 'react-router-dom';
 import { adminAPI } from '../../api/adminAPI';
+import { validateImageFile } from '../../utils/helpers';
 import { Camera, Pencil, User, Mail, Phone, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminChangePasswordModal from '../../components/admin/AdminChangePasswordModal';
 
 const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
 
-export default function AdminProfile({ adminInfo, onUpdateProfile }) {
+export default function AdminProfile() {
+  const { adminInfo, onUpdateProfile } = useOutletContext();
   const { user } = useSelector((state) => state.auth);
   const fileInputRef = useRef(null);
   const selectedFileRef = useRef(null);
@@ -41,6 +44,14 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    const error = validateImageFile(file);
+    if (error) {
+      toast.error(error);
+      e.target.value = '';
+      return;
+    }
+
     selectedFileRef.current = file;
     const reader = new FileReader();
     reader.onloadend = () => setFormData(prev => ({ ...prev, profileImage: reader.result }));
@@ -124,7 +135,6 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
         </div>
 
         <div className="flex gap-10">
-          {/* Left — avatar */}
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div className="relative">
               {isValidImageSrc(formData.profileImage) ? (
@@ -140,7 +150,6 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
                   </span>
                 </div>
               )}
-              {/* Camera only in edit mode */}
               {isEditing && (
                 <button
                   type="button"
@@ -153,7 +162,7 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
                 onChange={handleImageChange}
                 className="hidden"
               />
@@ -162,7 +171,6 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
             <p className="text-xs text-gray-500">System Administrator</p>
           </div>
 
-          {/* Right — fields */}
           <div className="flex-1 space-y-5">
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1.5">
@@ -204,7 +212,6 @@ export default function AdminProfile({ adminInfo, onUpdateProfile }) {
               />
             </div>
 
-            {/* Change Password */}
             <div className="pt-4 border-t border-gray-100">
               <button
                 onClick={() => setShowPasswordModal(true)}

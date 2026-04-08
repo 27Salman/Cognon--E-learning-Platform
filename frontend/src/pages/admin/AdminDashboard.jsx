@@ -1,45 +1,11 @@
 import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { logoutUser } from '../../store/slices/authSlice';
-import Button from '../../components/common/Button';
-import toast from 'react-hot-toast';
-import { ROUTES } from '../../utils/constants';
-import { FiShield } from 'react-icons/fi';
+import { useSelector } from 'react-redux';
 
 const AdminDashboard = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-
-  const handleLogout = async () => {
-    try {
-      await dispatch(logoutUser()).unwrap();
-      toast.success('Logged out successfully');
-      navigate('/admin/login');
-    } catch (error) {
-      toast.error('Logout failed');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-gray-900 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <FiShield className="text-primary-500 text-3xl" />
-              <h1 className="text-2xl font-bold text-white">Cognon Admin</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-300">Administrator: {user?.name}</span>
-              <Button variant="danger" size="sm" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-4">Admin Dashboard</h2>
@@ -78,3 +44,7 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+
+
+

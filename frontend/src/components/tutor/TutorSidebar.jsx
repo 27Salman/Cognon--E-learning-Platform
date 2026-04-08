@@ -21,9 +21,9 @@ export default function TutorSidebar({ tutorInfo }) {
 
     const isActive = (path) => location.pathname === path;
 
-    const handleLogout = () => {
-        dispatch(logoutUser());
+    const handleLogout = async () => {
         localStorage.removeItem('tutorInfo');
+        await dispatch(logoutUser());
         toast.success('Logged out successfully');
         navigate('/login', { replace: true });
     };
