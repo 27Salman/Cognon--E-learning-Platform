@@ -2,7 +2,7 @@ const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 
 const lessonService = {
-    async createLesson(courseId, tutorId, lessonData) {
+    async createLesson(courseId, tutorId, lessonData, files = {}) {
         const { title, description, videoUrl, duration, order } = lessonData;
 
         const course = await Course.findOne({ _id: courseId, tutor: tutorId });
@@ -19,17 +19,17 @@ const lessonService = {
             videoUrl,
             duration: duration || 0,
             order,
-            course: courseId
+            course: courseId,
+            thumbnail: files.thumbnail ? files.thumbnail[0].filename : null,
+            pdfNotes: files.pdfNotes ? files.pdfNotes[0].filename : null,
         });
 
         await lesson.save();
-
         await this.updateCourseTotals(courseId);
-
         return await Lesson.findById(lesson._id).populate('course', 'title');
     },
 
-    async updateLesson(lessonId, tutorId, updateData) {
+    async updateLesson(lessonId, tutorId, updateData, files = {}) {
         const lesson = await Lesson.findById(lessonId).populate('course');
         if (!lesson) throw new Error('Lesson not found');
 
@@ -55,6 +55,8 @@ const lessonService = {
         if (videoUrl !== undefined) lesson.videoUrl = videoUrl;
         if (duration !== undefined) lesson.duration = duration;
         if (order) lesson.order = order;
+        if (files.thumbnail) lesson.thumbnail = files.thumbnail[0].filename;
+        if (files.pdfNotes) lesson.pdfNotes = files.pdfNotes[0].filename;
 
         await lesson.save();
 

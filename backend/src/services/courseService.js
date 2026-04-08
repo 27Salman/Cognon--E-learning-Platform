@@ -1,7 +1,7 @@
 const Course = require('../models/Course');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
-const { COURSE_STATUS, USER_ROLES } = require('../config/constants');
+const { COURSE_STATUS } = require('../config/constants');
 
 const courseService = {
 
@@ -21,7 +21,7 @@ const courseService = {
 
         await User.findByIdAndUpdate(
             tutorId,
-            { $push: { 'tutorProfile.courseCreated' : course._id } }
+            { $push: { 'tutorProfile.coursesCreated': course._id } }
         );
 
         return await Course.findById(course._id).populate('tutor', 'name email');
@@ -54,7 +54,7 @@ const courseService = {
 
         await User.findByIdAndUpdate(
             tutorId,
-            { $pull: { 'tutorProfile.courseCreated': courseId } }
+            { $pull: { 'tutorProfile.coursesCreated': courseId } }
         );
 
         await User.updateMany(
@@ -66,7 +66,7 @@ const courseService = {
         return { message: 'Course deleted successfully' };
     },
 
-    async getTutorCourses(tutorId, page = 1, limit = 10){
+    async getTutorCourses(tutorId, page = 1, limit = 5){
         const skip = (page - 1) * limit;
 
         const courses = await Course.find({ tutor: tutorId })
@@ -89,7 +89,7 @@ const courseService = {
         };
     },
 
-    async getAllPublishedCourses(filters = {}, page = 1, limit = 10){
+    async getAllPublishedCourses(filters = {}, page = 1, limit = 5){
         const skip = (page -1) * limit;
         const query = { status: COURSE_STATUS.PUBLISHED };
 
@@ -124,7 +124,6 @@ const courseService = {
 
         if (!course) throw new Error('Course not found');
 
-        // If course is not published, only tutor can view it
         if (course.status !== COURSE_STATUS.PUBLISHED) {
             if (!userId || course.tutor._id.toString() !== userId) {
                 throw new Error('Course not available');
@@ -162,7 +161,7 @@ const courseService = {
             studentId,
             {
                 $push: {
-                    'studentProfile.enrolledCourses:': {
+                    'studentProfile.enrolledCourses': {
                         courseId: courseId,
                         enrolledAt: new Date(),
                         progress: 0
@@ -208,7 +207,27 @@ const courseService = {
                 hasPrev: page > 1
             }
         };
-    }
+    },
+
+    async checkEnrollmentStatus(studentId, courseId){
+        const student = await User.findById(studentId);
+        if(!student) throw new Error('Student not found');
+
+        const enrollment = student.studentProfile.enrolledCourses.find(
+            ec => ec.courseId.toString() === courseId
+        );
+
+        if(!enrollment){
+            return { isEnrolled: false, progress: 0, completedLessons: [] }
+        }
+
+        return {
+            isEnrolled: true,
+            enrolledAt: enrollment.enrolledAt,
+            progress: enrollment.progress,
+            completedLessons: enrollment.completedLessons
+        };
+    },
 
 }
 

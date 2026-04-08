@@ -3,12 +3,12 @@ const lessonService = require('../services/lessonService');
 const { HTTP_STATUS } = require('../config/constants');
 
 exports.createLesson = asyncHandler(async (req, res) => {
-    const data = await lessonService.createLesson(req.params.courseId, req.user.id, req.body);
+    const data = await lessonService.createLesson(req.params.courseId, req.user.id, req.body, req.files || {});
     res.status(HTTP_STATUS.CREATED).json({ success: true, message: 'Lesson created successfully', data });
 });
 
 exports.updateLesson = asyncHandler(async (req, res) => {
-    const data = await lessonService.updateLesson(req.params.id, req.user.id, req.body);
+    const data = await lessonService.updateLesson(req.params.id, req.user.id, req.body, req.files || {});
     res.status(HTTP_STATUS.OK).json({ success: true, message: 'Lesson updated successfully', data });
 });
 

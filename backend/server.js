@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ path: __dirname + '/.env' });
 
 const path = require('path');
 const express = require("express");
@@ -11,12 +11,18 @@ const connectDB = require("./src/config/db");
 const { HTTP_STATUS } = require('./src/config/constants');
 const { errorHandler, notFound } = require('./src/middleware/errorMiddleware');
 
-require('./src/controllers/googleAuthController'); // Initialize passport strategies
+require('./src/controllers/googleAuthController'); 
 
 const { authRoutes } = require('./src/routes/authRoutes');
 const { adminRoutes } = require('./src/routes/adminRoutes');
 const { tutorRoutes } = require('./src/routes/tutorRoutes');
 const { userRoutes } = require('./src/routes/userRoutes');
+const { courseRoutes } = require('./src/routes/courseRoutes');
+const { lessonRoutes } = require('./src/routes/lessonRoutes');
+const { chatRoutes } = require('./src/routes/chatRoutes');
+const { progressRoutes } = require('./src/routes/progressRoutes');
+
+
 
 const PORT = process.env.PORT || 5000;
 
@@ -49,6 +55,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tutor', tutorRoutes);
 app.use('/api/student', userRoutes);
+
+
+app.use('/api/courses', courseRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/courses', progressRoutes);
+
 
 app.get('/api/health', (req, res) => {
   res.status(HTTP_STATUS.OK).json({

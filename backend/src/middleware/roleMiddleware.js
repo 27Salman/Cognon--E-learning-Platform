@@ -15,7 +15,6 @@ exports.restrictTo = (...roles) => {
                 message: `Access denied. This route is restricted to: ${roles.join(', ')}`
             });
         }
-
         next();
     };
 };

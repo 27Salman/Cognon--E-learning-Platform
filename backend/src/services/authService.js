@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const { USER_ROLES } = require("../config/constants");
 const { sendVerificationOTP } = require('./emailService');
-const { generateOTP, createOTP } = require('./otpService');
+const { createOTP } = require('./otpService');
 
 const authService = {
     async registerUser(userData) {
@@ -30,7 +30,9 @@ const authService = {
             });
 
             if (verifiedUser) {
-                throw new Error(`This email is already registered as ${role}. Please login.`);
+                const err = new Error(`This email is already registered as ${role}. Please login.`);
+                err.statusCode = 409;
+                throw err;
             }
 
             const userRole = role || USER_ROLES.STUDENT;
@@ -137,9 +139,7 @@ const authService = {
         }
 
         if (user.status === 'blocked') {
-            const error =  new Error('Your account has been blocked. Please contact admin.');
-            error.statusCode = 400;
-            throw error;
+            throw new Error('Your account has been blocked. Please contact admin.');
         }
 
         if (!user.isVerified && user.role !== USER_ROLES.ADMIN) {

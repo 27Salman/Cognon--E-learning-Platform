@@ -4,12 +4,16 @@ const USER_ROLES = {
     STUDENT: 'student'
 };
 
+const TUTOR_APPROVAL_STATUS = {
+    PENDING: 'pending',
+    APPROVED: 'approved',
+    REJECTED: 'rejected',
+}
+
 const USER_STATUS = {
-    ACTIVE: 'active',       
-    PENDING: 'pending',         
+    ACTIVE: 'active',                
     BLOCKED: 'blocked',         
-    INACTIVE: 'inactive',
-    APPROVAL : 'pending'       
+    INACTIVE: 'inactive',     
 };
 
 const COURSE_STATUS = {
@@ -84,6 +88,7 @@ const REGEX = {
 
 module.exports = {
     USER_ROLES,
+    TUTOR_APPROVAL_STATUS,
     USER_STATUS,
     COURSE_STATUS,
     COURSE_DIFFICULTY,

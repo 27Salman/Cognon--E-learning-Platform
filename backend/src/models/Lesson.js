@@ -20,7 +20,7 @@ const lessonSchema = new mongoose.Schema(
             validate: {
                 validator: function(v) {
                     if (!v) return true; // allow empty
-                    return /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(v);
+                    return /^https?:\/\/.+/.test(v);
                 },
                 message: 'Please provide a valid video URL'
             }
@@ -39,6 +39,14 @@ const lessonSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Course',
             required: [true, 'Lesson must belong to a course']
+        },
+        thumbnail: {
+            type: String,
+            default: null
+        },
+        pdfNotes: {
+            type: String,
+            default: null
         }
     },
     {
@@ -54,6 +62,14 @@ lessonSchema.index({ course: 1, createdAt: -1 });
 lessonSchema.methods.toJSON = function() {
     const lesson = this.toObject();
     delete lesson.__v;
+    if (lesson.thumbnail) {
+        const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+        lesson.thumbnailURL = `${BASE_URL}/uploads/lessons/${lesson.thumbnail}`;
+    }
+    if (lesson.pdfNotes) {
+        const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+        lesson.pdfNotesURL = `${BASE_URL}/uploads/pdfs/${lesson.pdfNotes}`;
+    }
     return lesson;
 };
 
