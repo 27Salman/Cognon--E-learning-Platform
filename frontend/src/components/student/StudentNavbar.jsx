@@ -23,8 +23,7 @@ export default function StudentNavbar({ studentInfo }) {
 
     return (
         <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-6">
-                <div className="flex items-center justify-between h-16">
+            <div className="flex items-center justify-between h-16 px-6 w-full">
                     {/* Logo */}
                     <h1
                         className="text-2xl font-bold text-purple-600 cursor-pointer"
@@ -35,11 +34,11 @@ export default function StudentNavbar({ studentInfo }) {
 
                     {/* Nav links */}
                     <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-                        <a href="#home" className="text-gray-700 hover:text-purple-600 transition">Home</a>
-                        <a href="#about" className="text-gray-700 hover:text-purple-600 transition">About</a>
-                        <a href="#courses" className="text-gray-700 hover:text-purple-600 transition">Courses</a>
-                        <a href="#blog" className="text-gray-700 hover:text-purple-600 transition">Blog</a>
-                        <a href="#contact" className="text-gray-700 hover:text-purple-600 transition">Contact</a>
+                        <button onClick={() => navigate('/student/dashboard')} className="text-gray-700 hover:text-purple-600 transition">Home</button>
+                        <button onClick={() => navigate('/student/dashboard')} className="text-gray-700 hover:text-purple-600 transition">About Us</button>
+                        <button onClick={() => navigate('/student/categories')} className="text-gray-700 hover:text-purple-600 transition">Categories</button>
+                        <button onClick={() => navigate('/student/courses')} className="text-gray-700 hover:text-purple-600 transition">Courses</button>
+                        <button onClick={() => navigate('/student/dashboard')} className="text-gray-700 hover:text-purple-600 transition">Contact</button>
                     </nav>
 
                     {/* Right icons */}
@@ -84,7 +83,6 @@ export default function StudentNavbar({ studentInfo }) {
                             )}
                         </button>
                     </div>
-                </div>
             </div>
         </header>
     );

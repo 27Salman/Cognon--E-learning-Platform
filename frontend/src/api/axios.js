@@ -8,6 +8,8 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+let isLoggingOut = false;
+
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
@@ -20,12 +22,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isLoggingOut) {
+      isLoggingOut = true;
       clearAuthData();
 
       import('../store/store').then(({ default: store }) => {
-        import('../store/slices/authSlice').then(({ logoutUser }) => {
-          store.dispatch(logoutUser());
+        import('../store/slices/authSlice').then(({ clearAuth }) => {
+          store.dispatch(clearAuth());
+          isLoggingOut = false;
         });
       });
 

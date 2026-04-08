@@ -1,6 +1,9 @@
 import api from './axios';
 
 export const tutorAPI = {
+
+    getDashboard: () => api.get('/tutor/dashboard'),
+
     getProfile: () => api.get('/tutor/profile'),
     
     updateProfile: (formData) => {

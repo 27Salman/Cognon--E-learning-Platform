@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import AdminNavbar from '../admin/AdminNavbar';
 import AdminSidebar from '../admin/AdminSidebar';
-import ProfileSection from '../../pages/admin/AdminProfile';
 import Footer from '../common/Footer';
 import { adminAPI } from '../../api/adminAPI';
 
 export default function AdminLayout() {
-  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
 
   const [adminInfo, setAdminInfo] = useState(() => {
@@ -22,13 +20,17 @@ export default function AdminLayout() {
         return parsed;
       }
       return {};
-    } catch { return {}; }
+    } catch {
+      return {};
+    }
   });
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     adminAPI.getProfile()
       .then((res) => {
+        if (cancelled) return;
         const data = res.data || res;
         const profile = {
           _id: data._id,
@@ -42,6 +44,7 @@ export default function AdminLayout() {
         localStorage.setItem('adminInfo', JSON.stringify(profile));
       })
       .catch(() => {
+        if (cancelled) return;
         if (user) {
           setAdminInfo(prev => ({
             ...prev,
@@ -52,6 +55,7 @@ export default function AdminLayout() {
           }));
         }
       });
+    return () => { cancelled = true; };
   }, [user?._id]);
 
   const handleUpdateProfile = (updatedData) => {
@@ -61,8 +65,6 @@ export default function AdminLayout() {
     localStorage.setItem('adminInfo', JSON.stringify(toStore));
   };
 
-  const isProfileRoute = location.pathname === '/admin/profile' || location.pathname === '/admin';
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <AdminNavbar adminInfo={adminInfo} />
@@ -71,10 +73,7 @@ export default function AdminLayout() {
         <AdminSidebar adminInfo={adminInfo} />
 
         <main className="flex-1 overflow-y-auto">
-          {isProfileRoute
-            ? <ProfileSection adminInfo={adminInfo} onUpdateProfile={handleUpdateProfile} />
-            : <Outlet />
-          }
+          <Outlet context={{ adminInfo, onUpdateProfile: handleUpdateProfile }} />
         </main>
       </div>
 

@@ -33,9 +33,9 @@ export default function TutorManagement() {
             if (filter) params.status = filter;
             if (search) params.search = search;
             const res = await adminAPI.getTutors(params);
-            setTutors(res.data.data.tutors);
-            setSummary(res.data.data.summary);
-            setPagination(res.data.data.pagination);
+            setTutors(res.data.tutors);
+            setSummary(res.data.summary);
+            setPagination(res.data.pagination);
         } catch {
             toast.error('Failed to load tutors', { id: 'fetch-tutors' });
         } finally {
@@ -59,7 +59,7 @@ export default function TutorManagement() {
                 ? await adminAPI.approveTutor(tutorId)
                 : await adminAPI.rejectTutor(tutorId);
 
-            const updated = res.data.data;
+            const updated = res.data;
             setTutors(prev => prev.map(t => t._id === tutorId ? updated : t));
             setSelectedTutor(updated);
             toast.success(action === 'approve' ? 'Tutor approved' : 'Tutor rejected');
@@ -82,7 +82,7 @@ export default function TutorManagement() {
                 ? await adminAPI.blockUser(userId)
                 : await adminAPI.unblockUser(userId);
 
-            const updated = res.data.data;
+            const updated = res.data;
             setTutors(prev => {
                 const mapped = prev.map(t => t._id === userId ? updated : t);
                 if (filter) return mapped.filter(t => t.status === filter);

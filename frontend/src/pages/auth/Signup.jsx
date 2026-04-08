@@ -183,8 +183,7 @@ const Signup = () => {
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon...!</h2>
             <p className="text-gray-600">
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
-            </p>
+Cognon provides a smart platform for learning, growing, and achieving your goals faster.            </p>
           </div>
 
           {/* Role Tabs */}

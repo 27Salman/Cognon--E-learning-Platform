@@ -22,13 +22,26 @@ import StudentManagement from './pages/admin/StudentManagement';
 import TutorLayout from './components/layouts/TutorLayout';
 import TutorProfile from './pages/tutor/TutorProfile';
 import TutorDashboard from './pages/tutor/TutorDashboard';
-//import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentLayout from './components/layouts/StudentLayout';
 import StudentProfile from './pages/student/StudentProfile';
 import { ROUTES, ROLES } from './utils/constants';
 import NotFound from './pages/NotFound';
 import Unauthorized from './pages/Unauthorized';
 import VerifyOTP from './pages/auth/VerifyOTP';
+import TutorCourses from './pages/tutor/TutorCourses';
+import CreateCourse from './pages/tutor/CreateCourse';
+import EditCourse from './pages/tutor/EditCourse';
+import TutorCourseDetail from './pages/tutor/TutorCourseDetail';
+import TutorChat from './pages/tutor/TutorChat';
+import CourseCatalog from './pages/student/CourseCatalog';
+import CourseDetails from './pages/student/CourseDetails';
+import MyCourses from './pages/student/MyCourses';
+import CourseLessons from './pages/student/CourseLessons';
+import LessonViewer from './pages/student/LessonViewer';
+import CategoryPage from './pages/student/CategoryPage';
+
+
 
 function App() {
   const dispatch = useDispatch();
@@ -85,7 +98,51 @@ function App() {
       >
         <Route index element={<Navigate to="/student/dashboard" replace />} />
         <Route path="profile" element={<StudentProfile />} />
+        <Route path="my-courses" element={<MyCourses />} />
+        <Route path="courses/:courseId/lessons" element={<CourseLessons />} />
       </Route>
+
+      {/* Student Course Catalog - standalone full page */}
+      <Route
+        path="/student/courses"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+              <CourseCatalog />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/categories"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+              <CategoryPage />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/courses/:id"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+              <CourseDetails />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/courses/:courseId/learn"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+              <LessonViewer />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
 
       {/* Protected Tutor Routes */}
       <Route
@@ -101,6 +158,12 @@ function App() {
         <Route index element={<Navigate to="/tutor/dashboard" replace />} />
         <Route path="dashboard" element={<TutorDashboard />} />
         <Route path="profile" element={<TutorProfile />} />
+        <Route path="courses" element={<TutorCourses />} />
+        <Route path="courses/new" element={<CreateCourse />} />
+        <Route path="courses/:id" element={<TutorCourseDetail />} />
+        <Route path="courses/:id/edit" element={<EditCourse />} />
+        <Route path="chat" element={<TutorChat />} />
+
       </Route>
 
       {/* Protected Admin Routes */}
@@ -115,7 +178,7 @@ function App() {
         }
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="dashboard" element={<></>} />
+        <Route path="dashboard" element={<AdminDashboard/>} />
         <Route path="profile" element={<AdminProfile />} />
         <Route path="tutors" element={<TutorManagement />} />
         <Route path="students" element={<StudentManagement />} />

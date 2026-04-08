@@ -6,6 +6,12 @@ export const ROLES = {
   STUDENT: 'student',
 };
 
+export const TUTOR_APPROVAL_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: ' rejected'
+}
+
 export const USER_STATUS = {
   ACTIVE: 'active',
   BLOCKED: 'blocked',
@@ -60,6 +66,7 @@ export const ROUTES = {
   ADMIN_COURSES: '/admin/courses',
   ADMIN_CATEGORIES: '/admin/categories',
   ADMIN_TUTORS: '/admin/tutors',
+  ADMIN_STUDENTS: '/admin/students',
 };
 
 export const STORAGE_KEYS = {

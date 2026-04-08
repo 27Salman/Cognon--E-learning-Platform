@@ -1,0 +1,369 @@
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { fetchPublishedCourses, fetchEnrolledCourses, setFilters } from "../../store/slices/studentSlice";
+import StudentNavbar from "../../components/student/StudentNavbar";
+import Footer from "../../components/common/Footer";
+import { studentAPI } from "../../api/studentAPI";
+import {
+    BookOpen, Search, X, ChevronLeft, ChevronRight,
+    Clock, Users, Heart, Monitor, Briefcase, Camera,
+    TrendingUp, Palette, Code2, BarChart2
+} from "lucide-react";
+
+const CATEGORIES = [
+    { label: "Design",            icon: Palette,   color: "bg-green-100 text-green-600" },
+    { label: "Digital Marketing", icon: TrendingUp, color: "bg-blue-100 text-blue-500" },
+    { label: "Development",       icon: Code2,      color: "bg-purple-100 text-purple-600" },
+    { label: "Business",          icon: Briefcase,  color: "bg-teal-100 text-teal-600" },
+    { label: "Marketing",         icon: BarChart2,  color: "bg-yellow-100 text-yellow-600" },
+    { label: "Photography",       icon: Camera,     color: "bg-red-100 text-red-500" },
+    { label: "Editing",           icon: Monitor,    color: "bg-gray-100 text-gray-600" },
+    { label: "Web Development",   icon: Code2,      color: "bg-teal-100 text-teal-500" },
+];
+
+function formatDuration(minutes) {
+    if (!minutes || minutes === 0) return null;
+    if (minutes < 60) return `${minutes} min`;
+    const hrs = Math.round(minutes / 60);
+    return `${hrs} hr${hrs !== 1 ? 's' : ''}`;
+}
+
+function CourseCardLarge({ course }) {
+    const navigate = useNavigate();
+    return (
+        <div
+            onClick={() => navigate(`/student/courses/${course._id}`)}
+            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden"
+        >
+            <div className="w-full h-40 bg-gray-100 overflow-hidden">
+                {course.thumbnailURL ? (
+                    <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover" />
+                ) : (
+                    <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                        <BookOpen className="w-10 h-10 text-purple-300" />
+                    </div>
+                )}
+            </div>
+            <div className="p-3">
+                <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                    <span className="text-purple-500 font-medium">{course.category || "Design"}</span>
+                    {formatDuration(course.totalDuration) && (
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatDuration(course.totalDuration)}</span>
+                    )}
+                </div>
+                <h3 className="font-semibold text-gray-800 text-sm leading-snug mb-1 line-clamp-2">{course.title}</h3>
+                {course.description && <p className="text-xs text-gray-500 line-clamp-2 mb-2">{course.description}</p>}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center text-xs font-bold text-purple-700">
+                            {course.tutor?.name?.charAt(0)?.toUpperCase() || "T"}
+                        </div>
+                        <span className="text-xs text-gray-600">{course.tutor?.name || "Tutor"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        {course.originalPrice && course.originalPrice > course.price && (
+                            <span className="text-xs text-gray-400 line-through">₹{course.originalPrice}</span>
+                        )}
+                        <span className="text-purple-600 font-bold text-sm">
+                            {course.price === 0 ? "Free" : `₹${course.price}`}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function CourseCardCompact({ course }) {
+    const navigate = useNavigate();
+    return (
+        <div
+            onClick={() => navigate(`/student/courses/${course._id}`)}
+            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden"
+        >
+            <div className="relative w-full h-36 bg-gray-100 overflow-hidden">
+                {course.thumbnailURL ? (
+                    <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover" />
+                ) : (
+                    <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                        <BookOpen className="w-8 h-8 text-purple-300" />
+                    </div>
+                )}
+                <button
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-2 right-2 p-1 bg-white rounded-full shadow"
+                >
+                    <Heart className="w-3.5 h-3.5 text-gray-400" />
+                </button>
+            </div>
+            <div className="p-3">
+                <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                    <span className="text-purple-500 font-medium">{course.category || "Design"}</span>
+                    {formatDuration(course.totalDuration) && (
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatDuration(course.totalDuration)}</span>
+                    )}
+                </div>
+                <h3 className="font-semibold text-gray-800 text-sm leading-snug line-clamp-2 mb-2">{course.title}</h3>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-xs font-bold text-purple-700">
+                            {course.tutor?.name?.charAt(0)?.toUpperCase() || "T"}
+                        </div>
+                        <span className="text-xs text-gray-600">{course.tutor?.name || "Tutor"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        {course.originalPrice && course.originalPrice > course.price && (
+                            <span className="text-xs text-gray-400 line-through">₹{course.originalPrice}</span>
+                        )}
+                        <span className="text-purple-600 font-bold text-sm">
+                            {course.price === 0 ? "Free" : `₹${course.price}`}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default function CourseCatalog() {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { catalog, enrolledCourses, filters, loading } = useSelector(state => state.student);
+
+    const [studentInfo, setStudentInfo] = useState(() => {
+        try { return JSON.parse(localStorage.getItem("studentInfo")) || {}; } catch { return {}; }
+    });
+    const [searchValue, setSearchValue] = useState(filters.search || "");
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [activeCategory, setActiveCategory] = useState(filters.category || "");
+    const [filteredCourses, setFilteredCourses] = useState([]);
+    const [isFiltering, setIsFiltering] = useState(false);
+    const debounceRef = useRef(null);
+    const searchRef = useRef(null);
+
+    useEffect(() => {
+        studentAPI.getProfile()
+            .then(res => setStudentInfo(res.data || res))
+            .catch(() => {});
+        dispatch(fetchPublishedCourses({}));
+        dispatch(fetchEnrolledCourses());
+    }, [dispatch]);
+
+    // Search suggestions
+    useEffect(() => {
+        if (searchValue.trim().length < 2) { setSuggestions([]); return; }
+        const matches = catalog
+            .filter(c => c.title.toLowerCase().includes(searchValue.toLowerCase()))
+            .slice(0, 5);
+        setSuggestions(matches);
+    }, [searchValue, catalog]);
+
+    // Filter courses when search/category changes
+    useEffect(() => {
+        const hasFilter = searchValue.trim() || activeCategory;
+        setIsFiltering(!!hasFilter);
+        if (!hasFilter) { setFilteredCourses([]); return; }
+        let result = [...catalog];
+        if (activeCategory) result = result.filter(c => c.category === activeCategory);
+        if (searchValue.trim()) result = result.filter(c =>
+            c.title.toLowerCase().includes(searchValue.toLowerCase()) ||
+            (c.description || "").toLowerCase().includes(searchValue.toLowerCase())
+        );
+        setFilteredCourses(result);
+    }, [searchValue, activeCategory, catalog]);
+
+    const handleSearch = (val) => {
+        setSearchValue(val);
+        dispatch(setFilters({ search: val }));
+    };
+
+    const handleCategoryClick = (label) => {
+        const next = activeCategory === label ? "" : label;
+        setActiveCategory(next);
+        dispatch(setFilters({ category: next }));
+    };
+
+    const handleClearFilters = () => {
+        setSearchValue("");
+        setActiveCategory("");
+        dispatch(setFilters({ search: "", category: "" }));
+    };
+
+    const handleSuggestionClick = (course) => {
+        navigate(`/student/courses/${course._id}`);
+        setShowSuggestions(false);
+    };
+
+    // Set of enrolled course IDs for filtering
+    const enrolledIds = new Set(enrolledCourses.map(c => c._id));
+
+    // Only unenrolled courses for discovery sections
+    const unenrolled = catalog.filter(c => !enrolledIds.has(c._id));
+
+    // Derived sections — all exclude enrolled courses
+    const recommended = unenrolled.slice(0, 4);
+    const technical = unenrolled.filter(c =>
+        ["Development", "Web Development", "Data Science"].includes(c.category)
+    ).slice(0, 4);
+    const topRated = unenrolled.slice().sort((a, b) => (b.enrolledCount || 0) - (a.enrolledCount || 0)).slice(0, 4);
+
+    // In-progress courses from enrolled (with progress < 100)
+    const inProgress = enrolledCourses.filter(c => (c.progress || 0) < 100).slice(0, 6);
+
+    return (
+        <div className="min-h-screen bg-white flex flex-col">
+            <StudentNavbar studentInfo={studentInfo} />
+
+            <div className="flex-1">
+                        {/* Welcome back / In Progress */}
+                        {inProgress.length > 0 && (
+                            <div className="bg-[#ede9f8] py-8 px-6">
+                                <div className="max-w-7xl mx-auto">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-lg font-bold text-gray-800">Welcome back, ready for your next lesson?</h2>
+                                        <button
+                                            onClick={() => navigate("/student/my-courses")}
+                                            className="text-sm text-purple-600 font-medium hover:underline"
+                                        >
+                                            View history
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {inProgress.map(course => (
+                                            <div
+                                                key={course._id}
+                                                onClick={() => navigate(`/student/courses/${course._id}/learn`)}
+                                                className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden"
+                                            >
+                                                <div className="w-full h-32 bg-gray-100 overflow-hidden">
+                                                    {course.thumbnailURL ? (
+                                                        <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                                                            <BookOpen className="w-8 h-8 text-purple-300" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="p-3">
+                                                    <h3 className="font-semibold text-gray-800 text-xs truncate mb-1">{course.title}</h3>
+                                                    <div className="flex items-center gap-1.5 mb-2">
+                                                        <div className="w-4 h-4 rounded-full bg-purple-200 flex items-center justify-center text-xs font-bold text-purple-700 flex-shrink-0">
+                                                            {course.tutor?.name?.charAt(0)?.toUpperCase() || "T"}
+                                                        </div>
+                                                        <span className="text-xs text-gray-500 truncate">{course.tutor?.name}</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
+                                                        <div
+                                                            className="bg-purple-600 h-1.5 rounded-full transition-all"
+                                                            style={{ width: `${course.progress || 0}%` }}
+                                                        />
+                                                    </div>
+                                                    <p className="text-xs text-gray-400">
+                                                        {course.progress || 0}% complete
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Categories */}
+                        <div className="max-w-7xl mx-auto px-6 py-10">
+                            <h2 className="text-xl font-bold text-gray-800 mb-6">Choice favourite course from top category</h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                {CATEGORIES.map(({ label, icon: Icon, color }) => (
+                                    <button
+                                        key={label}
+                                        onClick={() => handleCategoryClick(label)}
+                                        className="bg-white border border-gray-100 rounded-xl p-5 flex flex-col items-center gap-3 hover:shadow-md transition text-center"
+                                    >
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
+                                            <Icon className="w-6 h-6" />
+                                        </div>
+                                        <span className="font-semibold text-gray-800 text-sm">{label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Recommended for you */}
+                        {recommended.length > 0 && (
+                            <div className="bg-[#ede9f8] py-10 px-6">
+                                <div className="max-w-7xl mx-auto">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-xl font-bold text-gray-800">Recommended for you</h2>
+                                        <button className="text-sm text-purple-600 font-medium hover:underline">See all</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                                        {recommended.map(c => <CourseCardLarge key={c._id} course={c} />)}
+                                    </div>
+                                    <div className="flex justify-end gap-2 mt-4">
+                                        <button className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50">
+                                            <ChevronLeft className="w-4 h-4 text-gray-600" />
+                                        </button>
+                                        <button className="p-2 bg-purple-600 rounded-full hover:bg-purple-700">
+                                            <ChevronRight className="w-4 h-4 text-white" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Technical Courses */}
+                        {technical.length > 0 && (
+                            <div className="max-w-7xl mx-auto px-6 py-10">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold text-gray-800">Technical Courses</h2>
+                                    <button
+                                        onClick={() => handleCategoryClick("Development")}
+                                        className="text-sm text-purple-600 font-medium hover:underline"
+                                    >
+                                        See all
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                                    {technical.map(c => <CourseCardCompact key={c._id} course={c} />)}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Top Rated Courses */}
+                        {topRated.length > 0 && (
+                            <div className="bg-[#ede9f8] py-10 px-6">
+                                <div className="max-w-7xl mx-auto">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-xl font-bold text-gray-800">Top Rated Courses</h2>
+                                        <button className="text-sm text-purple-600 font-medium hover:underline">See all</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                                        {topRated.map(c => <CourseCardLarge key={c._id} course={c} />)}
+                                    </div>
+                                    <div className="flex justify-end gap-2 mt-4">
+                                        <button className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50">
+                                            <ChevronLeft className="w-4 h-4 text-gray-600" />
+                                        </button>
+                                        <button className="p-2 bg-purple-600 rounded-full hover:bg-purple-700">
+                                            <ChevronRight className="w-4 h-4 text-white" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Empty state */}
+                        {!loading && catalog.length === 0 && (
+                            <div className="text-center py-24">
+                                <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500">No courses available yet</p>
+                            </div>
+                        )}
+            </div>
+
+            <Footer />
+        </div>
+    );
+}

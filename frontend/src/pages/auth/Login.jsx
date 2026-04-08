@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
@@ -27,7 +27,6 @@ const Login = () => {
   const isLocked = failedAttempts >= MAX_ATTEMPTS;
   const attemptsRemaining = MAX_ATTEMPTS - failedAttempts;
 
-  // Blur the submit button the moment it locks
   useEffect(() => {
     if (isLocked && submitBtnRef.current) {
       submitBtnRef.current.blur();
@@ -88,7 +87,6 @@ const Login = () => {
     }
 
     if (loginUser.fulfilled.match(resultAction)) {
-      // Clear this email's counter on success
       setAttemptsByKey(prev => ({ ...prev, [attemptKey]: 0 }));
       toast.success('Login successful!');
     } else {
@@ -158,7 +156,7 @@ const Login = () => {
 
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon..!</h2>
-            <p className="text-gray-600">Lorem Ipsum is simply dummy text of the printing and typesetting industry.</p>
+            <p className="text-gray-600">Cognon provides a smart platform for learning, growing, and achieving your goals faster.</p>
           </div>
 
           {/* Role Tabs */}
