@@ -1,12 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as authAPI from '../../api/authAPI';
 import { setToken, setUser, clearAuthData, getToken, getUser } from '../../utils/helpers';
-import { STORAGE_KEYS } from '../../utils/constants';
 
-const broadcastLogout = () => {
-  localStorage.setItem(STORAGE_KEYS.LOGOUT_SIGNAL, Date.now().toString());
-  localStorage.removeItem(STORAGE_KEYS.LOGOUT_SIGNAL);
-};
+
 
 const initialState = {
   user: getUser(),
@@ -48,7 +44,8 @@ export const logoutUser = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      await authAPI.logout();
+      const token = getToken();
+      if (token) await authAPI.logout();
       return true;
     } catch (error) {
       return true;
@@ -146,7 +143,6 @@ const authSlice = createSlice({
         state.token = null;
         state.error = null;
         clearAuthData();
-        broadcastLogout();
       })
       .addCase(logoutUser.rejected, (state) => {
         state.loading = false;
@@ -154,7 +150,6 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         clearAuthData();
-        broadcastLogout();
       });
 
     // Get Current User

@@ -2,38 +2,38 @@ import { STORAGE_KEYS } from './constants';
 
 // Token 
 export const setToken = (token) => {
-  localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+  sessionStorage.setItem(STORAGE_KEYS.TOKEN, token);
 };
 
 export const getToken = () => {
-  return localStorage.getItem(STORAGE_KEYS.TOKEN);
+  return sessionStorage.getItem(STORAGE_KEYS.TOKEN);
 };
 
 export const removeToken = () => {
-  localStorage.removeItem(STORAGE_KEYS.TOKEN);
+  sessionStorage.removeItem(STORAGE_KEYS.TOKEN);
 };
 
 // User 
 export const setUser = (user) => {
-  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+  sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 };
 
 export const getUser = () => {
-  const user = localStorage.getItem(STORAGE_KEYS.USER);
+  const user = sessionStorage.getItem(STORAGE_KEYS.USER);
   return user ? JSON.parse(user) : null;
 };
 
 export const removeUser = () => {
-  localStorage.removeItem(STORAGE_KEYS.USER);
+  sessionStorage.removeItem(STORAGE_KEYS.USER);
 };
 
 // Clear all auth data 
 export const clearAuthData = () => {
-  removeToken();
-  removeUser();
-  localStorage.removeItem('adminInfo');
-  localStorage.removeItem('tutorInfo');
-  localStorage.removeItem('studentInfo');
+  sessionStorage.removeItem(STORAGE_KEYS.TOKEN);
+  sessionStorage.removeItem(STORAGE_KEYS.USER);
+  sessionStorage.removeItem('adminInfo');
+  sessionStorage.removeItem('tutorInfo');
+  sessionStorage.removeItem('studentInfo');
 };
 
 // Helpers 

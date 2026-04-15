@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { setAuthFromStorage, logoutUser } from './store/slices/authSlice';
-import { STORAGE_KEYS } from './utils/constants';
+import { setAuthFromStorage } from './store/slices/authSlice';
 import ProtectedRoute from './routes/ProtectedRoute';
 import RoleRoute from './routes/RoleRoute';
 import Home from './pages/Home';
@@ -48,14 +47,6 @@ function App() {
 
   useEffect(() => {
     dispatch(setAuthFromStorage());
-
-    const handleStorageEvent = (e) => {
-      if (e.key === STORAGE_KEYS.LOGOUT_SIGNAL) {
-        dispatch(logoutUser());
-      }
-    };
-    window.addEventListener('storage', handleStorageEvent);
-    return () => window.removeEventListener('storage', handleStorageEvent);
   }, [dispatch]);
 
   return (

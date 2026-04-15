@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Upload, Trash2 } from 'lucide-react';
 import { courseAPI } from '../../api/courseAPI';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import ImageCropModal from '../../components/common/ImageCropModal';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = ['Web Development', 'Data Science', 'Graphic Design', 'Business', 'Marketing', 'IT & Software', 'Languages', 'Programming'];
@@ -27,6 +28,8 @@ export default function EditCourse() {
     const [confirmCourse, setConfirmCourse] = useState(false);
     const [confirmLesson, setConfirmLesson] = useState({ open: false, id: null, title: '' });
     const [deletingLesson, setDeletingLesson] = useState(false);
+    const [cropSrc, setCropSrc] = useState(null);         // course thumbnail crop
+    const [lessonCropSrc, setLessonCropSrc] = useState(null); // lesson thumbnail crop
 
     const resetLessonForm = () => {
         setLessonForm({ title: '', duration: '', videoUrl: '', description: '' });
@@ -66,8 +69,8 @@ export default function EditCourse() {
     const handleFile = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        setThumbnail(file);
-        setPreview(URL.createObjectURL(file));
+        setCropSrc(URL.createObjectURL(file));
+        e.target.value = '';
     };
 
     const handleSave = async () => {
@@ -271,8 +274,8 @@ export default function EditCourse() {
                             <input type="file" accept="image/*" className="hidden" onChange={e => {
                                 const file = e.target.files[0];
                                 if (file) {
-                                    setLessonThumbnail(file);
-                                    setLessonThumbnailPreview(URL.createObjectURL(file));
+                                    setLessonCropSrc(URL.createObjectURL(file));
+                                    e.target.value = '';
                                 }
                             }} />
                         </label>
@@ -364,6 +367,24 @@ export default function EditCourse() {
                 onConfirm={handleDeleteLesson}
                 onClose={() => setConfirmLesson({ open: false, id: null, title: '' })}
             />
+
+            {cropSrc && (
+                <ImageCropModal
+                    imageSrc={cropSrc}
+                    aspectRatio={16 / 9}
+                    onCrop={(file, url) => { setThumbnail(file); setPreview(url); setCropSrc(null); }}
+                    onClose={() => setCropSrc(null)}
+                />
+            )}
+
+            {lessonCropSrc && (
+                <ImageCropModal
+                    imageSrc={lessonCropSrc}
+                    aspectRatio={16 / 9}
+                    onCrop={(file, url) => { setLessonThumbnail(file); setLessonThumbnailPreview(url); setLessonCropSrc(null); }}
+                    onClose={() => setLessonCropSrc(null)}
+                />
+            )}
         </div>
     );
 }

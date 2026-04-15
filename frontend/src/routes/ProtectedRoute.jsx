@@ -24,11 +24,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader size="lg" text="Loading..." />
-      </div>
-    );
+    return <Loader fullScreen />;
   }
 
   return children;
