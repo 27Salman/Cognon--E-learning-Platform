@@ -28,8 +28,7 @@ coverage/
 
 # Backend Specific
 backend/node_modules/
-backend/uploads/*
-!backend/uploads/.gitkeep
+backend/src/uploads/
 backend/.env
 
 # Frontend Specific
@@ -41,10 +40,3 @@ frontend/.env
 package-lock.json
 yarn.lock
 
-FINAL_FIXES.md
-FIXES_APPLIED.md
-QUICK_START.md
-SETUP_INSTRUCTIONS.md
-PROJECT_STATE.md
-GOOGLE_OAUTH_SETUP.md
-LATEST_FIXES.md

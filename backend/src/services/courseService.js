@@ -119,7 +119,7 @@ const courseService = {
 
     async getCourseById(courseId, userId = null, userRole = null) {
         const course = await Course.findById(courseId)
-            .populate('tutor', 'name email profileImage')
+            .populate('tutor', 'name email profileImage tutorProfile')
             .populate('studentsEnrolled', 'name email');
 
         if (!course) throw new Error('Course not found');
@@ -130,14 +130,26 @@ const courseService = {
             }
         }
 
+        const isEnrolled = userId ? course.studentsEnrolled.some(s => s._id.toString() === userId) : false;
+        const isOwner = userId ? course.tutor._id.toString() === userId : false;
+
         const lessons = await Lesson.find({ course: courseId }).sort({ order: 1 });
+
+        // Strip sensitive content for unenrolled users
+        const sanitizedLessons = lessons.map(l => {
+            const lesson = l.toJSON();
+            if (!isEnrolled && !isOwner) {
+                delete lesson.videoUrl;
+                delete lesson.pdfNotes;
+                delete lesson.pdfNotesURL;
+            }
+            return lesson;
+        });
         
         return {
             ...course.toJSON(),
-            lessons,
-            isEnrolled: userId ? course.studentsEnrolled.some(student => 
-                student._id.toString() === userId
-            ) : false
+            lessons: sanitizedLessons,
+            isEnrolled
         };
     },
 
@@ -173,7 +185,7 @@ const courseService = {
         return await Course.findById(courseId).populate('tutor', 'name email');
     },
 
-    async getEnrolledCourses(studentId, page = 1, limit = 10) {
+    async getEnrolledCourses(studentId, page = 1, limit = 5) {
         const skip = (page - 1) * limit;
         
         const student = await User.findById(studentId)

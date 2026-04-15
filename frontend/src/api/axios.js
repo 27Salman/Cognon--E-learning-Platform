@@ -22,7 +22,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response?.status === 401 && !isLoggingOut) {
+    const isLogoutRequest = error.config?.url?.includes('/auth/logout');
+
+    if (error.response?.status === 401 && !isLoggingOut && !isLogoutRequest) {
       isLoggingOut = true;
       clearAuthData();
 

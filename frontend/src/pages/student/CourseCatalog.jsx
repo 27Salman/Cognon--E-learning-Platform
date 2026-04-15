@@ -1,13 +1,13 @@
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchPublishedCourses, fetchEnrolledCourses, setFilters } from "../../store/slices/studentSlice";
+import { fetchPublishedCourses, fetchEnrolledCourses } from "../../store/slices/studentSlice";
 import StudentNavbar from "../../components/student/StudentNavbar";
 import Footer from "../../components/common/Footer";
 import { studentAPI } from "../../api/studentAPI";
 import {
-    BookOpen, Search, X, ChevronLeft, ChevronRight,
-    Clock, Users, Heart, Monitor, Briefcase, Camera,
+    BookOpen, ChevronLeft, ChevronRight,
+    Clock, Heart, Monitor, Briefcase, Camera,
     TrendingUp, Palette, Code2, BarChart2
 } from "lucide-react";
 
@@ -129,19 +129,11 @@ function CourseCardCompact({ course }) {
 export default function CourseCatalog() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { catalog, enrolledCourses, filters, loading } = useSelector(state => state.student);
+    const { catalog, enrolledCourses, loading } = useSelector(state => state.student);
 
     const [studentInfo, setStudentInfo] = useState(() => {
         try { return JSON.parse(localStorage.getItem("studentInfo")) || {}; } catch { return {}; }
     });
-    const [searchValue, setSearchValue] = useState(filters.search || "");
-    const [suggestions, setSuggestions] = useState([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [activeCategory, setActiveCategory] = useState(filters.category || "");
-    const [filteredCourses, setFilteredCourses] = useState([]);
-    const [isFiltering, setIsFiltering] = useState(false);
-    const debounceRef = useRef(null);
-    const searchRef = useRef(null);
 
     useEffect(() => {
         studentAPI.getProfile()
@@ -151,65 +143,20 @@ export default function CourseCatalog() {
         dispatch(fetchEnrolledCourses());
     }, [dispatch]);
 
-    // Search suggestions
-    useEffect(() => {
-        if (searchValue.trim().length < 2) { setSuggestions([]); return; }
-        const matches = catalog
-            .filter(c => c.title.toLowerCase().includes(searchValue.toLowerCase()))
-            .slice(0, 5);
-        setSuggestions(matches);
-    }, [searchValue, catalog]);
-
-    // Filter courses when search/category changes
-    useEffect(() => {
-        const hasFilter = searchValue.trim() || activeCategory;
-        setIsFiltering(!!hasFilter);
-        if (!hasFilter) { setFilteredCourses([]); return; }
-        let result = [...catalog];
-        if (activeCategory) result = result.filter(c => c.category === activeCategory);
-        if (searchValue.trim()) result = result.filter(c =>
-            c.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-            (c.description || "").toLowerCase().includes(searchValue.toLowerCase())
-        );
-        setFilteredCourses(result);
-    }, [searchValue, activeCategory, catalog]);
-
-    const handleSearch = (val) => {
-        setSearchValue(val);
-        dispatch(setFilters({ search: val }));
-    };
-
     const handleCategoryClick = (label) => {
-        const next = activeCategory === label ? "" : label;
-        setActiveCategory(next);
-        dispatch(setFilters({ category: next }));
+        navigate(`/student/categories?category=${encodeURIComponent(label)}`);
     };
 
-    const handleClearFilters = () => {
-        setSearchValue("");
-        setActiveCategory("");
-        dispatch(setFilters({ search: "", category: "" }));
-    };
-
-    const handleSuggestionClick = (course) => {
-        navigate(`/student/courses/${course._id}`);
-        setShowSuggestions(false);
-    };
-
-    // Set of enrolled course IDs for filtering
     const enrolledIds = new Set(enrolledCourses.map(c => c._id));
 
-    // Only unenrolled courses for discovery sections
     const unenrolled = catalog.filter(c => !enrolledIds.has(c._id));
 
-    // Derived sections — all exclude enrolled courses
     const recommended = unenrolled.slice(0, 4);
     const technical = unenrolled.filter(c =>
         ["Development", "Web Development", "Data Science"].includes(c.category)
     ).slice(0, 4);
     const topRated = unenrolled.slice().sort((a, b) => (b.enrolledCount || 0) - (a.enrolledCount || 0)).slice(0, 4);
 
-    // In-progress courses from enrolled (with progress < 100)
     const inProgress = enrolledCourses.filter(c => (c.progress || 0) < 100).slice(0, 6);
 
     return (

@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCourseDetails, fetchCourseProgress, markLessonComplete, fetchPublishedCourses } from '../../store/slices/studentSlice';
 import VideoPlayer from '../../components/student/VideoPlayer';
 import {
     CheckCircle, ChevronLeft, Download, MessageSquare,
-    Clock, BookOpen, ArrowLeft, ArrowRight
+    Clock, BookOpen, ArrowLeft, ArrowRight, Lock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -17,6 +17,8 @@ export default function LessonViewer() {
     const { currentCourse, progress, loading, catalog } = useSelector(state => state.student);
     const [currentLesson, setCurrentLesson] = useState(null);
     const [marking, setMarking] = useState(false);
+    const [elapsed, setElapsed] = useState(0);
+    const timerRef = useRef(null);
 
     useEffect(() => {
         dispatch(fetchCourseDetails(courseId));
@@ -38,8 +40,30 @@ export default function LessonViewer() {
     const currentProgressLesson = progressLessons.find(l => l._id?.toString() === currentLesson?._id?.toString());
     const isCompleted = currentProgressLesson?.isCompleted ?? false;
 
-    // "Student also bought" — unenrolled published courses excluding current
-    const enrolledIds = new Set((currentCourse?.studentsEnrolled || []).map(s => s._id || s));
+    // --- Timer: reset on lesson change, count up while not completed ---
+    useEffect(() => {
+        setElapsed(0);
+        clearInterval(timerRef.current);
+        if (!isCompleted) {
+            timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
+        }
+        return () => clearInterval(timerRef.current);
+    }, [currentLesson?._id, isCompleted]);
+
+    // Required: 80% of lesson duration in seconds. If no duration set, unlock immediately.
+    const requiredSeconds = currentLesson?.duration ? currentLesson.duration * 60 * 0.8 : 0;
+    const canMarkComplete = isCompleted || requiredSeconds === 0 || elapsed >= requiredSeconds;
+    const remainingMin = Math.ceil((requiredSeconds - elapsed) / 60);
+
+    // --- Sequential lock: lesson N accessible only if lesson N-1 is completed ---
+    const isLessonAccessible = (index) => {
+        if (index === 0) return true;
+        const prevLesson = lessons[index - 1];
+        return progressLessons.find(
+            p => p._id?.toString() === prevLesson._id?.toString()
+        )?.isCompleted ?? false;
+    };
+
     const alsoBoought = catalog.filter(c => c._id !== courseId).slice(0, 4);
 
     const handleMarkComplete = async () => {
@@ -57,8 +81,9 @@ export default function LessonViewer() {
     };
 
     const handleDownloadPdf = () => {
-        if (currentLesson?.pdfNotesURL) {
-            window.open(currentLesson.pdfNotesURL, '_blank');
+        if (currentLesson?.pdfNotes || currentLesson?.pdfNotesURL) {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            window.open(`${API_URL}/lessons/${currentLesson._id}/pdf`, '_blank');
         } else {
             toast.error('No PDF available for this lesson');
         }
@@ -135,15 +160,17 @@ export default function LessonViewer() {
                     )}
                     <div className="px-3 pt-4 pb-4">
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Lessons</p>
-                        {lessons.map(lesson => {
+                        {lessons.map((lesson, index) => {
                             const pl = progressLessons.find(p => p._id?.toString() === lesson._id?.toString());
+                            const accessible = isLessonAccessible(index);
                             return (
                                 <LessonRow
                                     key={lesson._id}
                                     lesson={lesson}
                                     isActive={currentLesson?._id === lesson._id}
                                     isCompleted={pl?.isCompleted ?? false}
-                                    onClick={() => selectLesson(lesson)}
+                                    isLocked={!accessible}
+                                    onClick={() => accessible && selectLesson(lesson)}
                                 />
                             );
                         })}
@@ -180,11 +207,12 @@ export default function LessonViewer() {
                             ) : (
                                 <button
                                     onClick={handleMarkComplete}
-                                    disabled={marking}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-60 transition-colors"
+                                    disabled={marking || !canMarkComplete}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                    title={!canMarkComplete ? `Watch ${remainingMin} more min to unlock` : ''}
                                 >
                                     <CheckCircle className="w-4 h-4" />
-                                    {marking ? 'Saving...' : 'Mark Complete'}
+                                    {marking ? 'Saving...' : !canMarkComplete ? `${remainingMin} min left` : 'Mark Complete'}
                                 </button>
                             )}
 
@@ -208,7 +236,7 @@ export default function LessonViewer() {
                             </button>
                             <button
                                 onClick={() => currentIndex < lessons.length - 1 && selectLesson(lessons[currentIndex + 1])}
-                                disabled={currentIndex >= lessons.length - 1}
+                                disabled={currentIndex >= lessons.length - 1 || !isLessonAccessible(currentIndex + 1)}
                                 className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 Next <ArrowRight className="w-4 h-4" />
@@ -290,12 +318,15 @@ export default function LessonViewer() {
     );
 }
 
-function LessonRow({ lesson, isActive, isCompleted, onClick }) {
+function LessonRow({ lesson, isActive, isCompleted, isLocked, onClick }) {
     return (
         <button
             onClick={onClick}
+            disabled={isLocked}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 text-left transition-colors ${
-                isActive
+                isLocked
+                    ? 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
+                    : isActive
                     ? 'bg-purple-600 text-white'
                     : isCompleted
                     ? 'bg-orange-50 text-gray-700 hover:bg-orange-100'
@@ -303,9 +334,12 @@ function LessonRow({ lesson, isActive, isCompleted, onClick }) {
             }`}
         >
             <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${
-                isActive ? 'bg-white/20' : isCompleted ? 'bg-orange-200' : 'bg-gray-200'
+                isLocked ? 'bg-gray-200' : isActive ? 'bg-white/20' : isCompleted ? 'bg-orange-200' : 'bg-gray-200'
             }`}>
-                <BookOpen className={`w-3 h-3 ${isActive ? 'text-white' : isCompleted ? 'text-orange-600' : 'text-gray-500'}`} />
+                {isLocked
+                    ? <Lock className="w-3 h-3 text-gray-400" />
+                    : <BookOpen className={`w-3 h-3 ${isActive ? 'text-white' : isCompleted ? 'text-orange-600' : 'text-gray-500'}`} />
+                }
             </div>
             <span className="flex-1 text-xs font-medium truncate">{lesson.title}</span>
             {lesson.duration > 0 && (

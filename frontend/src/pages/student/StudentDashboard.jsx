@@ -20,11 +20,9 @@ const StudentDashboard = () => {
     dispatch(fetchEnrolledCourses());
   }, [dispatch]);
 
-  // Unenrolled courses for "Best Rated Courses"
   const enrolledIds = new Set(enrolledCourses.map(c => c._id));
   const unenrolled = catalog.filter(c => !enrolledIds.has(c._id)).slice(0, 4);
 
-  // Derive unique categories from catalog
   const uniqueCategories = [...new Set(catalog.map(c => c.category).filter(Boolean))].slice(0, 4);
 
   return (
@@ -91,7 +89,7 @@ const StudentDashboard = () => {
             <div className="bg-orange-50 rounded-2xl p-8 flex items-center justify-between hover:shadow-lg transition">
               <div>
                 <h3 className="text-sm font-medium text-orange-600 mb-2">Certificates</h3>
-                <p className="text-4xl font-bold text-gray-900">{enrolledCourses.filter(c => (c.progress || 0) >= 100).length}</p>
+                <p className="text-4xl font-bold text-gray-900">0</p>
               </div>
               <div className="text-5xl">📜</div>
             </div>

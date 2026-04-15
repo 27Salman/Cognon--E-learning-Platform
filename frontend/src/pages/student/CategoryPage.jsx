@@ -5,7 +5,13 @@ import { fetchPublishedCourses, setFilters } from "../../store/slices/studentSli
 import StudentNavbar from "../../components/student/StudentNavbar";
 import Footer from "../../components/common/Footer";
 import { studentAPI } from "../../api/studentAPI";
-import { BookOpen, Search, X, Clock } from "lucide-react";
+import { BookOpen, Search, X, Clock, SlidersHorizontal } from "lucide-react";
+
+const SORT_OPTIONS = [
+    { value: "newest",    label: "Newest" },
+    { value: "price_asc", label: "Price: Low to High" },
+    { value: "price_desc",label: "Price: High to Low" },
+];
 
 function formatDuration(minutes) {
     if (!minutes || minutes === 0) return null;
@@ -60,23 +66,27 @@ export default function CategoryPage() {
     const location = useLocation();
     const { catalog, loading } = useSelector(state => state.student);
 
+    const params = new URLSearchParams(location.search);
+    const focusCategory = params.get("category") || null;
+
     const [studentInfo, setStudentInfo] = useState(() => {
         try { return JSON.parse(localStorage.getItem("studentInfo")) || {}; } catch { return {}; }
     });
     const [searchValue, setSearchValue] = useState("");
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
-
-    // Support ?category= query param for "See all" links
-    const params = new URLSearchParams(location.search);
-    const focusCategory = params.get("category") || null;
-
+    const [sortBy, setSortBy] = useState("newest");
+    const [categoryFilter, setCategoryFilter] = useState(focusCategory || "");
     useEffect(() => {
         studentAPI.getProfile().then(res => setStudentInfo(res.data || res)).catch(() => {});
         dispatch(fetchPublishedCourses({}));
     }, [dispatch]);
 
-    // Search suggestions
+    // sync categoryFilter when URL param changes
+    useEffect(() => {
+        setCategoryFilter(focusCategory || "");
+    }, [focusCategory]);
+
     useEffect(() => {
         if (searchValue.trim().length < 2) { setSuggestions([]); return; }
         const matches = catalog.filter(c =>
@@ -85,7 +95,6 @@ export default function CategoryPage() {
         setSuggestions(matches);
     }, [searchValue, catalog]);
 
-    // Debounced search fetch
     const handleSearch = (val) => {
         setSearchValue(val);
     };
@@ -94,15 +103,23 @@ export default function CategoryPage() {
         setSearchValue("");
     };
 
-    // Group courses by category — filter client-side if searching
-    const filteredCatalog = searchValue.trim()
-        ? catalog.filter(c =>
-            c.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-            (c.category || "").toLowerCase().includes(searchValue.toLowerCase())
-          )
-        : catalog;
+    const allCategories = [...new Set(catalog.map(c => c.category).filter(Boolean))].sort();
 
-    const grouped = filteredCatalog.reduce((acc, course) => {
+    const filteredCatalog = catalog.filter(c => {
+        const matchSearch = !searchValue.trim() ||
+            c.title.toLowerCase().includes(searchValue.toLowerCase()) ||
+            (c.category || "").toLowerCase().includes(searchValue.toLowerCase());
+        const matchCategory = !categoryFilter || c.category === categoryFilter;
+        return matchSearch && matchCategory;
+    });
+
+    const sortedCatalog = [...filteredCatalog].sort((a, b) => {
+        if (sortBy === "price_asc")  return (a.price || 0) - (b.price || 0);
+        if (sortBy === "price_desc") return (b.price || 0) - (a.price || 0);
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    const grouped = sortedCatalog.reduce((acc, course) => {
         const cat = course.category || "Other";
         if (!acc[cat]) acc[cat] = [];
         acc[cat].push(course);
@@ -112,8 +129,8 @@ export default function CategoryPage() {
     const categories = Object.keys(grouped).sort();
 
     // If focusCategory, scroll to it or filter
-    const displayCategories = focusCategory
-        ? categories.filter(c => c === focusCategory)
+    const displayCategories = categoryFilter
+        ? categories.filter(c => c === categoryFilter)
         : categories;
 
     return (
@@ -157,12 +174,53 @@ export default function CategoryPage() {
                     </div>
                     {focusCategory && (
                         <button
-                            onClick={() => navigate('/student/categories')}
+                            onClick={() => { navigate('/student/categories'); setCategoryFilter(""); }}
                             className="mt-3 text-sm text-purple-600 hover:underline"
                         >
                             ← All Categories
                         </button>
                     )}
+                    {/* Filter + Sort bar */}
+                    <div className="flex flex-wrap items-center gap-3 mt-4">
+                        <SlidersHorizontal className="w-4 h-4 text-gray-400 flex-shrink-0" />
+
+                        {/* Category filter */}
+                        <div className="flex items-center gap-1.5">
+                            <label className="text-sm text-gray-500 flex-shrink-0">Filter</label>
+                            <select
+                                value={categoryFilter}
+                                onChange={e => setCategoryFilter(e.target.value)}
+                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                            >
+                                <option value="">All Categories</option>
+                                {allCategories.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Sort by */}
+                        <div className="flex items-center gap-1.5">
+                            <label className="text-sm text-gray-500 flex-shrink-0">Sort by</label>
+                            <select
+                                value={sortBy}
+                                onChange={e => setSortBy(e.target.value)}
+                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                            >
+                                {SORT_OPTIONS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Clear filters */}
+                        <button
+                            onClick={() => { setCategoryFilter(""); setSortBy("newest"); setSearchValue(""); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                         Clear
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -200,7 +258,7 @@ export default function CategoryPage() {
                                     )}
                                 </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-                                    {(focusCategory ? grouped[category] : grouped[category].slice(0, 4)).map(course => (
+                                    {(categoryFilter ? grouped[category] : grouped[category].slice(0, 4)).map(course => (
                                         <CourseCard key={course._id} course={course} />
                                     ))}
                                 </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Upload } from 'lucide-react';
 import { createCourse } from '../../store/slices/courseSlice';
+import ImageCropModal from '../../components/common/ImageCropModal';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = ['Web Development', 'Data Science', 'Graphic Design', 'Business', 'Marketing', 'IT & Software', 'Languages', 'Programming'];
@@ -15,14 +16,21 @@ export default function CreateCourse() {
     const [thumbnail, setThumbnail] = useState(null);
     const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [cropSrc, setCropSrc] = useState(null);
 
     const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleFile = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        setThumbnail(file);
-        setPreview(URL.createObjectURL(file));
+        setCropSrc(URL.createObjectURL(file));
+        e.target.value = '';
+    };
+
+    const handleCropDone = (croppedFile, croppedPreview) => {
+        setThumbnail(croppedFile);
+        setPreview(croppedPreview);
+        setCropSrc(null);
     };
 
     const handleSubmit = async (e) => {
@@ -146,6 +154,15 @@ export default function CreateCourse() {
                     </button>
                 </div>
             </form>
+
+            {cropSrc && (
+                <ImageCropModal
+                    imageSrc={cropSrc}
+                    aspectRatio={16 / 9}
+                    onCrop={handleCropDone}
+                    onClose={() => setCropSrc(null)}
+                />
+            )}
         </div>
     );
 }
