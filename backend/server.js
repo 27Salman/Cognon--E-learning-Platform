@@ -21,7 +21,7 @@ const { courseRoutes } = require('./src/routes/courseRoutes');
 const { lessonRoutes } = require('./src/routes/lessonRoutes');
 const { chatRoutes } = require('./src/routes/chatRoutes');
 const { progressRoutes } = require('./src/routes/progressRoutes');
-
+const { categoryRoutes } = require('./src/routes/categoryRoutes');
 
 
 const PORT = process.env.PORT || 5000;
@@ -49,7 +49,6 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Serve uploads but block direct PDF access (PDFs served via protected route)
 app.use('/uploads', (req, res, next) => {
     if (req.path.startsWith('/pdfs/')) {
         return res.status(403).json({ success: false, message: 'Access denied' });
@@ -67,6 +66,8 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/courses', progressRoutes);
+app.use('/api/categories', categoryRoutes);
+
 
 
 app.get('/api/health', (req, res) => {
