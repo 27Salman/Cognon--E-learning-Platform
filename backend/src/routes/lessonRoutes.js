@@ -49,6 +49,27 @@ router.put('/:id', protect, tutorOnly, lessonUpload.fields([
 
 router.delete('/:id', protect, tutorOnly, deleteLesson);
 
+// Protected PDF download — enrollment required
+router.get('/:id/pdf', protect, async (req, res) => {
+    const path = require('path');
+    const Lesson = require('../models/Lesson');
+
+    const lesson = await Lesson.findById(req.params.id).populate('course');
+    if (!lesson || !lesson.pdfNotes) {
+        return res.status(404).json({ success: false, message: 'PDF not found' });
+    }
+
+    const isOwner = lesson.course.tutor.toString() === req.user.id;
+    const isEnrolled = lesson.course.studentsEnrolled.map(s => s.toString()).includes(req.user.id);
+
+    if (!isOwner && !isEnrolled) {
+        return res.status(403).json({ success: false, message: 'Enroll in this course to access the PDF' });
+    }
+
+    const filePath = path.join(__dirname, '../uploads/pdfs', lesson.pdfNotes);
+    res.sendFile(filePath);
+});
+
 router.get('/:id', protect, getLessonById);
 
 module.exports = { lessonRoutes: router };

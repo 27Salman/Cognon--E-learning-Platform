@@ -49,7 +49,13 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-app.use('/uploads', express.static(path.join(__dirname, 'src/uploads')));
+// Serve uploads but block direct PDF access (PDFs served via protected route)
+app.use('/uploads', (req, res, next) => {
+    if (req.path.startsWith('/pdfs/')) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    next();
+}, express.static(path.join(__dirname, 'src/uploads')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);

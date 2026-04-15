@@ -97,7 +97,16 @@ const lessonService = {
             .sort({ order: 1 })
             .populate('course', 'title status');
 
-        return lessons;
+        // Strip sensitive content for unenrolled users
+        return lessons.map(l => {
+            const lesson = l.toJSON();
+            if (!isOwner && !isEnrolled) {
+                delete lesson.videoUrl;
+                delete lesson.pdfNotes;
+                delete lesson.pdfNotesURL;
+            }
+            return lesson;
+        });
     },
 
     async getLessonById(lessonId, userId = null, userRole = null) {
@@ -112,7 +121,13 @@ const lessonService = {
             throw new Error('Access denied to this lesson');
         }
 
-        return lesson;
+        const lessonData = lesson.toJSON();
+        if (!isOwner && !isEnrolled) {
+            delete lessonData.videoUrl;
+            delete lessonData.pdfNotes;
+            delete lessonData.pdfNotesURL;
+        }
+        return lessonData;
     },
 
     async reorderLessons(courseId, tutorId, lessonOrders) {
