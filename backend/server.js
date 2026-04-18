@@ -16,13 +16,15 @@ require('./src/controllers/googleAuthController');
 const { authRoutes } = require('./src/routes/authRoutes');
 const { adminRoutes } = require('./src/routes/adminRoutes');
 const { tutorRoutes } = require('./src/routes/tutorRoutes');
-const { userRoutes } = require('./src/routes/userRoutes');
+const { userRoutes, publicCatalogRoutes } = require('./src/routes/userRoutes');
 const { courseRoutes } = require('./src/routes/courseRoutes');
 const { lessonRoutes } = require('./src/routes/lessonRoutes');
 const { chatRoutes } = require('./src/routes/chatRoutes');
 const { progressRoutes } = require('./src/routes/progressRoutes');
 const { categoryRoutes } = require('./src/routes/categoryRoutes');
-
+const { couponRoutes } = require('./src/routes/couponRoutes');
+const { offerRoutes } = require('./src/routes/offerRoutes');
+const checkoutController = require('./src/controllers/checkoutController');
 
 const PORT = process.env.PORT || 5000;
 
@@ -39,6 +41,9 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+
+app.post('/api/webhook/razorpay', express.raw({ type: 'application/json' }), checkoutController.handleWebhook);
+
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -61,13 +66,15 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/tutor', tutorRoutes);
 app.use('/api/student', userRoutes);
 
+app.use('/api/catalog', publicCatalogRoutes);
 
 app.use('/api/courses', courseRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/courses', progressRoutes);
 app.use('/api/categories', categoryRoutes);
-
+app.use('/api/coupons', couponRoutes);
+app.use('/api/offers', offerRoutes);
 
 
 app.get('/api/health', (req, res) => {

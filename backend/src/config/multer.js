@@ -4,14 +4,14 @@ const fs = require('fs');
 
 const uploadDir = path.join(__dirname, '../uploads');
 
-// Helper to ensure directory exists
+//Ensure directory exists
 const ensureDir = (dir) => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
 };
 
-// Common file filter for images
+// Filter for images
 const imageFilter = (req, file, cb) => {
     const allowed = /jpeg|jpg|png|webp/;
     const valid = allowed.test(path.extname(file.originalname).toLowerCase()) &&
@@ -19,7 +19,7 @@ const imageFilter = (req, file, cb) => {
     valid ? cb(null, true) : cb(new Error('Only image files are allowed'));
 };
 
-// Profile image upload 
+// Profile
 const profileStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dest = path.join(uploadDir, 'profiles');
@@ -32,7 +32,7 @@ const profileStorage = multer.diskStorage({
     }
 });
 
-// Course thumbnail upload
+// Course thumbnail 
 const courseStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dest = path.join(uploadDir, 'courses');
@@ -45,7 +45,7 @@ const courseStorage = multer.diskStorage({
     }
 });
 
-// Lesson thumbnail upload
+// Lesson thumbnail 
 const lessonThumbnailStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dest = path.join(uploadDir, 'lessons');
@@ -58,7 +58,7 @@ const lessonThumbnailStorage = multer.diskStorage({
     }
 });
 
-// PDF notes upload
+// PDF  
 const pdfFilter = (req, file, cb) => {
     const valid = file.mimetype === 'application/pdf' ||
                   path.extname(file.originalname).toLowerCase() === '.pdf';

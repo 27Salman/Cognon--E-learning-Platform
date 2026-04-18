@@ -1,7 +1,12 @@
 const User = require('../models/User');
+const Course = require('../models/Course');
+const Order = require('../models/Order');
+const { COURSE_STATUS } = require('../config/constants');
 const { deleteOldProfileImage } = require('./fileService');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
+
+
 
 const buildImageURL = (profileImage) => {
     if (!profileImage) return null;
@@ -90,9 +95,6 @@ const tutorService = {
     },
 
     async getTutorDashboard(tutorId) {
-        const Course = require('../models/Course');
-        const { COURSE_STATUS } = require('../config/constants');
-
         const courses = await Course.find({ tutor: tutorId });
 
         const totalCourses = courses.length;
@@ -127,6 +129,195 @@ const tutorService = {
             recentCourses
         };
     },
+
+    async getRevenueDashboard(tutorId) {
+        const courses = await Course.find({ tutor: tutorId }).select(
+            'title price studentsEnrolled status thumbnail category createdAt revenue'
+        );
+
+        if (courses.length === 0) {
+            return {
+                summary: { totalEarnings: 0, totalEnrollments: 0, totalCourses: 0, activeCourses: 0 },
+                monthlyRevenue: [],
+                courses: [],
+                recentEnrollments: []
+            };
+        }
+
+        const courseIds= courses.map(c => c._id);
+
+        const orders = await Order.find({
+            'courses.tutor': tutorId,
+            paymentStatus: 'completed'
+        })
+        .populate('user', 'name email profileImage')
+        .populate('courses.course', 'title thumbnail')
+        .sort({ orderDate: -1 });
+
+        let totalEarnings = 0;
+        const recentEnrollments = [];
+
+        for (const order of orders) {
+            for (const item of order.courses) {
+                if (item.tutor.toString() === tutorId.toString()) {
+                    totalEarnings += item.tutorShare;
+
+                    if (recentEnrollments.length < 10) {
+                        recentEnrollments.push({
+                            student: order.user,
+                            course: item.course,
+                            courseTitle: item.courseTitle,
+                            originalPrice: item.originalPrice,
+                            finalPrice: item.discountedPrice,
+                            tutorEarning: item.tutorShare,
+                            couponUsed: order.couponCode ? order.couponCode : null,
+                            purchaseDate: order.orderDate
+                        });
+                    }
+                }
+            }
+        }
+
+        const monthlyRevenue = await this.getMonthlyRevenue(tutorId);
+
+        const courseRevenue = courses.map(course => {
+            const enrolledCount = course.studentsEnrolled ? course.studentsEnrolled.length : 0;
+            return {
+                _id: course._id,
+                title: course.title,
+                thumbnail: course.thumbnail,
+                category: course.category,
+                price: course.price,
+                status: course.status,
+                enrolledCount,
+                totalRevenue: course.revenue || 0,
+                tutorEarning: Math.round((course.revenue || 0) * 0.9),
+                createdAt: course.createdAt
+            };
+        });
+
+        courseRevenue.sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+        const summary = {
+            totalEarnings: Math.round(totalEarnings),
+            totalEnrollments: courses.reduce((sum, c) => sum + (c.studentsEnrolled?.length || 0), 0),
+            totalCourses: courses.length,
+            activeCourses: courses.filter(c => c.status === COURSE_STATUS.PUBLISHED).length
+        };
+
+        return {
+            summary,
+            monthlyRevenue,
+            courses: courseRevenue,
+            recentEnrollments
+        };
+
+    },
+
+    async getMonthlyRevenue(tutorId) {
+        const twelveMonthsAgo = new Date();
+
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+        twelveMonthsAgo.setDate(1);
+        twelveMonthsAgo.setHours(0, 0, 0, 0);
+
+        const orders = await Order.find({
+            'courses.tutor': tutorId,
+            paymentStatus: 'completed',
+            orderDate: { $gte: twelveMonthsAgo }
+        });
+
+        const monthlyMap = {};
+        for (let i = 0; i < 12; i++) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            monthlyMap[key] = { month: key, revenue: 0, enrollments: 0 };
+        }
+
+        for (const order of orders) {
+            const key = `${order.orderDate.getFullYear()}-${String(order.orderDate.getMonth() + 1).padStart(2, '0')}`;
+            if (monthlyMap[key]) {
+                for (const item of order.courses) {
+                    if (item.tutor.toString() === tutorId.toString()) {
+                        monthlyMap[key].revenue += item.tutorShare;
+                        monthlyMap[key].enrollments += 1;
+                    }
+                }
+            }
+        }
+
+        return Object.values(monthlyMap)
+            .sort((a, b) => a.month.localeCompare(b.month))
+            .map(m => ({ ...m, revenue: Math.round(m.revenue) }));
+    },
+
+    async getCourseRevenueDetails(tutorId, courseId, { search, page = 1, limit = 5 } = {}) {
+        const course = await Course.findOne({ _id: courseId, tutor: tutorId });
+        if (!course) throw new Error('Course not found');
+
+        const query = {
+            'courses.tutor': tutorId,
+            'courses.course': courseId,
+            paymentStatus: 'completed'
+        };
+
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 5));
+        const skip = (pageNum - 1) * limitNum;
+
+        const [orders, totalFiltered] = await Promise.all([
+            Order.find(query)
+                .populate('user', 'name email profileImage')
+                .sort({ orderDate: -1 })
+                .skip(skip)
+                .limit(limitNum),
+            Order.countDocuments(query)
+        ]);
+
+        const enrollments = orders.map(order => {
+            const courseItem = order.courses.find(
+                item => item.course.toString() === courseId.toString()
+            );
+            return {
+                student: order.user,
+                originalPrice: courseItem?.originalPrice || course.price,
+                finalPrice: courseItem?.discountedPrice || course.price,
+                tutorEarning: courseItem?.tutorShare || 0,
+                couponUsed: order.couponCode || null,
+                purchaseDate: order.orderDate,
+                orderId: order.orderId
+            };
+        });
+
+        const filtered = search
+            ? enrollments.filter(e =>
+                e.student?.name?.toLowerCase().includes(search.toLowerCase()) ||
+                e.student?.email?.toLowerCase().includes(search.toLowerCase())
+            )
+            : enrollments;
+
+        const pagination = {
+            currentPage: pageNum,
+            totalPages: Math.ceil(totalFiltered / limitNum),
+            totalFiltered,
+            limit: limitNum
+        };
+
+        return {
+            course: {
+                _id: course._id,
+                title: course.title,
+                price: course.price,
+                totalEnrollments: course.studentsEnrolled?.length || 0,
+                totalRevenue: course.revenue || 0,
+                tutorTotalEarning: Math.round((course.revenue || 0) * 0.9)
+            },
+            enrollments: filtered,
+            pagination
+        };
+    }
+
 
 };
 

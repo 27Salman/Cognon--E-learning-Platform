@@ -43,3 +43,23 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     const data = await tutorService.getTutorDashboard(req.user.id);
     res.status(HTTP_STATUS.OK).json({ success: true, data });
 });
+
+exports.getRevenueDashboard = asyncHandler(async (req, res) => {
+    const data = await tutorService.getRevenueDashboard(req.user.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data });
+});
+
+exports.getCourseRevenueDetails = asyncHandler(async (req, res) => {
+    const { search, page, limit } = req.query;
+    const data = await tutorService.getCourseRevenueDetails(
+        req.user.id,
+        req.params.courseId,
+        { search, page, limit }
+    );
+    res.status(HTTP_STATUS.OK).json({ success: true, data });
+});
+
+
+
+
+

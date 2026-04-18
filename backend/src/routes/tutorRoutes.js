@@ -11,6 +11,8 @@ const {
     requestPasswordChange,
     verifyPasswordChange,
     getDashboard,
+    getRevenueDashboard,
+    getCourseRevenueDetails,
 } = require('../controllers/tutorController');
 
 
@@ -27,5 +29,7 @@ router.post('/change-password/request', requestPasswordChange);
 router.post('/change-password/verify', verifyPasswordChange);
 
 router.get('/dashboard', getDashboard);
+router.get('/revenue', getRevenueDashboard);
+router.get('/revenue/:courseId', getCourseRevenueDetails);
 
 module.exports = { tutorRoutes: router };

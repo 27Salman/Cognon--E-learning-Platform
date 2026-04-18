@@ -1,0 +1,40 @@
+const asyncHandler = require('../middleware/asyncHandler');
+const orderService = require('../services/orderService');
+const { HTTP_STATUS } = require('../config/constants');
+
+// Student 
+exports.getMyOrders = asyncHandler(async (req, res) => {
+    const { search, status, page, limit } = req.query;
+    const result = await orderService.getStudentOrders(req.user.id, { search, status, page, limit });
+    res.status(HTTP_STATUS.OK).json({ success: true, data: result });
+});
+
+exports.getMyOrderById = asyncHandler(async (req, res) => {
+    const order = await orderService.getStudentOrderById(req.user.id, req.params.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data: order });
+});
+
+// Admin 
+exports.getAllOrders = asyncHandler(async (req, res) => {
+    const { search, status, tutorId, studentId, dateFrom, dateTo, sort, page, limit } = req.query;
+    const result = await orderService.getAllOrders({ search, status, tutorId, studentId, dateFrom, dateTo, sort, page, limit });
+    res.status(HTTP_STATUS.OK).json({ success: true, data: result });
+});
+
+exports.getOrderById = asyncHandler(async (req, res) => {
+    const order = await orderService.getOrderById(req.params.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data: order });
+});
+
+exports.updatePaymentStatus = asyncHandler(async (req, res) => {
+    const { paymentStatus } = req.body;
+    const order = await orderService.updatePaymentStatus(req.params.id, paymentStatus);
+    res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Payment status updated successfully',
+        data: order
+    });
+});
+
+
+
