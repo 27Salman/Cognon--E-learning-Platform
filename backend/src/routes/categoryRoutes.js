@@ -4,14 +4,19 @@ const categoryController = require('../controllers/categoryController');
 const { protect } = require('../middleware/authMiddleware');
 const { restrictTo } = require('../middleware/roleMiddleware');
 const { USER_ROLES } = require('../config/constants');
-const upload = require('../config/multer');
+const { uploadProfile } = require('../config/multer');
 
-// Admin routes
+router.get('/public', (req, res, next) => {
+    req.query.isActive = 'true';
+    next();
+}, categoryController.getCategories);
+
+// Admin 
 router.post(
     '/',
     protect,
     restrictTo(USER_ROLES.ADMIN),
-    upload.single('image'),
+    uploadProfile.single('image'),
     categoryController.createCategory
 );
 
@@ -33,7 +38,7 @@ router.put(
     '/:id',
     protect,
     restrictTo(USER_ROLES.ADMIN),
-    upload.single('image'),
+    uploadProfile.single('image'),
     categoryController.updateCategory
 );
 

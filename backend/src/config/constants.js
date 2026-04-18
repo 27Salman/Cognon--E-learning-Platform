@@ -23,13 +23,6 @@ const COURSE_STATUS = {
     PENDING_REVIEW: 'pending_review'
 };
 
-const COURSE_DIFFICULTY = {
-    BEGINNER: 'beginner',
-    INTERMEDIATE: 'intermediate',
-    ADVANCED: 'advanced',
-    EXPERT: 'expert'
-};
-
 const ENROLLMENT_STATUS = {
     ENROLLED: 'enrolled',       
     IN_PROGRESS: 'in_progress', 
@@ -129,7 +122,6 @@ module.exports = {
     TUTOR_APPROVAL_STATUS,
     USER_STATUS,
     COURSE_STATUS,
-    COURSE_DIFFICULTY,
     ENROLLMENT_STATUS,
     PAGINATION,
     HTTP_STATUS,

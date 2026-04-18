@@ -46,9 +46,8 @@ cartSchema.virtual('subtotal').get(function () {
     return this.items.reduce((total, item) => total + item.price, 0);
 });
 
-cartSchema.pre('save', function (next) {
+cartSchema.pre('save', function () {
     this.updatedAt = Date.now();
-    next();
 });
 
 cartSchema.methods.toJSON = function () {

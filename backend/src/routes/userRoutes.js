@@ -42,6 +42,7 @@ router.delete('/cart/:courseId', cartController.removeFromCart);
 router.delete('/cart', cartController.clearCart);
 
 router.post('/coupons/validate', couponController.validateCoupon);
+router.get('/coupons/available', couponController.getAvailableCoupons);
 
 router.post('/checkout/calculate', checkoutController.calculatePrice);
 router.post('/checkout/create-order', checkoutController.createRazorpayOrder);

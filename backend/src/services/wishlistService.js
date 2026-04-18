@@ -54,7 +54,7 @@ const wishlistService = {
         let wishlist = await Wishlist.findOne({ user: userId })
             .populate({
                 path: 'courses',
-                select: 'title description price thumbnail category tutor status studentsEnrolled level rating',
+                select: 'title description price thumbnail category tutor status studentsEnrolled rating',
                 populate: { path: 'tutor', select: 'name' }
             });
 

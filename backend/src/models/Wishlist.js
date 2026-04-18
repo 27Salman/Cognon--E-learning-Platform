@@ -28,9 +28,8 @@ wishlistSchema.virtual('totalItems').get(function () {
     return this.courses.length;
 });
 
-wishlistSchema.pre('save', function (next) {
+wishlistSchema.pre('save', function () {
     this.updatedAt = Date.now();
-    next();
 });
 
 wishlistSchema.methods.toJSON = function () {

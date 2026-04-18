@@ -12,11 +12,10 @@ const buildImageURL = (image) => {
 const categoryService = {
 
     async createCategory({ name, description }, file) {
-
-        const existingCategory = await Category.findOne({ 
-            name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } 
+        const existingCategory = await Category.findOne({
+            name: { $regex: new RegExp(`^${name.trim()}$`, 'i') }
         });
-        
+
         if (existingCategory) {
             throw new Error('Category with this name already exists');
         }
@@ -35,22 +34,22 @@ const categoryService = {
         };
     },
 
-    async getCategories({ search, isActive, page = 1, limit = 5 } = {}){
+    async getCategories({ search, isActive, page = 1, limit = 10 } = {}) {
         const query = {};
 
-        if(isActive !== undefined){
+        if (isActive !== undefined) {
             query.isActive = isActive === 'true';
         }
 
-        if(search && search.trim()){
+        if (search && search.trim()) {
             query.name = { $regex: search.trim(), $options: 'i' };
         }
 
         const pageNum = Math.max(1, parseInt(page) || 1);
-        const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 5));
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
         const skip = (pageNum - 1) * limitNum;
 
-        const [ categories, totalFiltered ] = await Promise.all([
+        const [categories, totalFiltered] = await Promise.all([
             Category.find(query)
                 .sort({ createdAt: -1 })
                 .skip(skip)
@@ -68,10 +67,9 @@ const categoryService = {
             totalPages: Math.ceil(totalFiltered / limitNum),
             totalFiltered,
             limit: limitNum
-        }
+        };
 
         return { categories: categoriesWithURL, pagination };
- 
     },
 
     async getCategoryById(categoryId) {
@@ -163,8 +161,6 @@ const categoryService = {
             imageURL: buildImageURL(category.image)
         };
     }
-}
+};
 
 module.exports = categoryService;
-
-

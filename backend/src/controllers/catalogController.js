@@ -3,9 +3,9 @@ const catalogService = require('../services/catalogService');
 const { HTTP_STATUS } = require('../config/constants');
 
 exports.getCourses = asyncHandler(async (req, res) => {
-    const { search, category, minPrice, maxPrice, level, language, rating, sort, page, limit } = req.query;
+    const { search, category, minPrice, maxPrice, language, rating, sort, page, limit } = req.query;
     const result = await catalogService.getCourses({
-        search, category, minPrice, maxPrice, level, language, rating, sort, page, limit
+        search, category, minPrice, maxPrice, language, rating, sort, page, limit
     });
     res.status(HTTP_STATUS.OK).json({ success: true, data: result });
 });

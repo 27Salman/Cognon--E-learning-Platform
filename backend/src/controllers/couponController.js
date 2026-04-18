@@ -1,8 +1,7 @@
 const asyncHandler = require('../middleware/asyncHandler');
 const couponService = require('../services/couponService');
 const { HTTP_STATUS } = require('../config/constants');
-
-// Admin 
+ 
 exports.createCoupon = asyncHandler(async (req, res) => {
     const coupon = await couponService.createCoupon(req.user.id, req.body);
     res.status(HTTP_STATUS.CREATED).json({
@@ -14,13 +13,9 @@ exports.createCoupon = asyncHandler(async (req, res) => {
 
 exports.getCoupons = asyncHandler(async (req, res) => {
     const { search, isActive, applicableTo, page, limit } = req.query;
-    const result = await couponService.getCoupons({ search, isActive, applicableTo, page, limit });
+    const createdBy = req.user.role === 'tutor' ? req.user.id : undefined;
+    const result = await couponService.getCoupons({ search, isActive, applicableTo, page, limit, createdBy });
     res.status(HTTP_STATUS.OK).json({ success: true, data: result });
-});
-
-exports.getCouponById = asyncHandler(async (req, res) => {
-    const coupon = await couponService.getCouponById(req.params.id);
-    res.status(HTTP_STATUS.OK).json({ success: true, data: coupon });
 });
 
 exports.updateCoupon = asyncHandler(async (req, res) => {
@@ -58,4 +53,9 @@ exports.validateCoupon = asyncHandler(async (req, res) => {
         message: 'Coupon is valid',
         data: result
     });
+});
+
+exports.getAvailableCoupons = asyncHandler(async (req, res) => {
+    const coupons = await couponService.getAvailableCoupons(req.user.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data: coupons });
 });

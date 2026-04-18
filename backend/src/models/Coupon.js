@@ -124,11 +124,10 @@ couponSchema.virtual('isUsageLimitReached').get(function () {
     return this.usageCount >= this.usageLimit;
 });
 
-couponSchema.pre('validate', function (next) {
+couponSchema.pre('validate', function () {
     if (this.validUntil <= this.validFrom) {
-        next(new Error('Valid until date must be after valid from date'));
+        throw new Error('Valid until date must be after valid from date');
     }
-    next();
 });
 
 couponSchema.methods.toJSON = function () {

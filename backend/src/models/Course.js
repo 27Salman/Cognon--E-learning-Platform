@@ -55,11 +55,6 @@ const courseSchema = new mongoose.Schema(
             type: Number,
             default: 0
         },
-        level: {
-            type: String,
-            enum: ['beginner', 'intermediate', 'advanced'],
-            default: 'beginner'
-        },
         language: {
             type: String,
             default: 'English'
@@ -78,6 +73,12 @@ const courseSchema = new mongoose.Schema(
             type: Number,
             default: 0,
             min: 0
+        },
+        offerPercentage: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 100
         }
     },
     {

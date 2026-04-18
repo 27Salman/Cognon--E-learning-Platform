@@ -2,7 +2,7 @@ const asyncHandler = require('../middleware/asyncHandler');
 const courseService = require('../services/courseService');
 const { HTTP_STATUS } = require('../config/constants');
 
-//Tutor Actions
+//Tutor
 
 exports.createCourse = asyncHandler(async (req, res) => {
     const data = await courseService.createCourse(req.user.id, req.body, req.file);
@@ -25,7 +25,7 @@ exports.getTutorCourses = asyncHandler(async (req, res) => {
     res.status(HTTP_STATUS.OK).json({ success: true, data });
 });
 
-//Student Actions
+//Student 
 
 exports.getAllPublishedCourses = asyncHandler(async (req, res) => {
     const { category, page, limit } = req.query;

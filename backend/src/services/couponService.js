@@ -59,8 +59,12 @@ const couponService = {
         return coupon;
     },
 
-    async getCoupons({ search, isActive, applicableTo, page = 1, limit = 5 } = {}) {
+    async getCoupons({ search, isActive, applicableTo, page = 1, limit = 5, createdBy } = {}) {
         const query = {};
+
+        if (createdBy) {
+            query.createdBy = createdBy;
+        }
 
         if (isActive !== undefined) {
             query.isActive = isActive === 'true';
@@ -99,18 +103,6 @@ const couponService = {
         };
 
         return { coupons, pagination };
-    },
-
-    async getCouponById(couponId) {
-        const coupon = await Coupon.findById(couponId)
-            .populate('applicableIds')
-            .populate('createdBy', 'name email');
-
-        if (!coupon) {
-            throw new Error('Coupon not found');
-        }
-
-        return coupon;
     },
 
     async updateCoupon(couponId, updateData) {
@@ -171,7 +163,7 @@ const couponService = {
         return coupon;
     },
 
-    //Student use
+    //Student 
     async validateCoupon(code, userId, cartTotal, courseIds) {
         const coupon = await Coupon.findOne({ code: code.toUpperCase() })
             .populate('applicableIds');
@@ -237,6 +229,36 @@ const couponService = {
             discount: Math.min(discount, cartTotal),
             finalAmount: Math.max(0, cartTotal - discount)
         };
+    },
+
+    async getAvailableCoupons(userId) {
+        const now = new Date();
+        const coupons = await Coupon.find({
+            isActive: true,
+            validFrom: { $lte: now },
+            validUntil: { $gte: now },
+            $or: [
+                { usageLimit: null },
+                { $expr: { $lt: ['$usageCount', '$usageLimit'] } }
+            ]
+        })
+        .select('code description discountType discountValue minPurchaseAmount maxDiscountAmount validUntil usedBy perUserLimit')
+        .sort({ discountValue: -1 })
+        .limit(20);
+
+        return coupons.filter(coupon => {
+            const userUsage = coupon.usedBy?.find(u => u.user?.toString() === userId?.toString());
+            return !userUsage || userUsage.usedCount < coupon.perUserLimit;
+        }).map(c => ({
+            _id: c._id,
+            code: c.code,
+            description: c.description,
+            discountType: c.discountType,
+            discountValue: c.discountValue,
+            minPurchaseAmount: c.minPurchaseAmount,
+            maxDiscountAmount: c.maxDiscountAmount,
+            validUntil: c.validUntil
+        }));
     }
 
 };

@@ -1,23 +1,20 @@
 const Course = require('../models/Course');
 const Category = require('../models/Category');
-const offerService = require('./offerService');
 const { COURSE_STATUS } = require('../config/constants');
 
 const catalogService = {
 
-    async getCourses ({
-            search,
-            category,
-            minPrice,
-            maxPrice,
-            level,
-            language,
-            rating,
-            sort = '-createdAt',
-            page = 1,
-            limit = 5
-        } = {}) {
-
+    async getCourses({
+        search,
+        category,
+        minPrice,
+        maxPrice,
+        language,
+        rating,
+        sort = '-createdAt',
+        page = 1,
+        limit = 12
+    } = {}) {
         const query = { status: COURSE_STATUS.PUBLISHED };
 
         if (search && search.trim()) {
@@ -29,10 +26,6 @@ const catalogService = {
 
         if (category) {
             query.category = { $regex: new RegExp(`^${category}$`, 'i') };
-        }
-
-        if (level && ['beginner', 'intermediate', 'advanced'].includes(level)) {
-            query.level = level;
         }
 
         if (language) {
@@ -50,8 +43,8 @@ const catalogService = {
         }
 
         const pageNum = Math.max(1, parseInt(page) || 1);
-        const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 5));
-        const skip = ( pageNum - 1 ) * limitNum;
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 12));
+        const skip = (pageNum - 1) * limitNum;
 
         const sortMap = {
             '-createdAt': { createdAt: -1 },
@@ -62,45 +55,41 @@ const catalogService = {
         };
         const sortOption = sortMap[sort] || { createdAt: -1 };
 
-        const [courses, totalFiltered] = new Promise.all([
+        const [courses, totalFiltered] = await Promise.all([
             Course.find(query)
                 .populate('tutor', 'name profileImage')
                 .sort(sortOption)
                 .skip(skip)
                 .limit(limitNum),
             Course.countDocuments(query)
-        ])
+        ]);
 
-        const coursesWithOffers = await Promise.all(
-            courses.map(async (course) => {
-                const bestOffer = await offerService.getBestOfferForCourse(course._id);
-                const courseObj = course.toJSON();
-                if (bestOffer) {
-                    const discountedPrice = Math.round(
-                        course.price - (course.price * bestOffer.discountPercentage) / 100
-                    );
-                    courseObj.offer = {
-                        title: bestOffer.title,
-                        discountPercentage: bestOffer.discountPercentage,
-                        discountedPrice
-                    };
-                }
-                return courseObj;
-            })
-        );
+        const coursesWithOffers = courses.map((course) => {
+            const courseObj = course.toJSON();
+            if (course.offerPercentage > 0) {
+                const discountedPrice = Math.round(
+                    course.price - (course.price * course.offerPercentage) / 100
+                );
+                courseObj.offer = {
+                    discountPercentage: course.offerPercentage,
+                    discountedPrice
+                };
+            }
+            return courseObj;
+        });
 
         const pagination = {
             currentPage: pageNum,
-            totalPages: Math.ceil( totalFiltered / limitNum ),
+            totalPages: Math.ceil(totalFiltered / limitNum),
             totalFiltered,
-            limit: limitNum,
-        }
+            limit: limitNum
+        };
 
-        return { courses: coursesWithOffers, pagination }
-
+        return { courses: coursesWithOffers, pagination };
     },
 
     async getCourseDetails(courseId, userId = null) {
+        const Lesson = require('../models/Lesson');
         const course = await Course.findOne({
             _id: courseId,
             status: COURSE_STATUS.PUBLISHED
@@ -110,16 +99,19 @@ const catalogService = {
             throw new Error('Course not found');
         }
 
-        const bestOffer = await offerService.getBestOfferForCourse(courseId);
-        const courseObj = course.toJSON();
+        const lessons = await Lesson.find({ course: courseId })
+            .sort({ order: 1, createdAt: 1 })
+            .select('title description duration videoUrl thumbnailURL order');
 
-        if (bestOffer) {
+        const courseObj = course.toJSON();
+        courseObj.lessons = lessons;
+
+        if (course.offerPercentage > 0) {
             const discountedPrice = Math.round(
-                course.price - (course.price * bestOffer.discountPercentage) / 100
+                course.price - (course.price * course.offerPercentage) / 100
             );
             courseObj.offer = {
-                title: bestOffer.title,
-                discountPercentage: bestOffer.discountPercentage,
+                discountPercentage: course.offerPercentage,
                 discountedPrice
             };
         }
@@ -140,7 +132,6 @@ const catalogService = {
         return {
             categories: categories.map(c => c.name),
             languages: languages.filter(Boolean),
-            levels: ['beginner', 'intermediate', 'advanced'],
             sortOptions: [
                 { value: '-createdAt', label: 'Newest First' },
                 { value: 'price_asc', label: 'Price: Low to High' },
@@ -153,9 +144,3 @@ const catalogService = {
 };
 
 module.exports = catalogService;
-
-
-
-
-
-

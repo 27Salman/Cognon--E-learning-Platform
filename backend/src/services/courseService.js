@@ -6,12 +6,13 @@ const { COURSE_STATUS } = require('../config/constants');
 const courseService = {
 
     async createCourse(tutorId, courseData, file){
-        const { title, description, price, category } = courseData;
+        const { title, description, price, offerPercentage, category } = courseData;
 
         const course = new Course({
             title, 
             description,
             price: price || 0,
+            offerPercentage: Number(offerPercentage) || 0,
             category,
             tutor: tutorId,
             thumbnail: file ? file.filename : null
@@ -31,11 +32,12 @@ const courseService = {
         const course = await Course.findOne({ _id: courseId, tutor: tutorId });
         if(!course) throw new Error('Course not found or unauthorized');
 
-        const { title, description, price, category, status } = updateData;
+        const { title, description, price, offerPercentage, category, status } = updateData;
 
         if(title) course.title = title;
         if(description) course.description = description;
         if(price !== undefined) course.price = price;
+        if(offerPercentage !== undefined) course.offerPercentage = Number(offerPercentage) || 0;
         if(category) course.category = category;
         if(status && Object.values(COURSE_STATUS).includes(status)){
             course.status = status;
@@ -135,7 +137,6 @@ const courseService = {
 
         const lessons = await Lesson.find({ course: courseId }).sort({ order: 1 });
 
-        // Strip sensitive content for unenrolled users
         const sanitizedLessons = lessons.map(l => {
             const lesson = l.toJSON();
             if (!isEnrolled && !isOwner) {
@@ -153,7 +154,7 @@ const courseService = {
         };
     },
 
-    //Student enrollment
+    //Student 
     async enrollStudent(courseId, studentId){
         const course = await Course.findById(courseId);
         if(!course) throw new Error('Course not found');

@@ -7,8 +7,7 @@ const Coupon = require('../models/Coupon');
 const User = require('../models/User');
 const cartService = require('./cartService');
 const couponService = require('./couponService');
-const offerService = require('./offerService');
-const { PLATFORM_COMMISSION, COURSE_STATUS } = require('../config/constants');
+const { PLATFORM_COMMISSION } = require('../config/constants');
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,

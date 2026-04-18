@@ -224,13 +224,15 @@ const adminService = {
                 .skip(skip)
                 .limit(limitNum),
             User.countDocuments(query),
-            User.find({ role: USER_ROLES.TUTOR }).select('status'),
+            User.find({ role: USER_ROLES.TUTOR }).select('status tutorProfile.approvalStatus'),
         ])
 
         const summary = {
             total: allTutors.length,
-            active: allTutors.filter( a => a.status === USER_STATUS.ACTIVE).length,
-            blocked: allTutors.filter( a => a.status === USER_STATUS.BLOCKED).length,
+            active: allTutors.filter(a => a.status === USER_STATUS.ACTIVE).length,
+            blocked: allTutors.filter(a => a.status === USER_STATUS.BLOCKED).length,
+            approved: allTutors.filter(a => a.tutorProfile?.approvalStatus === TUTOR_APPROVAL_STATUS.APPROVED).length,
+            pending: allTutors.filter(a => a.tutorProfile?.approvalStatus === TUTOR_APPROVAL_STATUS.PENDING).length,
         }
 
         const pagination = {
@@ -264,7 +266,7 @@ const adminService = {
     },
 
 
-    //Student management
+    //Student 
 
     async getStudents ({ status, search, page = 1, limit = 10 } = {}){
         const query = { role: USER_ROLES.STUDENT };
@@ -348,7 +350,7 @@ const adminService = {
         return user;
     },
 
-    // Course Management
+    // Course 
     async getCourses({ category, status, tutor, search, sort = '-createdAt', page = 1, limit = 5 } = {}) {
         const query = {};
 
@@ -356,7 +358,7 @@ const adminService = {
             query.category = category;
         }
 
-        if(status && Object.values(COURSES_STATUS).includes(status)){
+        if(status && Object.values(COURSE_STATUS).includes(status)){
             query.status = status;
         }
 
@@ -420,7 +422,12 @@ const adminService = {
             throw new Error('Course not found');
         }
 
-        return course;
+        const lessons = await Lesson.find({ course: courseId }).sort({ order: 1, createdAt: 1 });
+
+        const courseObj = course.toJSON();
+        courseObj.lessons = lessons;
+
+        return courseObj;
     },
 
     async updateCourseStatus(courseId, status) {

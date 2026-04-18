@@ -2,7 +2,6 @@ const Cart = require('../models/Cart');
 const Wishlist = require('../models/Wishlist');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
-const offerService = require('./offerService');
 const { COURSE_STATUS } = require('../config/constants');
 
 const cartService = {
@@ -80,7 +79,7 @@ const cartService = {
     async getCart(userId) {
         const cart = await Cart.findOne({ user: userId }).populate({
             path: 'items.course',
-            select: 'title description price thumbnail category tutor status level rating studentsEnrolled',
+            select: 'title description price thumbnail category tutor status rating studentsEnrolled offerPercentage',
             populate: { path: 'tutor', select: 'name' }
         });
 
@@ -100,17 +99,16 @@ const cartService = {
                 continue;
             }
 
-            const bestOffer = await offerService.getBestOfferForCourse(item.course._id);
+            const offerPct = item.course.offerPercentage || 0;
             let finalPrice = item.course.price;
             let discountAmount = 0;
             let offerInfo = null;
 
-            if (bestOffer) {
-                discountAmount = (item.course.price * bestOffer.discountPercentage) / 100;
+            if (offerPct > 0) {
+                discountAmount = (item.course.price * offerPct) / 100;
                 finalPrice = item.course.price - discountAmount;
                 offerInfo = {
-                    title: bestOffer.title,
-                    discountPercentage: bestOffer.discountPercentage
+                    discountPercentage: offerPct
                 };
             }
 

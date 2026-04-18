@@ -23,7 +23,6 @@ const { chatRoutes } = require('./src/routes/chatRoutes');
 const { progressRoutes } = require('./src/routes/progressRoutes');
 const { categoryRoutes } = require('./src/routes/categoryRoutes');
 const { couponRoutes } = require('./src/routes/couponRoutes');
-const { offerRoutes } = require('./src/routes/offerRoutes');
 const checkoutController = require('./src/controllers/checkoutController');
 
 const PORT = process.env.PORT || 5000;
@@ -61,6 +60,11 @@ app.use('/uploads', (req, res, next) => {
     next();
 }, express.static(path.join(__dirname, 'src/uploads')));
 
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tutor', tutorRoutes);
@@ -74,7 +78,6 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/courses', progressRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/coupons', couponRoutes);
-app.use('/api/offers', offerRoutes);
 
 
 app.get('/api/health', (req, res) => {

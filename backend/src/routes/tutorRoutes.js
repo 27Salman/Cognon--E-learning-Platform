@@ -14,10 +14,16 @@ const {
     getRevenueDashboard,
     getCourseRevenueDetails,
 } = require('../controllers/tutorController');
-
+const couponController = require('../controllers/couponController');
 
 router.use(protect);
 router.use(restrictTo('tutor'));
+
+router.get('/coupons', couponController.getCoupons);
+router.post('/coupons', couponController.createCoupon);
+router.put('/coupons/:id', couponController.updateCoupon);
+router.delete('/coupons/:id', couponController.deleteCoupon);
+router.patch('/coupons/:id/toggle', couponController.toggleCouponStatus);
 
 router.get('/profile', getProfile);
 router.put('/profile', uploadProfile.single('profileImage'), updateProfile);
