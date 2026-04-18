@@ -1,12 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Upload } from 'lucide-react';
 import { createCourse } from '../../store/slices/courseSlice';
 import ImageCropModal from '../../components/common/ImageCropModal';
 import toast from 'react-hot-toast';
-
-const CATEGORIES = ['Web Development', 'Data Science', 'Graphic Design', 'Business', 'Marketing', 'IT & Software', 'Languages', 'Programming'];
+import { tutorAPI } from '../../api/tutorAPI';
 
 export default function CreateCourse() {
     const dispatch = useDispatch();
@@ -17,6 +16,13 @@ export default function CreateCourse() {
     const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(false);
     const [cropSrc, setCropSrc] = useState(null);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        tutorAPI.getCategories()
+            .then(res => setCategories(res.data.categories || []))
+            .catch(() => setCategories([]));
+    }, []);
 
     const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -81,7 +87,7 @@ export default function CreateCourse() {
                                 className="w-full border border-purple-200 bg-purple-50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                             >
                                 <option value="">Select category</option>
-                                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
                             </select>
                         </div>
 

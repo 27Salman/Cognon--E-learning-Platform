@@ -7,20 +7,8 @@ import Footer from "../../components/common/Footer";
 import { studentAPI } from "../../api/studentAPI";
 import {
     BookOpen, ChevronLeft, ChevronRight,
-    Clock, Heart, Monitor, Briefcase, Camera,
-    TrendingUp, Palette, Code2, BarChart2
+    Clock, Heart, Tag
 } from "lucide-react";
-
-const CATEGORIES = [
-    { label: "Design",            icon: Palette,   color: "bg-green-100 text-green-600" },
-    { label: "Digital Marketing", icon: TrendingUp, color: "bg-blue-100 text-blue-500" },
-    { label: "Development",       icon: Code2,      color: "bg-purple-100 text-purple-600" },
-    { label: "Business",          icon: Briefcase,  color: "bg-teal-100 text-teal-600" },
-    { label: "Marketing",         icon: BarChart2,  color: "bg-yellow-100 text-yellow-600" },
-    { label: "Photography",       icon: Camera,     color: "bg-red-100 text-red-500" },
-    { label: "Editing",           icon: Monitor,    color: "bg-gray-100 text-gray-600" },
-    { label: "Web Development",   icon: Code2,      color: "bg-teal-100 text-teal-500" },
-];
 
 function formatDuration(minutes) {
     if (!minutes || minutes === 0) return null;
@@ -135,12 +123,23 @@ export default function CourseCatalog() {
         try { return JSON.parse(localStorage.getItem("studentInfo")) || {}; } catch { return {}; }
     });
 
+    const [dynamicCategories, setDynamicCategories] = useState([]);
+
     useEffect(() => {
         studentAPI.getProfile()
             .then(res => setStudentInfo(res.data || res))
             .catch(() => {});
         dispatch(fetchPublishedCourses({}));
         dispatch(fetchEnrolledCourses());
+
+        // Fetch admin-managed categories
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/public`)
+            .then(r => r.json())
+            .then(data => {
+                const cats = data?.data?.categories || [];
+                setDynamicCategories(cats);
+            })
+            .catch(() => {});
     }, [dispatch]);
 
     const handleCategoryClick = (label) => {
@@ -222,18 +221,34 @@ export default function CourseCatalog() {
                         <div className="max-w-7xl mx-auto px-6 py-10">
                             <h2 className="text-xl font-bold text-gray-800 mb-6">Choice favourite course from top category</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                {CATEGORIES.map(({ label, icon: Icon, color }) => (
-                                    <button
-                                        key={label}
-                                        onClick={() => handleCategoryClick(label)}
-                                        className="bg-white border border-gray-100 rounded-xl p-5 flex flex-col items-center gap-3 hover:shadow-md transition text-center"
-                                    >
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-                                            <Icon className="w-6 h-6" />
-                                        </div>
-                                        <span className="font-semibold text-gray-800 text-sm">{label}</span>
-                                    </button>
-                                ))}
+                                {dynamicCategories.map((cat, i) => {
+                                    const colors = [
+                                        'bg-green-100 text-green-600',
+                                        'bg-blue-100 text-blue-500',
+                                        'bg-purple-100 text-purple-600',
+                                        'bg-teal-100 text-teal-600',
+                                        'bg-yellow-100 text-yellow-600',
+                                        'bg-red-100 text-red-500',
+                                        'bg-gray-100 text-gray-600',
+                                        'bg-orange-100 text-orange-600',
+                                    ];
+                                    const color = colors[i % colors.length];
+                                    return (
+                                        <button
+                                            key={cat._id}
+                                            onClick={() => handleCategoryClick(cat.name)}
+                                            className="bg-white border border-gray-100 rounded-xl p-5 flex flex-col items-center gap-3 hover:shadow-md transition text-center"
+                                        >
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
+                                                <Tag className="w-6 h-6" />
+                                            </div>
+                                            <span className="font-semibold text-gray-800 text-sm">{cat.name}</span>
+                                        </button>
+                                    );
+                                })}
+                                {dynamicCategories.length === 0 && (
+                                    <p className="col-span-4 text-gray-400 text-sm text-center py-4">No categories available</p>
+                                )}
                             </div>
                         </div>
 

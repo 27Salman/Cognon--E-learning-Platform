@@ -4,26 +4,26 @@ import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import {
   LayoutDashboard, User, Tag, GraduationCap, BookOpen,
-  ShoppingCart, Wallet, LogOut
+  ShoppingCart, LogOut, Users
 } from 'lucide-react';
 
 const menuItems = [
-  { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-  { name: 'Profile',   path: '/admin/profile',   icon: User },
-  { name: 'Categories',path: '/admin/categories',icon: Tag },
-  { name: 'Students',  path: '/admin/students',  icon: GraduationCap },
-  { name: 'Tutors',    path: '/admin/tutors',    icon: BookOpen },
-  { name: 'Orders',    path: '/admin/orders',    icon: ShoppingCart },
-  { name: 'Wallet',    path: '/admin/wallet',    icon: Wallet },
-  { name: 'Courses',   path: '/admin/courses',   icon: BookOpen },
+  { name: 'Dashboard',   path: '/admin/dashboard',   icon: LayoutDashboard },
+  { name: 'Profile',     path: '/admin/profile',     icon: User },
+  { name: 'Categories',  path: '/admin/categories',  icon: Tag },
+  { name: 'Courses',     path: '/admin/courses',     icon: BookOpen },
+  { name: 'Students',    path: '/admin/students',    icon: GraduationCap },
+  { name: 'Tutors',      path: '/admin/tutors',      icon: Users },
+  { name: 'Orders',      path: '/admin/orders',      icon: ShoppingCart },
 ];
+
 export default function AdminSidebar({ adminInfo }) {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => location.pathname.startsWith(path);
 
   const handleLogout = async () => {
     await dispatch(logoutUser());
@@ -32,12 +32,10 @@ export default function AdminSidebar({ adminInfo }) {
   };
 
   const displayName = user?.name || adminInfo?.name || 'Admin';
-  const profileImage = adminInfo?.profileImage || null;
+  const profileImage = adminInfo?.profileImageURL || adminInfo?.profileImage || null;
 
   return (
     <aside className="bg-white w-56 min-h-screen flex-shrink-0 border-r border-gray-200 flex flex-col">
-
-      {/* Profile top section */}
       <div className="px-4 pt-6 pb-5 border-b border-gray-100 flex flex-col items-center">
         {profileImage ? (
           <img src={profileImage} alt="Admin" className="w-16 h-16 rounded-full object-cover border-2 border-purple-200 shadow-sm" />
@@ -49,8 +47,7 @@ export default function AdminSidebar({ adminInfo }) {
         <p className="mt-2 font-semibold text-gray-800 text-sm text-center">{displayName}</p>
       </div>
 
-      {/* Nav items  */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5">
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {menuItems.map(({ name, path, icon: Icon }) => (
           <button
             key={path}
@@ -66,7 +63,6 @@ export default function AdminSidebar({ adminInfo }) {
           </button>
         ))}
 
-        {/* Logout — directly after Courses */}
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"

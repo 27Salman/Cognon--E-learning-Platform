@@ -77,9 +77,17 @@ export default function CategoryPage() {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [sortBy, setSortBy] = useState("newest");
     const [categoryFilter, setCategoryFilter] = useState(focusCategory || "");
+    const [adminCategories, setAdminCategories] = useState([]);
+
     useEffect(() => {
         studentAPI.getProfile().then(res => setStudentInfo(res.data || res)).catch(() => {});
         dispatch(fetchPublishedCourses({}));
+
+        // Fetch admin-managed categories for the filter dropdown
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/public`)
+            .then(r => r.json())
+            .then(data => setAdminCategories(data?.data?.categories || []))
+            .catch(() => {});
     }, [dispatch]);
 
     // sync categoryFilter when URL param changes
@@ -103,7 +111,10 @@ export default function CategoryPage() {
         setSearchValue("");
     };
 
-    const allCategories = [...new Set(catalog.map(c => c.category).filter(Boolean))].sort();
+    // Use admin categories for filter, fall back to course-derived categories
+    const allCategories = adminCategories.length > 0
+        ? adminCategories.map(c => c.name)
+        : [...new Set(catalog.map(c => c.category).filter(Boolean))].sort();
 
     const filteredCatalog = catalog.filter(c => {
         const matchSearch = !searchValue.trim() ||

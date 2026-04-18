@@ -27,7 +27,7 @@ export default function TutorCourseDetail() {
             setCourse(data);
             setLessons(data.lessons || []);
         } catch {
-            toast.error('Failed to load course');
+            toast.error('Failed to load course', { id: 'tutor-course-error' });
         } finally {
             setLoading(false);
         }
