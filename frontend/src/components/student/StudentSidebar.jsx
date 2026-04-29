@@ -35,7 +35,13 @@ export default function StudentSidebar({ studentInfo }) {
     const location = useLocation();
     const dispatch = useDispatch();
 
-    const isActive = (path) => location.pathname === path;
+    const isActive = (path) => {
+        if (location.pathname === path) return true;
+        if (location.pathname.startsWith(path + '/')) return true;
+        // My Courses also highlights when viewing course lessons
+        if (path === '/student/my-courses' && location.pathname.includes('/student/courses/') && location.pathname.endsWith('/lessons')) return true;
+        return false;
+    };
 
     const handleLogout = async () => {
         localStorage.removeItem('studentInfo');

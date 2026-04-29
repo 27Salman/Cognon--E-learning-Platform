@@ -8,13 +8,13 @@ import {
 } from 'lucide-react';
 
 const menuItems = [
-  { name: 'Dashboard',   path: '/admin/dashboard',   icon: LayoutDashboard },
-  { name: 'Profile',     path: '/admin/profile',     icon: User },
-  { name: 'Categories',  path: '/admin/categories',  icon: Tag },
-  { name: 'Courses',     path: '/admin/courses',     icon: BookOpen },
-  { name: 'Students',    path: '/admin/students',    icon: GraduationCap },
-  { name: 'Tutors',      path: '/admin/tutors',      icon: Users },
-  { name: 'Orders',      path: '/admin/orders',      icon: ShoppingCart },
+  { name: 'Dashboard',  path: '/admin/dashboard',  icon: LayoutDashboard },
+  { name: 'Profile',    path: '/admin/profile',    icon: User },
+  { name: 'Categories', path: '/admin/categories', icon: Tag },
+  { name: 'Courses',    path: '/admin/courses',    icon: BookOpen },
+  { name: 'Students',   path: '/admin/students',   icon: GraduationCap },
+  { name: 'Tutors',     path: '/admin/tutors',     icon: Users },
+  { name: 'Orders',     path: '/admin/orders',     icon: ShoppingCart },
 ];
 
 export default function AdminSidebar({ adminInfo }) {

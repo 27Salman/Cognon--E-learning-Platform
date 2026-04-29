@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle, BookOpen, ArrowRight, ShoppingBag } from 'lucide-react';
+import { CheckCircle, BookOpen, ArrowRight, ShoppingBag, Download } from 'lucide-react';
 import StudentNavbar from '../../components/student/StudentNavbar';
 import { useSelector } from 'react-redux';
 
@@ -18,18 +18,48 @@ export default function OrderSuccess() {
         <div className="min-h-screen bg-gray-50">
             <StudentNavbar studentInfo={user} />
             <div className="max-w-lg mx-auto px-4 py-16 text-center">
-                {/* Success Icon */}
+                {/* Success Icon — matches Figma */}
                 <div className="flex justify-center mb-6">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-                        <CheckCircle className="w-12 h-12 text-green-500" />
+                    <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                        <CheckCircle className="w-14 h-14 text-white" strokeWidth={2.5} />
                     </div>
                 </div>
 
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Payment Successful!</h1>
-                <p className="text-gray-500 mb-2">Thank you for your purchase.</p>
-                <p className="text-sm font-mono text-purple-700 font-bold mb-8">
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">Order Complete</h1>
+                <p className="text-gray-500 mb-2">You Will Receive a confirmation email soon!</p>
+                <p className="text-sm font-mono text-purple-700 font-bold mb-4">
                     Order ID: {order.orderId}
                 </p>
+
+                {/* Download Invoice link — matches Figma */}
+                <button
+                    onClick={async () => {
+                        try {
+                            const token = sessionStorage.getItem('cognon_token');
+                            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                            const response = await fetch(
+                                `${apiUrl}/student/orders/${order._id}/invoice`,
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            if (!response.ok) throw new Error('Failed');
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.setAttribute('download', `invoice-${order.orderId}.pdf`);
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                            window.URL.revokeObjectURL(url);
+                        } catch {
+                            // silently ignore
+                        }
+                    }}
+                    className="mb-8 flex items-center justify-center gap-1.5 text-purple-600 font-bold text-sm uppercase tracking-wide hover:text-purple-800 transition-colors"
+                >
+                    <Download className="w-4 h-4" />
+                    Download Invoice
+                </button>
 
                 {/* Enrolled Courses */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6 text-left">

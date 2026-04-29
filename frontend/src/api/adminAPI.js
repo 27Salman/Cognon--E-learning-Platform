@@ -42,7 +42,7 @@ export const adminAPI = {
         api.patch(`/admin/tutors/${tutorId}/reject`),
 
 
-    // Category Management
+    // Category
     getCategories: (params = {}) =>
         api.get('/categories', { params: { ...params, _t: Date.now() } }),
 
@@ -89,4 +89,14 @@ export const adminAPI = {
 
     updatePaymentStatus: (id, paymentStatus) =>
         api.patch(`/admin/orders/${id}/payment-status`, { paymentStatus }),
+
+    //Sales
+    getSalesReport: (params = {}) =>
+        api.get('/admin/sales-report', { params }),
+
+    downloadSalesReportPDF: (params = {}) =>
+        api.get('/admin/sales-report/download/pdf', { params, responseType: 'blob' }),
+
+    downloadSalesReportExcel: (params = {}) =>
+        api.get('/admin/sales-report/download/excel', { params, responseType: 'blob' }),
 };

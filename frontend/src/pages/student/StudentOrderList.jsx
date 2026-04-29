@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentAPI } from '../../api/studentAPI';
-import { ShoppingCart, Eye, Search } from 'lucide-react';
+import { ShoppingCart, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUS_COLORS = {
     completed: 'bg-green-100 text-green-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    failed: 'bg-red-100 text-red-700',
+    pending:   'bg-yellow-100 text-yellow-700',
+    failed:    'bg-red-100 text-red-700',
 };
 
 export default function StudentOrderList() {
@@ -49,7 +49,7 @@ export default function StudentOrderList() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search by order ID..."
+                        placeholder="Search Order ID..."
                         value={search}
                         onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                         className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -70,7 +70,7 @@ export default function StudentOrderList() {
             {loading ? (
                 <div className="space-y-3">
                     {[...Array(3)].map((_, i) => (
-                        <div key={i} className="h-20 bg-white rounded-xl border border-gray-200 animate-pulse" />
+                        <div key={i} className="h-16 bg-white rounded-xl border border-gray-200 animate-pulse" />
                     ))}
                 </div>
             ) : orders.length === 0 ? (
@@ -90,35 +90,41 @@ export default function StudentOrderList() {
                     <table className="w-full text-sm">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Order ID</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Courses</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Amount</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Date</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Status</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Action</th>
+                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Order ID</th>
+                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Course</th>
+                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Amount</th>
+                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Date</th>
+                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {orders.map((order) => (
-                                <tr key={order._id} className="hover:bg-gray-50">
-                                    <td className="px-5 py-3 font-mono text-xs text-purple-700 font-bold">{order.orderId}</td>
-                                    <td className="px-5 py-3 text-gray-600">{order.courses?.length} course(s)</td>
-                                    <td className="px-5 py-3 font-bold text-gray-800">₹{order.finalAmount}</td>
-                                    <td className="px-5 py-3 text-gray-500 text-xs">
-                                        {new Date(order.orderDate).toLocaleDateString()}
+                                <tr
+                                    key={order._id}
+                                    onClick={() => navigate(`/student/orders/${order._id}`)}
+                                    className="hover:bg-purple-50 cursor-pointer transition-colors"
+                                >
+                                    <td className="px-5 py-4 font-mono text-xs text-purple-700 font-bold">
+                                        {order.orderId}
                                     </td>
-                                    <td className="px-5 py-3">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[order.paymentStatus]}`}>
+                                    <td className="px-5 py-4 text-gray-700 max-w-[200px]">
+                                        {order.courses?.length === 1
+                                            ? <span className="truncate block">{order.courses[0].courseTitle}</span>
+                                            : <span className="text-gray-500">{order.courses?.length} courses</span>
+                                        }
+                                    </td>
+                                    <td className="px-5 py-4 font-semibold text-gray-800">
+                                        ₹{order.finalAmount}
+                                    </td>
+                                    <td className="px-5 py-4 text-gray-500 text-xs whitespace-nowrap">
+                                        {new Date(order.orderDate).toLocaleDateString('en-IN', {
+                                            day: '2-digit', month: '2-digit', year: 'numeric'
+                                        })}
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[order.paymentStatus]}`}>
                                             {order.paymentStatus}
                                         </span>
-                                    </td>
-                                    <td className="px-5 py-3">
-                                        <button
-                                            onClick={() => navigate(`/student/orders/${order._id}`)}
-                                            className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg"
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -127,20 +133,38 @@ export default function StudentOrderList() {
                 </div>
             )}
 
+            {/* Pagination */}
             {pagination.totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-5">
+                <div className="flex justify-center items-center gap-2 mt-6">
+                    <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                    >
+                        ‹
+                    </button>
                     {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
-                        <button key={p} onClick={() => setPage(p)}
-                            className={`w-8 h-8 rounded-full text-sm font-medium ${p === page ? 'bg-purple-600 text-white' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                        <button
+                            key={p}
+                            onClick={() => setPage(p)}
+                            className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                                p === page
+                                    ? 'bg-purple-600 text-white'
+                                    : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
                             {p}
                         </button>
                     ))}
+                    <button
+                        onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                        disabled={page === pagination.totalPages}
+                        className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                    >
+                        ›
+                    </button>
                 </div>
             )}
         </div>
     );
 }
-
-
-
-

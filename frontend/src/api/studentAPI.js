@@ -79,12 +79,25 @@ export const studentAPI = {
     verifyPayment: (paymentData) =>
         api.post('/student/checkout/verify-payment', paymentData),
 
+    retryPayment: (orderId) =>
+        api.post(`/student/checkout/retry-payment/${orderId}`),
+
+    markOrderFailed: (razorpayOrderId) =>
+        api.post('/student/checkout/mark-failed', { razorpayOrderId }),
+
+    markOrderFailed: (razorpayOrderId) =>
+    api.post('/student/checkout/mark-failed', { razorpayOrderId }),
+
+
     // Orders
     getMyOrders: (params = {}) => 
         api.get('/student/orders', { params }),
 
     getMyOrderById: (id) => 
         api.get(`/student/orders/${id}`),
+
+    downloadInvoice: (id) =>
+        api.get(`/student/orders/${id}/invoice`, { responseType: 'blob' }),
 };
 
 

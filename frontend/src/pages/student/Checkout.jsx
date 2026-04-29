@@ -15,7 +15,6 @@ export default function Checkout() {
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
 
-    // coupon state
     const [couponCode, setCouponCode] = useState(location.state?.couponCode || '');
     const [couponInput, setCouponInput] = useState(location.state?.couponCode || '');
     const [couponLoading, setCouponLoading] = useState(false);
@@ -102,14 +101,17 @@ export default function Checkout() {
     };
 
     const handlePayment = async () => {
+        if (paying) return; // guard against double-click
         if (!window.Razorpay) {
             toast.error('Payment gateway not loaded. Please refresh the page.');
             return;
         }
         setPaying(true);
+        let razorpayOrderId = null;
         try {
             const orders = await studentAPI.createRazorpayOrder(couponCode || null);
-            const { razorpayOrderId, amount, keyId } = orders.data;
+            razorpayOrderId = orders.data.razorpayOrderId;
+            const { amount, keyId } = orders.data;
 
             const options = {
                 key: keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -131,14 +133,19 @@ export default function Checkout() {
                         });
                     } catch {
                         toast.error('Payment verification failed');
+                        setPaying(false);
                     }
                 },
                 prefill: { name: user?.name || '', email: user?.email || '' },
                 theme: { color: '#7c3aed' },
                 modal: {
-                    ondismiss: () => {
+                    ondismiss: async () => {
                         setPaying(false);
                         toast.error('Payment cancelled');
+                        // Mark the pending order as failed so retry button shows
+                        if (razorpayOrderId) {
+                            try { await studentAPI.markOrderFailed(razorpayOrderId); } catch {}
+                        }
                     }
                 }
             };
@@ -151,7 +158,7 @@ export default function Checkout() {
         }
     };
 
-    // Compute display values
+    //Display values
     const originalTotal = priceData?.items?.reduce((sum, item) => sum + item.originalPrice, 0) ?? 0;
     const offerDiscount = originalTotal - (priceData?.subtotal ?? originalTotal);
     const couponDiscount = priceData?.couponDiscount ?? 0;

@@ -20,7 +20,14 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    // For blob responses (file downloads), return the full response so callers
+    // can access response.data as the raw blob
+    if (response.config?.responseType === 'blob') {
+      return response;
+    }
+    return response.data;
+  },
   (error) => {
     const isLogoutRequest = error.config?.url?.includes('/auth/logout');
 
