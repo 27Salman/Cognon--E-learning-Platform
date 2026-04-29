@@ -90,21 +90,28 @@ const catalogService = {
 
     async getCourseDetails(courseId, userId = null) {
         const Lesson = require('../models/Lesson');
-        const course = await Course.findOne({
-            _id: courseId,
-            status: COURSE_STATUS.PUBLISHED
-        }).populate('tutor', 'name profileImage bio');
+
+        // First try to find the course regardless of status
+        const course = await Course.findById(courseId)
+            .populate('tutor', 'name profileImage bio');
 
         if (!course) {
             throw new Error('Course not found');
         }
 
+        // Allow access if: published, OR the student is enrolled, OR the tutor owns it
+        const isEnrolled = userId && course.studentsEnrolled.some(id => id.toString() === userId.toString());
+        const isOwner = userId && course.tutor._id.toString() === userId.toString();
+
+        if (course.status !== COURSE_STATUS.PUBLISHED && !isEnrolled && !isOwner) {
+            throw new Error('Course not found');
+        }
+
         const lessons = await Lesson.find({ course: courseId })
-            .sort({ order: 1, createdAt: 1 })
-            .select('title description duration videoUrl thumbnailURL order');
+            .sort({ order: 1, createdAt: 1 });
 
         const courseObj = course.toJSON();
-        courseObj.lessons = lessons;
+        courseObj.lessons = lessons.map(l => l.toJSON());
 
         if (course.offerPercentage > 0) {
             const discountedPrice = Math.round(
@@ -117,7 +124,7 @@ const catalogService = {
         }
 
         if (userId) {
-            courseObj.isEnrolled = course.studentsEnrolled.includes(userId);
+            courseObj.isEnrolled = isEnrolled;
         }
 
         return courseObj;

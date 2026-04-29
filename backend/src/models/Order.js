@@ -115,7 +115,7 @@ orderSchema.index({ user: 1, orderDate: -1 });
 orderSchema.index({ paymentStatus: 1, orderDate: -1 });
 orderSchema.index({ 'courses.tutor': 1, orderDate: -1 });
 
-orderSchema.pre('validate', async function (next) {
+orderSchema.pre('validate', async function () {
     if (!this.orderId) {
         const date = new Date();
         const year = date.getFullYear();
@@ -124,7 +124,6 @@ orderSchema.pre('validate', async function (next) {
         const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         this.orderId = `ORD-${year}${month}${day}-${random}`;
     }
-    next();
 });
 
 orderSchema.methods.toJSON = function () {

@@ -89,7 +89,7 @@ const adminService = {
                 price: c.price,
                 revenue: c.revenue || 0,
                 enrolledCount: c.studentsEnrolled?.length || 0,
-                thumbnail: c.thumbnail,
+                thumbnail: buildImageURL(c.thumbnail),
                 category: c.category,
                 tutor: c.tutor
             }))
@@ -468,6 +468,91 @@ const adminService = {
 
         return { message: 'Course and associated lessons deleted successfully' };
     },
+
+    //Sales report
+    async getSalesReport({ dateFrom, dateTo, groupBy = 'monthly' } = {}) {
+        const query = { paymentStatus: 'completed' };
+
+        const from = dateFrom ? new Date(dateFrom) : null;
+        const to   = dateTo   ? (() => { const d = new Date(dateTo); d.setHours(23, 59, 59, 999); return d; })() : null;
+
+        if (from || to) {
+            query.orderDate = {};
+            if (from) query.orderDate.$gte = from;
+            if (to)   query.orderDate.$lte = to;
+        }
+
+        const orders = await Order.find(query)
+            .populate('user', 'name email')
+            .populate('courses.tutor', 'name')
+            .sort({ orderDate: 1 });
+
+        // Pre-fill all periods in range so chart always has continuous data points
+        const groupMap = {};
+        const rangeStart = from || (orders.length > 0 ? new Date(orders[0].orderDate) : (() => { const d = new Date(); d.setMonth(d.getMonth() - 11); return d; })());
+        const rangeEnd   = to   || new Date();
+
+        if (groupBy === 'monthly') {
+            const cur = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
+            const end = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), 1);
+            while (cur <= end) {
+                const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`;
+                groupMap[key] = { period: key, orders: 0, revenue: 0, platformRevenue: 0, tutorRevenue: 0 };
+                cur.setMonth(cur.getMonth() + 1);
+            }
+        } else if (groupBy === 'daily') {
+            const cur = new Date(rangeStart); cur.setHours(0, 0, 0, 0);
+            const end = new Date(rangeEnd);   end.setHours(0, 0, 0, 0);
+            while (cur <= end) {
+                const key = cur.toISOString().slice(0, 10);
+                groupMap[key] = { period: key, orders: 0, revenue: 0, platformRevenue: 0, tutorRevenue: 0 };
+                cur.setDate(cur.getDate() + 1);
+            }
+        }
+
+        for (const order of orders) {
+            const d = new Date(order.orderDate);
+            let key;
+            if (groupBy === 'daily') {
+                key = d.toISOString().slice(0, 10);
+            } else if (groupBy === 'weekly') {
+                const startOfYear = new Date(d.getFullYear(), 0, 1);
+                const week = Math.ceil(((d - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+                key = `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+            } else {
+                key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            }
+
+            if (!groupMap[key]) {
+                groupMap[key] = { period: key, orders: 0, revenue: 0, platformRevenue: 0, tutorRevenue: 0 };
+            }
+            groupMap[key].orders   += 1;
+            groupMap[key].revenue  += order.finalAmount;
+            for (const c of order.courses) {
+                groupMap[key].platformRevenue += c.platformShare || 0;
+                groupMap[key].tutorRevenue    += c.tutorShare    || 0;
+            }
+        }
+
+        const summary = {
+            totalOrders:          orders.length,
+            totalRevenue:         orders.reduce((s, o) => s + o.finalAmount, 0),
+            totalPlatformRevenue: orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.platformShare || 0), 0), 0),
+            totalTutorRevenue:    orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.tutorShare    || 0), 0), 0),
+        };
+
+        const chartData = Object.values(groupMap)
+            .sort((a, b) => a.period.localeCompare(b.period))
+            .map(m => ({
+                ...m,
+                revenue:         Math.round(m.revenue),
+                platformRevenue: Math.round(m.platformRevenue),
+                tutorRevenue:    Math.round(m.tutorRevenue),
+            }));
+
+        return { summary, chartData, orders };
+    },
+
 
 };
 

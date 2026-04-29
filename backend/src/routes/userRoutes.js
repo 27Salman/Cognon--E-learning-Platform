@@ -47,9 +47,12 @@ router.get('/coupons/available', couponController.getAvailableCoupons);
 router.post('/checkout/calculate', checkoutController.calculatePrice);
 router.post('/checkout/create-order', checkoutController.createRazorpayOrder);
 router.post('/checkout/verify-payment', checkoutController.verifyPayment);
+router.post('/checkout/retry-payment/:orderId', checkoutController.retryPayment);
+router.post('/checkout/mark-failed', checkoutController.markOrderFailed);
 
 router.get('/orders', orderController.getMyOrders);
 router.get('/orders/:id', orderController.getMyOrderById);
+router.get('/orders/:id/invoice', orderController.downloadInvoice);
 
 module.exports = { userRoutes: router, publicCatalogRoutes: publicRouter };
 

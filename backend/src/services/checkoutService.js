@@ -64,6 +64,42 @@ const checkoutService = {
             throw new Error('Order amount cannot be zero');
         }
 
+        const cartCourseIds = priceData.items.map(item => item.course._id.toString()).sort();
+
+        const existingOrder = await Order.findOne({
+            user: userId,
+            paymentStatus: { $in: ['pending', 'failed'] }
+        }).sort({ createdAt: -1 });
+
+        if (existingOrder) {
+            const existingCourseIds = existingOrder.courses.map(c => c.course.toString()).sort();
+            const isSameCart = JSON.stringify(existingCourseIds) === JSON.stringify(cartCourseIds);
+            // Also verify the amount matches — if cart changed (offer/coupon), create fresh
+            const isSameAmount = existingOrder.finalAmount === priceData.finalAmount;
+
+            if (isSameCart && isSameAmount) {
+                const razorpayOrder = await razorpay.orders.create({
+                    amount: existingOrder.finalAmount * 100,
+                    currency: 'INR',
+                    receipt: `reuse_${Date.now()}`,
+                    notes: { userId: userId.toString() }
+                });
+
+                existingOrder.razorpayOrderId = razorpayOrder.id;
+                existingOrder.paymentStatus = 'pending';
+                await existingOrder.save();
+
+                return {
+                    razorpayOrderId: razorpayOrder.id,
+                    amount: existingOrder.finalAmount,
+                    currency: 'INR',
+                    priceBreakdown: priceData,
+                    keyId: process.env.RAZORPAY_KEY_ID
+                };
+            }
+            // Cart or amount changed — fall through to create a fresh order
+        }
+
         const razorpayOrder = await razorpay.orders.create({
             amount: priceData.finalAmount * 100,
             currency: 'INR',
@@ -74,6 +110,40 @@ const checkoutService = {
             }
         });
 
+        const orderCourses = priceData.items.map(item => {
+            const tutorShare = Math.round(item.finalPrice * PLATFORM_COMMISSION.TUTOR_SHARE);
+            const platformShare = Math.round(item.finalPrice * PLATFORM_COMMISSION.RATE);
+            return {
+                course: item.course._id,
+                tutor: item.course.tutor._id,
+                courseTitle: item.course.title,
+                originalPrice: item.originalPrice,
+                discountedPrice: item.finalPrice,
+                tutorShare,
+                platformShare
+            };
+        });
+
+        const pendingOrder = new Order({
+            user: userId,
+            courses: orderCourses,
+            subtotal: priceData.subtotal,
+            discount: priceData.couponDiscount,
+            couponCode: couponCode || null,
+            finalAmount: priceData.finalAmount,
+            paymentMethod: 'razorpay',
+            paymentStatus: 'pending',
+            razorpayOrderId: razorpayOrder.id,
+            orderDate: new Date()
+        });
+
+        if (couponCode) {
+            const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+            if (coupon) pendingOrder.couponApplied = coupon._id;
+        }
+
+        await pendingOrder.save();
+
         return {
             razorpayOrderId: razorpayOrder.id,
             amount: priceData.finalAmount,
@@ -81,7 +151,6 @@ const checkoutService = {
             priceBreakdown: priceData,
             keyId: process.env.RAZORPAY_KEY_ID
         };
-
     },
 
     async verifyPaymentAndCreateOrder(userId, paymentData) {
@@ -102,98 +171,124 @@ const checkoutService = {
             throw new Error('Payment verification failed. Invalid signature.');
         }
 
-        const priceData = await checkoutService.calculatePrice(userId, couponCode);
-
-        if (priceData.items.length === 0) {
-            throw new Error('Cart is empty');
+        const order = await Order.findOne({ razorpayOrderId, user: userId });
+        if (!order) {
+            throw new Error('Order not found. Please contact support.');
         }
 
-        const orderCourses = priceData.items.map(item => {
-            const tutorShare = Math.round(item.finalPrice * PLATFORM_COMMISSION.TUTOR_SHARE);
-            const platformShare = Math.round(item.finalPrice * PLATFORM_COMMISSION.RATE);
-
-            return {
-                course: item.course._id,
-                tutor: item.course.tutor._id,
-                courseTitle: item.course.title,
-                originalPrice: item.originalPrice,
-                discountedPrice: item.finalPrice,
-                tutorShare,
-                platformShare
-            };
-        });
-
-        const order = new Order({
-            user: userId,
-            courses: orderCourses,
-            subtotal: priceData.subtotal,
-            discount: priceData.couponDiscount,
-            couponCode: couponCode || null,
-            finalAmount: priceData.finalAmount,
-            paymentMethod: 'razorpay',
-            paymentStatus: 'completed',
-            razorpayOrderId,
-            razorpayPaymentId,
-            razorpaySignature,
-            orderDate: new Date()
-        });
-
-        if (couponCode) {
-            const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
-            if (coupon) {
-                order.couponApplied = coupon._id;
-
-                coupon.usageCount += 1;
-                const userUsage = coupon.usedBy.find(
-                    u => u.user.toString() === userId.toString()
-                );
-                if (userUsage) {
-                    userUsage.usedCount += 1;
-                    userUsage.lastUsedAt = new Date();
-                } else {
-                    coupon.usedBy.push({
-                        user: userId,
-                        usedCount: 1,
-                        lastUsedAt: new Date()
-                    });
-                }
-                await coupon.save();
-            }
+        if (order.paymentStatus === 'completed') {
+            return await Order.findById(order._id)
+                .populate('user', 'name email phone')
+                .populate('courses.course', 'title thumbnail')
+                .populate('courses.tutor', 'name email');
         }
 
+        order.paymentStatus = 'completed';
+        order.razorpayPaymentId = razorpayPaymentId;
+        order.razorpaySignature = razorpaySignature;
         await order.save();
 
-        const courseIds = priceData.items.map(item => item.course._id);
+        // Enroll student in courses first
+        const courseIds = order.courses.map(c => c.course);
         await Course.updateMany(
             { _id: { $in: courseIds } },
             { $addToSet: { studentsEnrolled: userId } }
         );
 
-        for (const item of priceData.items) {
-            await Course.findByIdAndUpdate(item.course._id, {
-                $inc: { revenue: item.finalPrice }
+        // Update User.studentProfile.enrolledCourses — only push if not already enrolled
+        const student = await User.findById(userId).select('studentProfile.enrolledCourses');
+        const alreadyEnrolledIds = (student?.studentProfile?.enrolledCourses || [])
+            .map(e => e.courseId.toString());
+
+        for (const item of order.courses) {
+            if (!alreadyEnrolledIds.includes(item.course.toString())) {
+                await User.findByIdAndUpdate(userId, {
+                    $push: {
+                        'studentProfile.enrolledCourses': {
+                            courseId: item.course,
+                            enrolledAt: new Date(),
+                            progress: 0,
+                            completedLessons: []
+                        }
+                    }
+                });
+            }
+        }
+
+        // Update revenue
+        for (const item of order.courses) {
+            await Course.findByIdAndUpdate(item.course, {
+                $inc: { revenue: item.discountedPrice }
             });
         }
 
-        await Cart.findOneAndUpdate(
-            { user: userId },
-            { $set: { items: [] } }
-        );
+        // Only update coupon usage AFTER enrollment succeeds
+        if (order.couponCode) {
+            const coupon = await Coupon.findOne({ code: order.couponCode.toUpperCase() });
+            if (coupon) {
+                coupon.usageCount += 1;
+                const userUsage = coupon.usedBy.find(u => u.user.toString() === userId.toString());
+                if (userUsage) {
+                    userUsage.usedCount += 1;
+                    userUsage.lastUsedAt = new Date();
+                } else {
+                    coupon.usedBy.push({ user: userId, usedCount: 1, lastUsedAt: new Date() });
+                }
+                await coupon.save();
+            }
+        }
+
+        await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
 
         return await Order.findById(order._id)
             .populate('user', 'name email phone')
             .populate('courses.course', 'title thumbnail')
             .populate('courses.tutor', 'name email');
+
     },
 
-     async handleWebhook(body, signature) {
-        const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
-            .update(JSON.stringify(body))
-            .digest('hex');
+    async retryPayment(userId, orderId) {
+        const order = await Order.findOne({ _id: orderId, user: userId });
+        if (!order) throw new Error('Order not found');
+        if (order.paymentStatus === 'completed') throw new Error('Order is already paid');
+        if (order.paymentStatus !== 'failed' && order.paymentStatus !== 'pending') {
+            throw new Error('Order cannot be retried');
+        }
 
-        if (expectedSignature !== signature) {
-            throw new Error('Invalid webhook signature');
+        const razorpayOrder = await razorpay.orders.create({
+            amount: order.finalAmount * 100,
+            currency: 'INR',
+            receipt: `retry_${Date.now()}`,
+            notes: { userId: userId.toString(), retryOrderId: order._id.toString() }
+        });
+
+        order.razorpayOrderId = razorpayOrder.id;
+        order.paymentStatus = 'pending';
+        await order.save();
+
+        return {
+            razorpayOrderId: razorpayOrder.id,
+            amount: order.finalAmount,
+            currency: 'INR',
+            keyId: process.env.RAZORPAY_KEY_ID,
+            orderId: order._id
+        };
+
+    },
+
+
+    async handleWebhook(body, signature) {
+        if (!process.env.RAZORPAY_WEBHOOK_SECRET) {
+            console.warn('RAZORPAY_WEBHOOK_SECRET not set — skipping signature verification');
+        } else {
+            const expectedSignature = crypto
+                .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+                .update(JSON.stringify(body))
+                .digest('hex');
+
+            if (expectedSignature !== signature) {
+                throw new Error('Invalid webhook signature');
+            }
         }
 
         const event = body.event;

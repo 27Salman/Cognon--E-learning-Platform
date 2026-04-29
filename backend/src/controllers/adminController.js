@@ -1,6 +1,8 @@
 const asyncHandler = require('../middleware/asyncHandler');
 const adminService = require('../services/adminService');
 const { HTTP_STATUS } = require('../config/constants');
+const salesReportService = require('../services/salesReportService');
+
 
 exports.getDashboardStats = asyncHandler(async (req, res) => {
     const data = await adminService.getDashboardStats();
@@ -106,4 +108,26 @@ exports.deleteCourse = asyncHandler(async (req, res) => {
         message: result.message
     });
 });
+
+//Sales
+exports.getSalesReport = asyncHandler(async (req, res) => {
+    const { dateFrom, dateTo, groupBy } = req.query;
+    const result = await adminService.getSalesReport({ dateFrom, dateTo, groupBy });
+    res.status(HTTP_STATUS.OK).json({ success: true, data: result });
+});
+
+exports.downloadSalesReportPDF = asyncHandler(async (req, res) => {
+    const { dateFrom, dateTo, groupBy } = req.query;
+    const result = await adminService.getSalesReport({ dateFrom, dateTo, groupBy });
+    salesReportService.generateSalesPDF({ ...result, dateFrom, dateTo }, res);
+});
+
+exports.downloadSalesReportExcel = asyncHandler(async (req, res) => {
+    const { dateFrom, dateTo, groupBy } = req.query;
+    const result = await adminService.getSalesReport({ dateFrom, dateTo, groupBy });
+    await salesReportService.generateSalesExcel({ ...result, dateFrom, dateTo }, res);
+});
+
+
+
 

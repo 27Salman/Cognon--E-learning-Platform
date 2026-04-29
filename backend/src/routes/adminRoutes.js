@@ -19,6 +19,9 @@ const {
     updateCourseStatus,
     deleteCourse,
     getDashboardStats,
+    getSalesReport, 
+    downloadSalesReportPDF, 
+    downloadSalesReportExcel
 } = require('../controllers/adminController');
 const orderController = require('../controllers/orderController');
 
@@ -51,5 +54,9 @@ router.delete('/courses/:id', deleteCourse);
 router.get('/orders', orderController.getAllOrders);
 router.get('/orders/:id', orderController.getOrderById);
 router.patch('/orders/:id/payment-status', orderController.updatePaymentStatus);
+
+router.get('/sales-report', getSalesReport);
+router.get('/sales-report/download/pdf', downloadSalesReportPDF);
+router.get('/sales-report/download/excel', downloadSalesReportExcel);
 
 module.exports = { adminRoutes: router };
