@@ -23,7 +23,6 @@ export default function AdminOrderDetail() {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
 
   const fetchOrder = async () => {
     try {
@@ -37,19 +36,6 @@ export default function AdminOrderDetail() {
   };
 
   useEffect(() => { fetchOrder(); }, [id]);
-
-  const handleStatusUpdate = async (newStatus) => {
-    setUpdating(true);
-    try {
-      await adminAPI.updatePaymentStatus(id, newStatus);
-      toast.success('Payment status updated');
-      fetchOrder();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update');
-    } finally {
-      setUpdating(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -208,27 +194,6 @@ export default function AdminOrderDetail() {
         </div>
       </div>
 
-      {/* Update Payment Status */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Update Payment Status</h2>
-        <div className="flex flex-wrap gap-2">
-          {['completed', 'pending', 'failed', 'refunded'].map((status) => (
-            <button
-              key={status}
-              onClick={() => handleStatusUpdate(status)}
-              disabled={updating || order.paymentStatus === status}
-              className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                order.paymentStatus === status
-                  ? 'bg-purple-600 text-white'
-                  : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
-        </div>
-        {updating && <p className="text-xs text-gray-400 mt-2">Updating...</p>}
-      </div>
     </div>
   );
 }

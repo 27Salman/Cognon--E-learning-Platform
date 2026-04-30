@@ -41,8 +41,8 @@ export const studentAPI = {
         api.get(`/courses/${courseId}/progress`),
 
     // Wishlist
-    getWishlist: () => 
-        api.get('/student/wishlist'),
+    getWishlist: (params = {}) => 
+        api.get('/student/wishlist', { params }),
 
     addToWishlist: (courseId) => 
         api.post('/student/wishlist', { courseId }),
@@ -66,8 +66,10 @@ export const studentAPI = {
     validateCoupon: (code, cartTotal, courseIds) =>
         api.post('/student/coupons/validate', { code, cartTotal, courseIds }),
 
-    getAvailableCoupons: () =>
-        api.get('/student/coupons/available'),
+    getAvailableCoupons: (courseIds = []) =>
+        api.get('/student/coupons/available', {
+            params: courseIds.length > 0 ? { courseIds: courseIds.join(',') } : {}
+        }),
 
     // Checkout
     calculatePrice: (couponCode) =>

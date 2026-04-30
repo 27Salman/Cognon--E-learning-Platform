@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminAPI } from '../../api/adminAPI';
-import { Search, Eye } from 'lucide-react';
+import { Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUS_COLORS = {
@@ -90,11 +90,11 @@ export default function AdminOrderList() {
             <tr>
               <th className="text-left px-5 py-3 font-semibold text-gray-600">Order ID</th>
               <th className="text-left px-5 py-3 font-semibold text-gray-600">Student</th>
+              <th className="text-left px-5 py-3 font-semibold text-gray-600">Category</th>
               <th className="text-left px-5 py-3 font-semibold text-gray-600">Courses</th>
               <th className="text-left px-5 py-3 font-semibold text-gray-600">Amount</th>
               <th className="text-left px-5 py-3 font-semibold text-gray-600">Date</th>
               <th className="text-left px-5 py-3 font-semibold text-gray-600">Status</th>
-              <th className="text-left px-5 py-3 font-semibold text-gray-600">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -103,7 +103,11 @@ export default function AdminOrderList() {
             ) : orders.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-10 text-gray-400">No orders found</td></tr>
             ) : orders.map((order) => (
-              <tr key={order._id} className="hover:bg-gray-50">
+              <tr
+                key={order._id}
+                onClick={() => navigate(`/admin/orders/${order._id}`)}
+                className="hover:bg-gray-50 cursor-pointer"
+              >
                 <td className="px-5 py-3 font-mono text-xs text-purple-700 font-bold">{order.orderId}</td>
                 <td className="px-5 py-3">
                   <div>
@@ -111,7 +115,22 @@ export default function AdminOrderList() {
                     <p className="text-xs text-gray-500">{order.user?.email}</p>
                   </div>
                 </td>
-                <td className="px-5 py-3 text-gray-600">{order.courses?.length} course(s)</td>
+                <td className="px-5 py-3 text-gray-600">
+                  <div className="space-y-1.5">
+                    {order.courses?.map((item, i) => (
+                      <span key={i} className="inline-block text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full font-medium">
+                        {item.course?.category || '—'}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-5 py-3 text-gray-600">
+                  <div className="space-y-1.5">
+                    {order.courses?.map((item, i) => (
+                      <p key={i} className="text-sm font-medium text-gray-800 leading-tight">{item.courseTitle}</p>
+                    ))}
+                  </div>
+                </td>
                 <td className="px-5 py-3 font-bold text-gray-800">₹{order.finalAmount?.toLocaleString()}</td>
                 <td className="px-5 py-3 text-gray-600 text-xs">
                   {new Date(order.orderDate).toLocaleDateString()}
@@ -120,14 +139,6 @@ export default function AdminOrderList() {
                   <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[order.paymentStatus]}`}>
                     {order.paymentStatus}
                   </span>
-                </td>
-                <td className="px-5 py-3">
-                  <button
-                    onClick={() => navigate(`/admin/orders/${order._id}`)}
-                    className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
                 </td>
               </tr>
             ))}

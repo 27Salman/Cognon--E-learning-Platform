@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentAPI } from '../../api/studentAPI';
-import { Heart, ShoppingCart, Trash2, BookOpen } from 'lucide-react';
+import { Heart, ShoppingCart, Trash2, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const LIMIT = 5;
 
 export default function Wishlist() {
     const navigate = useNavigate();
     const [wishlist, setWishlist] = useState([]);
+    const [pagination, setPagination] = useState({});
+    const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState({});
 
-    const fetchWishlist = async () => {
+    const fetchWishlist = async (p = 1) => {
+        setLoading(true);
         try {
-            const res = await studentAPI.getWishlist();
+            const res = await studentAPI.getWishlist({ page: p, limit: LIMIT });
             setWishlist(res.data.courses || []);
+            setPagination(res.data.pagination || {});
         } catch {
             toast.error('Failed to load wishlist', { id: 'wishlist-error' });
         } finally {
@@ -21,13 +27,16 @@ export default function Wishlist() {
         }
     };
 
-    useEffect(() => { fetchWishlist(); }, []);
+    useEffect(() => { fetchWishlist(page); }, [page]);
 
     const handleRemove = async (courseId) => {
         setActionLoading(prev => ({ ...prev, [courseId]: 'removing' }));
         try {
             await studentAPI.removeFromWishlist(courseId);
-            setWishlist(prev => prev.filter(c => c._id !== courseId));
+            // If last item on page > 1, go back a page
+            const newPage = wishlist.length === 1 && page > 1 ? page - 1 : page;
+            setPage(newPage);
+            fetchWishlist(newPage);
             toast.success('Removed from wishlist');
         } catch {
             toast.error('Failed to remove');
@@ -41,7 +50,9 @@ export default function Wishlist() {
         try {
             await studentAPI.addToCart(courseId);
             await studentAPI.removeFromWishlist(courseId);
-            setWishlist(prev => prev.filter(c => c._id !== courseId));
+            const newPage = wishlist.length === 1 && page > 1 ? page - 1 : page;
+            setPage(newPage);
+            fetchWishlist(newPage);
             toast.success('Moved to cart');
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to move to cart');
@@ -56,7 +67,7 @@ export default function Wishlist() {
                         <Heart className="w-6 h-6 text-purple-600" />
                         <h1 className="text-2xl font-bold text-gray-800">My Wishlist</h1>
                         <span className="bg-purple-100 text-purple-700 text-sm font-medium px-2.5 py-0.5 rounded-full">
-                            {wishlist.length}
+                            {pagination.totalFiltered ?? wishlist.length}
                         </span>
                     </div>
 
@@ -83,6 +94,7 @@ export default function Wishlist() {
                             </button>
                         </div>
                     ) : (
+                        <>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                             {wishlist.map((course) => (
                                 <div key={course._id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
@@ -144,6 +156,39 @@ export default function Wishlist() {
                                 </div>
                             ))}
                         </div>
+
+                        {pagination.totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-2 mt-8">
+                                <button
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setPage(p)}
+                                        className={`w-9 h-9 rounded-full text-sm font-medium transition-colors ${
+                                            p === page
+                                                ? 'bg-purple-600 text-white'
+                                                : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                                    disabled={page === pagination.totalPages}
+                                    className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+                        </>
                     )}
         </div>
     );

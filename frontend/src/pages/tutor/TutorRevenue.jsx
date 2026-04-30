@@ -1,24 +1,19 @@
 import { useState, useEffect } from 'react';
 import { tutorAPI } from '../../api/tutorAPI';
-import { TrendingUp, DollarSign, Users, BookOpen, Search, ChevronRight } from 'lucide-react';
-import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer
-} from 'recharts';
+import { Search, ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Users, BookOpen, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function TutorRevenue() {
+//List 
+function RevenueList({ onCourseClick }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [selectedCourse, setSelectedCourse] = useState(null);
-    const [courseDetails, setCourseDetails] = useState(null);
-    const [detailLoading, setDetailLoading] = useState(false);
-    const [detailSearch, setDetailSearch] = useState('');
-    const [detailPage, setDetailPage] = useState(1);
+    const [sort, setSort] = useState('relevance');
+    const [page, setPage] = useState(1);
+    const LIMIT = 5;
 
     useEffect(() => {
-        const fetchRevenue = async () => {
+        (async () => {
             try {
                 const res = await tutorAPI.getRevenueDashboard();
                 setData(res.data);
@@ -27,286 +22,391 @@ export default function TutorRevenue() {
             } finally {
                 setLoading(false);
             }
-        };
-        fetchRevenue();
+        })();
     }, []);
-
-    const fetchCourseDetails = async (courseId, page = 1, search = '') => {
-        setDetailLoading(true);
-        try {
-            const res = await tutorAPI.getCourseRevenueDetails(courseId, { page, limit: 5, search });
-            setCourseDetails(res.data);
-        } catch {
-            toast.error('Failed to load course details', { id: 'revenue-course-error' });
-        } finally {
-            setDetailLoading(false);
-        }
-    };
-
-    const handleCourseClick = (course) => {
-        setSelectedCourse(course);
-        setDetailSearch('');
-        setDetailPage(1);
-        fetchCourseDetails(course._id, 1, '');
-    };
-
-    const handleDetailSearch = (e) => {
-        setDetailSearch(e.target.value);
-        setDetailPage(1);
-        fetchCourseDetails(selectedCourse._id, 1, e.target.value);
-    };
-
-    const filteredCourses = data?.courses?.filter(c =>
-        c.title.toLowerCase().includes(search.toLowerCase())
-    ) || [];
 
     if (loading) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
-                <div className="flex-1 p-6">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-8 bg-gray-200 rounded w-48" />
-                        <div className="grid grid-cols-4 gap-4">
-                            {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
-                        </div>
-                        <div className="h-64 bg-gray-200 rounded-xl" />
-                    </div>
-                </div>
+            <div className="p-6 animate-pulse space-y-4">
+                <div className="h-8 bg-gray-200 rounded w-32" />
+                <div className="h-64 bg-gray-200 rounded-xl" />
             </div>
         );
     }
 
-    // Course detail view
-    if (selectedCourse) {
-        return (
-            <div className="flex-1 p-6">
-                <button
-                    onClick={() => { setSelectedCourse(null); setCourseDetails(null); }}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 text-sm font-medium"
-                >
-                    ← Back to Revenue
-                </button>
+    let courses = (data?.courses || []).filter(c =>
+        c.title.toLowerCase().includes(search.toLowerCase())
+    );
 
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">{selectedCourse.title}</h1>
-                <p className="text-gray-500 text-sm mb-6">Revenue Details</p>
+    if (sort === 'revenue_desc') courses = [...courses].sort((a, b) => b.totalRevenue - a.totalRevenue);
+    else if (sort === 'revenue_asc') courses = [...courses].sort((a, b) => a.totalRevenue - b.totalRevenue);
+    else if (sort === 'students_desc') courses = [...courses].sort((a, b) => b.enrolledCount - a.enrolledCount);
+    else if (sort === 'newest') courses = [...courses].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-                {/* Course Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    {[
-                        { label: 'Total Enrollments', value: courseDetails?.course?.totalEnrollments || 0 },
-                        { label: 'Course Price', value: `₹${courseDetails?.course?.price || 0}` },
-                        { label: 'Total Revenue', value: `₹${courseDetails?.course?.totalRevenue || 0}` },
-                        { label: 'Your Earnings (90%)', value: `₹${courseDetails?.course?.tutorTotalEarning || 0}` },
-                    ].map(({ label, value }) => (
-                        <div key={label} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                            <p className="text-xs text-gray-500 mb-1">{label}</p>
-                            <p className="text-xl font-bold text-gray-800">{value}</p>
-                        </div>
-                    ))}
-                </div>
+    const totalPages = Math.ceil(courses.length / LIMIT);
+    const paginated = courses.slice((page - 1) * LIMIT, page * LIMIT);
 
-                {/* Enrollments Table */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                        <h2 className="font-semibold text-gray-700">Student Enrollments</h2>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search students..."
-                                value={detailSearch}
-                                onChange={handleDetailSearch}
-                                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                        </div>
-                    </div>
-                    <table className="w-full text-sm">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Student</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Original Price</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Final Price</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Your Earning</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Coupon</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-600">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {detailLoading ? (
-                                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Loading...</td></tr>
-                            ) : courseDetails?.enrollments?.length === 0 ? (
-                                <tr><td colSpan={6} className="text-center py-8 text-gray-400">No enrollments yet</td></tr>
-                            ) : courseDetails?.enrollments?.map((enrollment, i) => (
-                                <tr key={i} className="hover:bg-gray-50">
-                                    <td className="px-5 py-3">
-                                        <div>
-                                            <p className="font-medium text-gray-800">{enrollment.student?.name}</p>
-                                            <p className="text-xs text-gray-500">{enrollment.student?.email}</p>
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-3 text-gray-600">₹{enrollment.originalPrice}</td>
-                                    <td className="px-5 py-3 font-medium text-gray-800">₹{enrollment.finalPrice}</td>
-                                    <td className="px-5 py-3 font-bold text-green-600">₹{enrollment.tutorEarning}</td>
-                                    <td className="px-5 py-3">
-                                        {enrollment.couponUsed ? (
-                                            <span className="font-mono text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                                {enrollment.couponUsed}
-                                            </span>
-                                        ) : (
-                                            <span className="text-xs text-gray-400">None</span>
-                                        )}
-                                    </td>
-                                    <td className="px-5 py-3 text-gray-600 text-xs">
-                                        {new Date(enrollment.purchaseDate).toLocaleDateString()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-
-                    {/* Pagination */}
-                    {courseDetails?.pagination?.totalPages > 1 && (
-                        <div className="flex justify-center gap-2 p-4">
-                            {Array.from({ length: courseDetails.pagination.totalPages }, (_, i) => i + 1).map(p => (
-                                <button key={p}
-                                    onClick={() => { setDetailPage(p); fetchCourseDetails(selectedCourse._id, p, detailSearch); }}
-                                    className={`w-8 h-8 rounded-full text-sm font-medium ${p === detailPage ? 'bg-purple-600 text-white' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
-                                    {p}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    // Main revenue dashboard
     return (
-        <div className="flex-1 p-6">
-            <div className="flex items-center gap-3 mb-6">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
-                <h1 className="text-2xl font-bold text-gray-800">Revenue Dashboard</h1>
-            </div>
+        <div className="p-6">
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">Revenue</h1>
 
-            {/* Summary Cards */}
+            {/* Overall summary cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 {[
-                    { label: 'Total Earnings', value: `₹${data?.summary?.totalEarnings?.toLocaleString() || 0}`, icon: DollarSign, color: 'text-green-600 bg-green-50' },
-                    { label: 'Total Enrollments', value: data?.summary?.totalEnrollments || 0, icon: Users, color: 'text-blue-600 bg-blue-50' },
-                    { label: 'Total Courses', value: data?.summary?.totalCourses || 0, icon: BookOpen, color: 'text-purple-600 bg-purple-50' },
-                    { label: 'Active Courses', value: data?.summary?.activeCourses || 0, icon: TrendingUp, color: 'text-orange-600 bg-orange-50' },
-                ].map(({ label, value, icon: Icon, color }) => (
-                    <div key={label} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                    {
+                        label: 'Total Earnings',
+                        value: `₹${(data?.summary?.totalEarnings || 0).toLocaleString('en-IN')}`,
+                        sub: 'Your share after platform cut',
+                        icon: DollarSign,
+                        color: 'bg-green-50 text-green-600',
+                    },
+                    {
+                        label: 'Total Revenue',
+                        value: `₹${(data?.summary?.totalRevenue || 0).toLocaleString('en-IN')}`,
+                        sub: 'Gross amount paid by students',
+                        icon: TrendingUp,
+                        color: 'bg-emerald-50 text-emerald-600',
+                    },
+                    {
+                        label: 'Total Enrollments',
+                        value: data?.summary?.totalEnrollments || 0,
+                        sub: 'Across all courses',
+                        icon: Users,
+                        color: 'bg-blue-50 text-blue-600',
+                    },
+                    {
+                        label: 'Active Courses',
+                        value: data?.summary?.activeCourses || 0,
+                        sub: `${data?.summary?.totalCourses || 0} total courses`,
+                        icon: BookOpen,
+                        color: 'bg-purple-50 text-purple-600',
+                    },
+                ].map(({ label, value, sub, icon: Icon, color }) => (
+                    <div key={label} className={`rounded-xl border border-gray-200 p-4 ${color.split(' ')[0]}`}>
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs text-gray-500 font-medium">{label}</p>
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color.split(' ')[1]}`}>
-                                <Icon className={`w-4 h-4 ${color.split(' ')[0]}`} />
-                            </div>
+                            <p className="text-xs font-medium text-gray-500">{label}</p>
+                            <Icon className={`w-4 h-4 ${color.split(' ')[1]}`} />
                         </div>
                         <p className="text-2xl font-bold text-gray-800">{value}</p>
+                        <p className="text-xs text-gray-400 mt-1">{sub}</p>
                     </div>
                 ))}
             </div>
 
-            {/* Monthly Revenue Chart */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
-                <h2 className="font-semibold text-gray-700 mb-4">Monthly Revenue (Last 12 Months)</h2>
-                {data?.monthlyRevenue?.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={220}>
-                        <LineChart data={data.monthlyRevenue}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                            <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} />
-                            <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, 'Earnings']} />
-                            <Line type="monotone" dataKey="revenue" stroke="#7c3aed" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Earnings" />
-                        </LineChart>
-                    </ResponsiveContainer>
-                ) : (
-                    <div className="h-40 flex items-center justify-center text-gray-400 text-sm">
-                        No revenue data yet
-                    </div>
-                )}
+            {/* Search + Sort */}
+            <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search Course"
+                        value={search}
+                        onChange={e => { setSearch(e.target.value); setPage(1); }}
+                        className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-64"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Sort By</span>
+                    <select
+                        value={sort}
+                        onChange={e => { setSort(e.target.value); setPage(1); }}
+                        className="border border-purple-400 text-purple-700 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    >
+                        <option value="relevance">Relevance</option>
+                        <option value="revenue_desc">Revenue (High to Low)</option>
+                        <option value="revenue_asc">Revenue (Low to High)</option>
+                        <option value="students_desc">Most Students</option>
+                        <option value="newest">Newest</option>
+                    </select>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Course Revenue Table */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                        <h2 className="font-semibold text-gray-700">Revenue by Course</h2>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-9 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                        </div>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                        {filteredCourses.length === 0 ? (
-                            <div className="py-8 text-center text-gray-400 text-sm">No courses found</div>
-                        ) : filteredCourses.map((course) => (
-                            <div
+            {/* Table */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="border-b border-gray-100">
+                        <tr>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs w-12">S1</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Course Name</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Students</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Rate</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Category</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Uploaded Date</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Total Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                        {paginated.length === 0 ? (
+                            <tr>
+                                <td colSpan={7} className="text-center py-10 text-gray-400">
+                                    {search ? 'No courses match your search' : 'No courses yet'}
+                                </td>
+                            </tr>
+                        ) : paginated.map((course, idx) => (
+                            <tr
                                 key={course._id}
-                                onClick={() => handleCourseClick(course)}
-                                className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer"
+                                onClick={() => onCourseClick(course)}
+                                className="hover:bg-purple-50 cursor-pointer transition-colors"
                             >
-                                {course.thumbnail ? (
-                                    <img src={course.thumbnailURL || course.thumbnail} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-                                        <BookOpen className="w-4 h-4 text-purple-400" />
-                                    </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-800 truncate">{course.title}</p>
-                                    <p className="text-xs text-gray-500">{course.enrolledCount} students · ₹{course.price}</p>
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                    <p className="text-sm font-bold text-green-600">₹{course.tutorEarning}</p>
-                                    <p className="text-xs text-gray-400">your share</p>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            </div>
+                                <td className="px-5 py-3.5 text-gray-500">{(page - 1) * LIMIT + idx + 1}</td>
+                                <td className="px-5 py-3.5 font-medium text-gray-800">{course.title}</td>
+                                <td className="px-5 py-3.5 text-gray-600">{course.enrolledCount}</td>
+                                <td className="px-5 py-3.5 text-gray-600">₹{course.price}</td>
+                                <td className="px-5 py-3.5 text-gray-600">{course.category || '—'}</td>
+                                <td className="px-5 py-3.5 text-gray-600">
+                                    {new Date(course.createdAt).toLocaleDateString('en-IN')}
+                                </td>
+                                <td className="px-5 py-3.5 font-semibold text-gray-800">
+                                    ₹{(course.totalRevenue || 0).toLocaleString('en-IN')}
+                                </td>
+                            </tr>
                         ))}
-                    </div>
-                </div>
-
-                {/* Recent Enrollments */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                    <div className="p-4 border-b border-gray-100">
-                        <h2 className="font-semibold text-gray-700">Recent Enrollments</h2>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                        {data?.recentEnrollments?.length === 0 ? (
-                            <div className="py-8 text-center text-gray-400 text-sm">No enrollments yet</div>
-                        ) : data?.recentEnrollments?.map((enrollment, i) => (
-                            <div key={i} className="flex items-center gap-3 p-4">
-                                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-purple-600 font-bold text-xs">
-                                        {enrollment.student?.name?.charAt(0)?.toUpperCase()}
-                                    </span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-800 truncate">{enrollment.student?.name}</p>
-                                    <p className="text-xs text-gray-500 truncate">{enrollment.courseTitle}</p>
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                    <p className="text-sm font-bold text-green-600">+₹{enrollment.tutorEarning}</p>
-                                    <p className="text-xs text-gray-400">{new Date(enrollment.purchaseDate).toLocaleDateString()}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-6">
+                    <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                        <button
+                            key={p}
+                            onClick={() => setPage(p)}
+                            className={`w-9 h-9 rounded-full text-sm font-medium transition-colors ${
+                                p === page
+                                    ? 'bg-purple-600 text-white'
+                                    : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            {String(p).padStart(2, '0')}
+                        </button>
+                    ))}
+                    <button
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
 
+//Details
+function RevenueDetails({ course, onBack }) {
+    const [details, setDetails] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const LIMIT = 5;
 
+    const fetchDetails = async (p = 1, s = '') => {
+        setLoading(true);
+        try {
+            const res = await tutorAPI.getCourseRevenueDetails(course._id, { page: p, limit: LIMIT, search: s });
+            setDetails(res.data);
+        } catch {
+            toast.error('Failed to load course details', { id: 'revenue-detail-error' });
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => { fetchDetails(1, ''); }, [course._id]);
 
+    const handleSearch = (e) => {
+        setSearch(e.target.value);
+        setPage(1);
+        fetchDetails(1, e.target.value);
+    };
+
+    const handlePage = (p) => {
+        setPage(p);
+        fetchDetails(p, search);
+    };
+
+    const totalPages = details?.pagination?.totalPages || 1;
+
+    return (
+        <div className="p-6">
+            {/* Back */}
+            <button
+                onClick={onBack}
+                className="flex items-center gap-2 text-gray-600 hover:text-purple-700 mb-5 text-sm font-medium transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Revenue
+            </button>
+
+            <h1 className="text-2xl font-bold text-gray-800 mb-1">Revenue Details</h1>
+            <p className="text-sm text-gray-500 mb-6">{course.title}</p>
+
+            {/* Course summary cards — per-course real-world metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                {[
+                    {
+                        label: 'Students Enrolled',
+                        value: details?.course?.totalEnrollments ?? course.enrolledCount,
+                        sub: 'Total enrollments',
+                        color: 'bg-blue-50 border-blue-100',
+                        text: 'text-blue-700',
+                    },
+                    {
+                        label: 'Gross Revenue',
+                        value: `₹${((details?.course?.grossRevenue ?? course.totalRevenue) || 0).toLocaleString('en-IN')}`,
+                        sub: 'What students paid',
+                        color: 'bg-green-50 border-green-100',
+                        text: 'text-green-700',
+                    },
+                    {
+                        label: 'Your Earnings',
+                        value: `₹${((details?.course?.tutorTotalEarning ?? course.tutorEarning) || 0).toLocaleString('en-IN')}`,
+                        sub: 'After platform commission',
+                        color: 'bg-purple-50 border-purple-100',
+                        text: 'text-purple-700',
+                    },
+                    {
+                        label: 'Avg. Discount',
+                        value: `₹${details?.course?.avgDiscount ?? 0}`,
+                        sub: 'Per enrollment',
+                        color: 'bg-orange-50 border-orange-100',
+                        text: 'text-orange-700',
+                    },
+                    {
+                        label: 'Coupon Usage',
+                        value: details?.course?.couponUsageCount ?? 0,
+                        sub: 'Students used a coupon',
+                        color: 'bg-pink-50 border-pink-100',
+                        text: 'text-pink-700',
+                    },
+                ].map(({ label, value, sub, color, text }) => (
+                    <div key={label} className={`rounded-xl border p-4 ${color}`}>
+                        <p className={`text-xs font-medium mb-1 ${text}`}>{label}</p>
+                        <p className="text-xl font-bold text-gray-800">{value}</p>
+                        <p className="text-xs text-gray-400 mt-1">{sub}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Search */}
+            <div className="relative mb-4 w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Search Course"
+                    value={search}
+                    onChange={handleSearch}
+                    className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                />
+            </div>
+
+            {/* Enrollments table */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="border-b border-gray-100">
+                        <tr>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs w-12">S1</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Students</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Course</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Original Price</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Final Price</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Coupon Status</th>
+                            <th className="text-left px-5 py-3 text-gray-500 font-semibold text-xs">Date of Purchase</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                        {loading ? (
+                            <tr>
+                                <td colSpan={7} className="text-center py-10 text-gray-400">Loading...</td>
+                            </tr>
+                        ) : details?.enrollments?.length === 0 ? (
+                            <tr>
+                                <td colSpan={7} className="text-center py-10 text-gray-400">No enrollments yet</td>
+                            </tr>
+                        ) : details?.enrollments?.map((e, idx) => (
+                            <tr key={idx} className="hover:bg-gray-50">
+                                <td className="px-5 py-3.5 text-gray-500">{(page - 1) * LIMIT + idx + 1}</td>
+                                <td className="px-5 py-3.5">
+                                    <p className="font-medium text-gray-800">{e.student?.name}</p>
+                                    <p className="text-xs text-gray-400">{e.student?.email}</p>
+                                </td>
+                                <td className="px-5 py-3.5 text-gray-600">{course.title}</td>
+                                <td className="px-5 py-3.5 text-gray-600">₹{e.originalPrice}</td>
+                                <td className="px-5 py-3.5 font-medium text-gray-800">₹{e.finalPrice}</td>
+                                <td className="px-5 py-3.5">
+                                    {e.couponUsed ? (
+                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-mono">
+                                            {e.couponUsed}
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-gray-400">No Coupon</span>
+                                    )}
+                                </td>
+                                <td className="px-5 py-3.5 text-gray-600 text-xs">
+                                    {new Date(e.purchaseDate).toLocaleDateString('en-IN')}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-6">
+                    <button
+                        onClick={() => handlePage(Math.max(1, page - 1))}
+                        disabled={page === 1}
+                        className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                        <button
+                            key={p}
+                            onClick={() => handlePage(p)}
+                            className={`w-9 h-9 rounded-full text-sm font-medium transition-colors ${
+                                p === page
+                                    ? 'bg-purple-600 text-white'
+                                    : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            {String(p).padStart(2, '0')}
+                        </button>
+                    ))}
+                    <button
+                        onClick={() => handlePage(Math.min(totalPages, page + 1))}
+                        disabled={page === totalPages}
+                        className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default function TutorRevenue() {
+    const [selectedCourse, setSelectedCourse] = useState(null);
+
+    if (selectedCourse) {
+        return (
+            <RevenueDetails
+                course={selectedCourse}
+                onBack={() => setSelectedCourse(null)}
+            />
+        );
+    }
+
+    return <RevenueList onCourseClick={setSelectedCourse} />;
+}

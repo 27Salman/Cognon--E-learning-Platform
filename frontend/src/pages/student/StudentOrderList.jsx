@@ -22,7 +22,7 @@ export default function StudentOrderList() {
     const fetchOrders = async () => {
         setLoading(true);
         try {
-            const params = { search, page, limit: 10 };
+            const params = { search, page, limit: 5 };
             if (statusFilter !== 'all') params.status = statusFilter;
             const res = await studentAPI.getMyOrders(params);
             setOrders(res.data.orders);

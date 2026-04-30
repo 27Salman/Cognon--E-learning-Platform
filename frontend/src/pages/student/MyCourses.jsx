@@ -2,23 +2,35 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchEnrolledCourses } from '../../store/slices/studentSlice';
-import { BookOpen, CheckCircle } from 'lucide-react';
+import { BookOpen, CheckCircle, AlertTriangle } from 'lucide-react';
 
 function CourseCard({ course, onClick }) {
     const progress = course.progress || 0;
     const isCompleted = progress >= 100;
+    const isUnavailable = course.status && course.status !== 'published';
 
     return (
         <div
-            onClick={onClick}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden"
+            onClick={isUnavailable ? undefined : onClick}
+            className={`bg-white rounded-xl border shadow-sm overflow-hidden transition ${
+                isUnavailable
+                    ? 'border-gray-200 opacity-60 cursor-not-allowed'
+                    : 'border-gray-100 hover:shadow-md cursor-pointer'
+            }`}
         >
-            <div className="w-full h-40 bg-gray-100 overflow-hidden">
+            <div className="w-full h-40 bg-gray-100 overflow-hidden relative">
                 {course.thumbnailURL ? (
                     <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover" />
                 ) : (
                     <div className="w-full h-full bg-purple-100 flex items-center justify-center">
                         <BookOpen className="w-10 h-10 text-purple-300" />
+                    </div>
+                )}
+                {isUnavailable && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <span className="bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1.5">
+                            <AlertTriangle className="w-3 h-3" /> Temporarily Unavailable
+                        </span>
                     </div>
                 )}
             </div>
@@ -29,21 +41,28 @@ function CourseCard({ course, onClick }) {
                 <p className="text-xs text-purple-600 font-medium mb-3">
                     By {course.tutor?.name || 'Tutor'}
                 </p>
-                {/* Progress bar */}
-                <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
-                    <div
-                        className={`h-1.5 rounded-full transition-all ${isCompleted ? 'bg-green-500' : 'bg-purple-600'}`}
-                        style={{ width: `${progress}%` }}
-                    />
-                </div>
-                <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">{progress}% complete</span>
-                    {isCompleted && (
-                        <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                            <CheckCircle className="w-3 h-3" /> Done
-                        </span>
-                    )}
-                </div>
+                {isUnavailable ? (
+                    <p className="text-xs text-yellow-600">
+                        This course has been temporarily unlisted by the tutor or admin. Your progress is saved.
+                    </p>
+                ) : (
+                    <>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
+                            <div
+                                className={`h-1.5 rounded-full transition-all ${isCompleted ? 'bg-green-500' : 'bg-purple-600'}`}
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-400">{progress}% complete</span>
+                            {isCompleted && (
+                                <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                                    <CheckCircle className="w-3 h-3" /> Done
+                                </span>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

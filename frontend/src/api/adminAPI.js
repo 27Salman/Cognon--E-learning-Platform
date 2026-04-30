@@ -87,9 +87,6 @@ export const adminAPI = {
     getOrderById: (id) => 
         api.get(`/admin/orders/${id}`),
 
-    updatePaymentStatus: (id, paymentStatus) =>
-        api.patch(`/admin/orders/${id}/payment-status`, { paymentStatus }),
-
     //Sales
     getSalesReport: (params = {}) =>
         api.get('/admin/sales-report', { params }),
@@ -99,4 +96,33 @@ export const adminAPI = {
 
     downloadSalesReportExcel: (params = {}) =>
         api.get('/admin/sales-report/download/excel', { params, responseType: 'blob' }),
+
+    // Coupon 
+    getCoupons: (params = {}) =>
+        api.get('/admin/coupons', { params }),
+
+    createCoupon: (data) =>
+        api.post('/admin/coupons', data),
+
+    updateCoupon: (id, data) =>
+        api.put(`/admin/coupons/${id}`, data),
+
+    deleteCoupon: (id) =>
+        api.delete(`/admin/coupons/${id}`),
+
+    toggleCouponStatus: (id) =>
+        api.patch(`/admin/coupons/${id}/toggle`),
+
+    // Wallet
+    getWallet: (params = {}) =>
+        api.get('/admin/wallet', { params }),
+
+    getWithdrawalRequests: (params = {}) =>
+        api.get('/admin/wallet/withdrawals', { params }),
+
+    approveWithdrawal: (id, adminNote = '') =>
+        api.patch(`/admin/wallet/withdrawals/${id}/approve`, { adminNote }),
+
+    rejectWithdrawal: (id, adminNote) =>
+        api.patch(`/admin/wallet/withdrawals/${id}/reject`, { adminNote }),
 };

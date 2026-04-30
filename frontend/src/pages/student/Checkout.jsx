@@ -38,7 +38,8 @@ export default function Checkout() {
     const fetchAvailableCoupons = async () => {
         setCouponsLoading(true);
         try {
-            const res = await studentAPI.getAvailableCoupons();
+            const courseIds = priceData?.items?.map(item => item.course?._id).filter(Boolean) || [];
+            const res = await studentAPI.getAvailableCoupons(courseIds);
             setAvailableCoupons(res.data || []);
         } catch {
         } finally {
@@ -101,7 +102,7 @@ export default function Checkout() {
     };
 
     const handlePayment = async () => {
-        if (paying) return; // guard against double-click
+        if (paying) return; 
         if (!window.Razorpay) {
             toast.error('Payment gateway not loaded. Please refresh the page.');
             return;
@@ -142,7 +143,6 @@ export default function Checkout() {
                     ondismiss: async () => {
                         setPaying(false);
                         toast.error('Payment cancelled');
-                        // Mark the pending order as failed so retry button shows
                         if (razorpayOrderId) {
                             try { await studentAPI.markOrderFailed(razorpayOrderId); } catch {}
                         }
@@ -158,7 +158,6 @@ export default function Checkout() {
         }
     };
 
-    //Display values
     const originalTotal = priceData?.items?.reduce((sum, item) => sum + item.originalPrice, 0) ?? 0;
     const offerDiscount = originalTotal - (priceData?.subtotal ?? originalTotal);
     const couponDiscount = priceData?.couponDiscount ?? 0;
@@ -319,41 +318,52 @@ export default function Checkout() {
                                                 ) : availableCoupons.length > 0 ? (
                                                     <div className="space-y-2">
                                                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available Coupons</p>
-                                                        {availableCoupons.map((c) => (
-                                                            <div
-                                                                key={c._id}
-                                                                onClick={() => handleSelectCoupon(c.code)}
-                                                                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                                                                    couponInput === c.code
-                                                                        ? 'border-purple-400 bg-purple-50'
-                                                                        : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'
-                                                                }`}
-                                                            >
-                                                                <div className="min-w-0">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="font-mono font-bold text-purple-700 text-sm">{c.code}</span>
-                                                                        {couponInput === c.code && (
-                                                                            <Check className="w-3.5 h-3.5 text-purple-600" />
+                                                        {availableCoupons.map((c) => {
+                                                            const isSelected = couponInput === c.code;
+                                                            const notApplicable = c.applicable === false;
+                                                            return (
+                                                                <div
+                                                                    key={c._id}
+                                                                    onClick={() => !notApplicable && handleSelectCoupon(c.code)}
+                                                                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                                                        notApplicable
+                                                                            ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
+                                                                            : isSelected
+                                                                            ? 'border-purple-400 bg-purple-50 cursor-pointer'
+                                                                            : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50 cursor-pointer'
+                                                                    }`}
+                                                                >
+                                                                    <div className="min-w-0">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className={`font-mono font-bold text-sm ${notApplicable ? 'text-gray-400' : 'text-purple-700'}`}>{c.code}</span>
+                                                                            {isSelected && !notApplicable && (
+                                                                                <Check className="w-3.5 h-3.5 text-purple-600" />
+                                                                            )}
+                                                                            {notApplicable && (
+                                                                                <span className="text-xs text-gray-400 italic">Not for your cart</span>
+                                                                            )}
+                                                                        </div>
+                                                                        <p className="text-xs text-gray-500 mt-0.5 truncate">
+                                                                            {c.discountType === 'percentage'
+                                                                                ? `${c.discountValue}% off${c.maxDiscountAmount ? ` (max ₹${c.maxDiscountAmount})` : ''}`
+                                                                                : `₹${c.discountValue} off`}
+                                                                            {c.minPurchaseAmount > 0 ? ` · min ₹${c.minPurchaseAmount}` : ''}
+                                                                        </p>
+                                                                        {c.description && (
+                                                                            <p className="text-xs text-gray-400 truncate">{c.description}</p>
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-xs text-gray-500 mt-0.5 truncate">
-                                                                        {c.discountType === 'percentage'
-                                                                            ? `${c.discountValue}% off${c.maxDiscountAmount ? ` (max ₹${c.maxDiscountAmount})` : ''}`
-                                                                            : `₹${c.discountValue} off`}
-                                                                        {c.minPurchaseAmount > 0 ? ` · min ₹${c.minPurchaseAmount}` : ''}
-                                                                    </p>
-                                                                    {c.description && (
-                                                                        <p className="text-xs text-gray-400 truncate">{c.description}</p>
+                                                                    {!notApplicable && (
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); handleApplyCoupon(c.code); }}
+                                                                            className="ml-3 text-xs text-purple-600 font-semibold hover:text-purple-800 whitespace-nowrap flex-shrink-0"
+                                                                        >
+                                                                            Apply
+                                                                        </button>
                                                                     )}
                                                                 </div>
-                                                                <button
-                                                                    onClick={(e) => { e.stopPropagation(); handleApplyCoupon(c.code); }}
-                                                                    className="ml-3 text-xs text-purple-600 font-semibold hover:text-purple-800 whitespace-nowrap flex-shrink-0"
-                                                                >
-                                                                    Apply
-                                                                </button>
-                                                            </div>
-                                                        ))}
+                                                            );
+                                                        })}
                                                     </div>
                                                 ) : (
                                                     <p className="text-xs text-gray-400 text-center py-1">No coupons available right now</p>

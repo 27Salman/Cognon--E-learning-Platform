@@ -50,7 +50,9 @@ import OrderSuccess from './pages/student/OrderSuccess';
 import StudentOrderList from './pages/student/StudentOrderList';
 import StudentOrderDetail from './pages/student/StudentOrderDetail';
 import TutorRevenue from './pages/tutor/TutorRevenue';
-import TutorCoupons from './pages/tutor/TutorCoupons';
+import AdminCoupons from './pages/admin/AdminCoupons';
+import TutorWallet from './pages/tutor/TutorWallet';
+import AdminWallet from './pages/admin/AdminWallet';
 
 
 function App() {
@@ -199,7 +201,7 @@ function App() {
         <Route path="courses/:id" element={<TutorCourseDetail />} />
         <Route path="courses/:id/edit" element={<EditCourse />} />
         <Route path="revenue" element={<TutorRevenue />} />
-        <Route path="coupons" element={<TutorCoupons />} />
+        <Route path="wallet" element={<TutorWallet />} />
         <Route path="chat" element={<TutorChat />} />
 
       </Route>
@@ -224,6 +226,8 @@ function App() {
         <Route path="courses" element={<CourseManagement />} />
         <Route path="orders" element={<OrderList />} />
         <Route path="orders/:id" element={<OrderDetail />} />
+        <Route path="coupons" element={<AdminCoupons />} />
+        <Route path="wallet" element={<AdminWallet />} />
 
       </Route>
 

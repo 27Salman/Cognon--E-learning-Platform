@@ -1,10 +1,27 @@
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useEffect, useState } from 'react';
 import { ROUTES, ROLES } from '../utils/constants';
+import { BookOpen, Star, Users } from 'lucide-react';
+
+const API_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : 'http://localhost:5000';
 
 const Home = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/catalog/courses?limit=8&sort=-createdAt`)
+      .then(r => r.json())
+      .then(data => setCourses(data?.data?.courses || []))
+      .catch(() => setCourses([]))
+      .finally(() => setCoursesLoading(false));
+  }, []);
 
   if (isAuthenticated && user) {
     const dashboard =
@@ -28,59 +45,24 @@ const Home = () => {
     { icon: '📊', title: 'Marketing', courses: '1,456 Courses', color: 'bg-purple-100' }
   ];
 
-  const courses = [
-    { 
-      title: 'Learn Figma - UI/UX Design', 
-      image: '🎨', 
-      price: '$57', 
-      rating: 4.5, 
-      students: '2.5k',
-      color: 'from-blue-400 to-indigo-500'
-    },
-    { 
-      title: 'Basics of learning team management', 
-      image: '👥', 
-      price: '$57', 
-      rating: 4.8, 
-      students: '1.8k',
-      color: 'from-cyan-400 to-blue-500'
-    },
-    { 
-      title: 'Learn Photoshop - Photo Editing', 
-      image: '🖼️', 
-      price: '$57', 
-      rating: 4.7, 
-      students: '3.2k',
-      color: 'from-green-400 to-emerald-500'
-    },
-    { 
-      title: 'Learn SQL - Database Management', 
-      image: '💾', 
-      price: '$57', 
-      rating: 4.6, 
-      students: '2.1k',
-      color: 'from-indigo-500 to-purple-600'
-    }
-  ];
-
   const testimonials = [
-    { 
-      name: 'John Doe', 
+    {
+      name: 'John Doe',
       role: 'Student',
-      rating: 5, 
-      text: 'Cognon has transformed my learning experience. The courses are well-structured and the tutors are incredibly knowledgeable. I highly recommend it to anyone looking to upskill!' 
+      rating: 5,
+      text: 'Cognon has transformed my learning experience. The courses are well-structured and the tutors are incredibly knowledgeable. I highly recommend it to anyone looking to upskill!'
     },
-    { 
-      name: 'Jane Smith', 
+    {
+      name: 'Jane Smith',
       role: 'Professional',
-      rating: 5, 
-      text: 'The flexibility and quality of courses on Cognon are unmatched. I was able to learn at my own pace and apply the knowledge directly to my work. Absolutely worth it!' 
+      rating: 5,
+      text: 'The flexibility and quality of courses on Cognon are unmatched. I was able to learn at my own pace and apply the knowledge directly to my work. Absolutely worth it!'
     },
-    { 
-      name: 'Mike Johnson', 
+    {
+      name: 'Mike Johnson',
       role: 'Entrepreneur',
-      rating: 5, 
-      text: 'As a busy entrepreneur, I needed a platform that could fit into my schedule. Cognon delivered exactly that with excellent content and supportive instructors.' 
+      rating: 5,
+      text: 'As a busy entrepreneur, I needed a platform that could fit into my schedule. Cognon delivered exactly that with excellent content and supportive instructors.'
     }
   ];
 
@@ -223,7 +205,6 @@ const Home = () => {
               to students around the globe
             </h2>
           </div>
-          
           <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
             <div>
               <p className="text-gray-600 leading-relaxed mb-6 text-sm">
@@ -278,37 +259,113 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Featured Courses */}
+      {/* Featured Courses — real data from platform */}
       <section id="courses" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between items-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900">Featured Courses</h2>
-            <button className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2">
+            <button
+              onClick={() => navigate(ROUTES.LOGIN)}
+              className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2"
+            >
               View All <span>→</span>
             </button>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {courses.map((course, index) => (
-              <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition">
-                <div className={`aspect-video bg-gradient-to-br ${course.color} flex items-center justify-center text-6xl`}>
-                  {course.image}
-                </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-base mb-3">{course.title}</h3>
-                  <div className="flex items-center justify-between text-xs text-gray-600 mb-4">
-                    <span className="flex items-center gap-1">⭐ {course.rating}</span>
-                    <span className="flex items-center gap-1">👥 {course.students}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-purple-600">{course.price}</span>
-                    <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs font-medium">
-                      Enroll Now
-                    </button>
+
+          {coursesLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-md animate-pulse">
+                  <div className="aspect-video bg-gray-200" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    <div className="h-8 bg-gray-200 rounded" />
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : courses.length === 0 ? (
+            <div className="text-center py-16">
+              <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg font-medium">No courses available yet</p>
+              <p className="text-gray-400 text-sm mt-1">Check back soon — new courses are being added!</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {courses.map((course) => (
+                <div
+                  key={course._id}
+                  onClick={() => navigate(ROUTES.LOGIN)}
+                  className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer group"
+                >
+                  {/* Thumbnail */}
+                  <div className="aspect-video bg-purple-100 overflow-hidden relative">
+                    {course.thumbnailURL ? (
+                      <img
+                        src={course.thumbnailURL}
+                        alt={course.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-400 to-indigo-500">
+                        <BookOpen className="w-12 h-12 text-white" />
+                      </div>
+                    )}
+                    {course.offer && (
+                      <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {course.offer.discountPercentage}% OFF
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-5">
+                    {course.category && (
+                      <span className="text-xs text-purple-600 font-medium">{course.category}</span>
+                    )}
+                    <h3 className="font-bold text-base mt-1 mb-2 line-clamp-2 leading-snug">{course.title}</h3>
+                    <p className="text-xs text-gray-500 mb-3">By {course.tutor?.name || 'Instructor'}</p>
+
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
+                      {course.rating > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                          {course.rating.toFixed(1)}
+                        </span>
+                      )}
+                      {course.enrolledCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {course.enrolledCount}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        {course.offer ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl font-bold text-purple-600">₹{course.offer.discountedPrice}</span>
+                            <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xl font-bold text-purple-600">
+                            {course.price === 0 ? 'Free' : `₹${course.price}`}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate(ROUTES.LOGIN); }}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs font-medium"
+                      >
+                        Enroll Now
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

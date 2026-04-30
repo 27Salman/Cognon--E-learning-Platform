@@ -40,8 +40,6 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
-  // The chart uses stats.monthlyChart (always last 12 months, has readable `label` field)
-  // The report is used only for the filtered summary cards + orders table
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [downloading, setDownloading] = useState('');
@@ -50,12 +48,10 @@ export default function AdminDashboard() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  // Fetch base stats (includes monthlyChart for the graph)
   useEffect(() => {
     (async () => {
       try {
         const res = await adminAPI.getDashboardStats();
-        // axios interceptor returns response.data, so res = { success, data }
         setStats(res.data);
       } catch {
         toast.error('Failed to load dashboard stats', { id: 'dashboard-error' });
@@ -65,7 +61,6 @@ export default function AdminDashboard() {
     })();
   }, []);
 
-  // Fetch filtered sales report for summary cards + orders table
   const fetchReport = useCallback(async (from, to) => {
     setReportLoading(true);
     try {
@@ -73,7 +68,6 @@ export default function AdminDashboard() {
       if (from) params.dateFrom = from;
       if (to) params.dateTo = to;
       const res = await adminAPI.getSalesReport(params);
-      // res = { success, data: { summary, chartData, orders } }
       setReport(res.data);
     } catch {
       toast.error('Failed to load sales data');
@@ -113,7 +107,6 @@ export default function AdminDashboard() {
         : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       const ext = type === 'pdf' ? 'pdf' : 'xlsx';
 
-      // axios interceptor returns full response for blob responseType
       const res = type === 'pdf'
         ? await adminAPI.downloadSalesReportPDF(params)
         : await adminAPI.downloadSalesReportExcel(params);
@@ -149,10 +142,16 @@ export default function AdminDashboard() {
   }
 
   const s = stats?.summary || {};
-  const monthlyChart = stats?.monthlyChart || [];
   const reportSummary = report?.summary;
+  const chartIsFiltered = preset !== 'all' || !!(dateFrom || dateTo);
+  const chartData = chartIsFiltered
+    ? (report?.chartData || [])
+    : (stats?.monthlyChart || []);
+  const chartXKey = chartIsFiltered ? 'period' : 'label';
+  const chartTitle = chartIsFiltered
+    ? 'Revenue & Profit Overview (Filtered)'
+    : 'Revenue & Profit Overview (Last 12 Months)';
 
-  // Summary cards order: Total Revenue → Platform Revenue → Tutor Payouts → Orders → Courses → Tutors → Students
   const summaryCards = [
     {
       label: 'Total Revenue',
@@ -306,16 +305,20 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Revenue & Profit Chart — uses stats.monthlyChart (always last 12 months, has readable labels) */}
+      {/* Revenue & Profit Chart — uses filtered report.chartData when a filter is active, otherwise last 12 months */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-700">Revenue &amp; Profit Overview (Last 12 Months)</h2>
+          <h2 className="font-semibold text-gray-700">{chartTitle}</h2>
+          {reportLoading && <span className="text-xs text-gray-400 animate-pulse">Updating…</span>}
         </div>
-        {monthlyChart.length > 0 ? (
+        {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={monthlyChart}>
+            <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <XAxis
+                dataKey={chartXKey}
+                tick={{ fontSize: 11 }}
+              />
               <YAxis
                 tick={{ fontSize: 11 }}
                 tickFormatter={v => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
@@ -331,11 +334,33 @@ export default function AdminDashboard() {
                 activeDot={{ r: 5 }}
                 name="Revenue"
               />
+              {chartIsFiltered && (
+                <Line
+                  type="monotone"
+                  dataKey="platformRevenue"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                  name="Platform Revenue"
+                />
+              )}
+              {chartIsFiltered && (
+                <Line
+                  type="monotone"
+                  dataKey="tutorRevenue"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                  name="Tutor Payout"
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         ) : (
           <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
-            No revenue data yet
+            {reportLoading ? 'Loading chart…' : 'No revenue data for selected period'}
           </div>
         )}
       </div>

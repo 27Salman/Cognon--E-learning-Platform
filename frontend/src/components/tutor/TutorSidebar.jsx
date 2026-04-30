@@ -2,14 +2,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
-import { BarChart3, User, BookOpen, TrendingUp, MessageSquare, LogOut, Ticket } from 'lucide-react';
+import { BarChart3, User, BookOpen, TrendingUp, MessageSquare, LogOut, Wallet } from 'lucide-react';
 
 const menuItems = [
     { name: 'Dashboard',    path: '/tutor/dashboard', icon: BarChart3 },
     { name: 'Profile',      path: '/tutor/profile',   icon: User },
     { name: 'Courses',      path: '/tutor/courses',   icon: BookOpen },
-    { name: 'Coupons',      path: '/tutor/coupons',   icon: Ticket },
     { name: 'Revenue',      path: '/tutor/revenue',   icon: TrendingUp },
+    { name: 'Wallet',       path: '/tutor/wallet',    icon: Wallet },
     { name: 'Chat & Video', path: '/tutor/chat',      icon: MessageSquare },
 ];
 

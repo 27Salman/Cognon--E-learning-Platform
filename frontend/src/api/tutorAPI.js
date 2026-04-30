@@ -31,22 +31,19 @@ export const tutorAPI = {
     getCourseRevenueDetails: (courseId, params = {}) =>
         api.get(`/tutor/revenue/${courseId}`, { params }),
 
+    downloadDashboardPDF: () =>
+        api.get('/tutor/dashboard/download/pdf', { responseType: 'blob' }),
+
+    downloadDashboardExcel: () =>
+        api.get('/tutor/dashboard/download/excel', { responseType: 'blob' }),
+
     // Categories 
     getCategories: () => api.get('/categories/public'),
 
-    // Coupons 
-    getMyCoupons: (params = {}) => 
-        api.get('/tutor/coupons', { params }),
+    // Wallet
+    getWallet: (params = {}) =>
+        api.get('/tutor/wallet', { params }),
 
-    createCoupon: (data) => 
-        api.post('/tutor/coupons', data),
-
-    updateCoupon: (id, data) => 
-        api.put(`/tutor/coupons/${id}`, data),
-
-    deleteCoupon: (id) => 
-        api.delete(`/tutor/coupons/${id}`),
-
-    toggleCoupon: (id) => 
-        api.patch(`/tutor/coupons/${id}/toggle`),
+    requestWithdrawal: (amount) =>
+        api.post('/tutor/wallet/withdraw', { amount }),
 };

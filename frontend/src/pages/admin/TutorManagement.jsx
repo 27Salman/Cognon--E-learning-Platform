@@ -53,6 +53,7 @@ export default function TutorManagement() {
     const handleFilterChange = (value) => { setFilter(value); setPage(1); };
 
     const handleApproval = async (tutorId, action) => {
+        const prevApprovalStatus = tutors.find(t => t._id === tutorId)?.tutorProfile?.approvalStatus || 'pending';
         setActionLoading(`approval-${tutorId}`);
         try {
             const res = action === 'approve'
@@ -62,6 +63,19 @@ export default function TutorManagement() {
             const updated = res.data;
             setTutors(prev => prev.map(t => t._id === tutorId ? updated : t));
             setSelectedTutor(updated);
+
+            // Update summary counts based on the previous and new approval status
+            setSummary(prev => {
+                const next = { ...prev };
+                if (prevApprovalStatus === 'pending') next.pending = Math.max(0, prev.pending - 1);
+                if (action === 'approve') {
+                    next.approved = prev.approved + 1;
+                } else if (action === 'reject' && prevApprovalStatus === 'approved') {
+                    next.approved = Math.max(0, prev.approved - 1);
+                }
+                return next;
+            });
+
             toast.success(action === 'approve' ? 'Tutor approved' : 'Tutor rejected');
         } catch (error) {
             toast.error(error.response?.data?.message || `Failed to ${action} tutor`);

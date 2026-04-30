@@ -4,7 +4,7 @@ import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import {
   LayoutDashboard, User, Tag, GraduationCap, BookOpen,
-  ShoppingCart, LogOut, Users
+  ShoppingCart, LogOut, Users, Ticket, Wallet
 } from 'lucide-react';
 
 const menuItems = [
@@ -15,6 +15,8 @@ const menuItems = [
   { name: 'Students',   path: '/admin/students',   icon: GraduationCap },
   { name: 'Tutors',     path: '/admin/tutors',     icon: Users },
   { name: 'Orders',     path: '/admin/orders',     icon: ShoppingCart },
+  { name: 'Coupons',    path: '/admin/coupons',    icon: Ticket },
+  { name: 'Wallet',     path: '/admin/wallet',     icon: Wallet },
 ];
 
 export default function AdminSidebar({ adminInfo }) {
