@@ -66,6 +66,7 @@ const catalogService = {
 
         const coursesWithOffers = courses.map((course) => {
             const courseObj = course.toJSON();
+            delete courseObj.studentsEnrolled;
             if (course.offerPercentage > 0) {
                 const discountedPrice = Math.round(
                     course.price - (course.price * course.offerPercentage) / 100
@@ -91,7 +92,6 @@ const catalogService = {
     async getCourseDetails(courseId, userId = null) {
         const Lesson = require('../models/Lesson');
 
-        // First try to find the course regardless of status
         const course = await Course.findById(courseId)
             .populate('tutor', 'name profileImage bio');
 
@@ -99,7 +99,6 @@ const catalogService = {
             throw new Error('Course not found');
         }
 
-        // Allow access if: published, OR the student is enrolled, OR the tutor owns it
         const isEnrolled = userId && course.studentsEnrolled.some(id => id.toString() === userId.toString());
         const isOwner = userId && course.tutor._id.toString() === userId.toString();
 
@@ -111,7 +110,17 @@ const catalogService = {
             .sort({ order: 1, createdAt: 1 });
 
         const courseObj = course.toJSON();
-        courseObj.lessons = lessons.map(l => l.toJSON());
+        delete courseObj.studentsEnrolled; 
+
+        courseObj.lessons = lessons.map(l => {
+            const lesson = l.toJSON();
+            if (!isEnrolled && !isOwner) {
+                delete lesson.videoUrl;
+                delete lesson.pdfNotes;
+                delete lesson.pdfNotesURL;
+            }
+            return lesson;
+        });
 
         if (course.offerPercentage > 0) {
             const discountedPrice = Math.round(

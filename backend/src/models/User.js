@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema(
             default: null,
             validate: {
                 validator: function(v) {
-                    if (!v) return true; // allow null/empty
+                    if (!v) return true; 
                     return /^[6-9]\d{9}$/.test(v);
                 },
                 message: 'Please provide a valid phone number (10 digits starting with 6-9)'
@@ -180,6 +180,10 @@ userSchema.methods.toJSON = function() {
     const user = this.toObject();
     delete user.password;
     delete user.__v;
+    delete user.verificationToken;
+    delete user.verificationTokenExpires;
+    delete user.passwordResetToken;
+    delete user.passwordResetExpires;
     
     if (user.profileImage) {
         user.profileImageURL = this.getProfileImageURL();

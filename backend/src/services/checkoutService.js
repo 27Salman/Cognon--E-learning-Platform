@@ -7,6 +7,7 @@ const Coupon = require('../models/Coupon');
 const User = require('../models/User');
 const cartService = require('./cartService');
 const couponService = require('./couponService');
+const walletService = require('./walletService');
 const { PLATFORM_COMMISSION } = require('../config/constants');
 
 const razorpay = new Razorpay({
@@ -74,7 +75,6 @@ const checkoutService = {
         if (existingOrder) {
             const existingCourseIds = existingOrder.courses.map(c => c.course.toString()).sort();
             const isSameCart = JSON.stringify(existingCourseIds) === JSON.stringify(cartCourseIds);
-            // Also verify the amount matches — if cart changed (offer/coupon), create fresh
             const isSameAmount = existingOrder.finalAmount === priceData.finalAmount;
 
             if (isSameCart && isSameAmount) {
@@ -97,7 +97,6 @@ const checkoutService = {
                     keyId: process.env.RAZORPAY_KEY_ID
                 };
             }
-            // Cart or amount changed — fall through to create a fresh order
         }
 
         const razorpayOrder = await razorpay.orders.create({
@@ -188,14 +187,13 @@ const checkoutService = {
         order.razorpaySignature = razorpaySignature;
         await order.save();
 
-        // Enroll student in courses first
+        // Enroll student 
         const courseIds = order.courses.map(c => c.course);
         await Course.updateMany(
             { _id: { $in: courseIds } },
             { $addToSet: { studentsEnrolled: userId } }
         );
 
-        // Update User.studentProfile.enrolledCourses — only push if not already enrolled
         const student = await User.findById(userId).select('studentProfile.enrolledCourses');
         const alreadyEnrolledIds = (student?.studentProfile?.enrolledCourses || [])
             .map(e => e.courseId.toString());
@@ -222,7 +220,6 @@ const checkoutService = {
             });
         }
 
-        // Only update coupon usage AFTER enrollment succeeds
         if (order.couponCode) {
             const coupon = await Coupon.findOne({ code: order.couponCode.toUpperCase() });
             if (coupon) {
@@ -237,6 +234,8 @@ const checkoutService = {
                 await coupon.save();
             }
         }
+
+        await walletService.creditFromOrder(order);
 
         await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
 

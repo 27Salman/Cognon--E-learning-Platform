@@ -550,7 +550,7 @@ const adminService = {
                 tutorRevenue:    Math.round(m.tutorRevenue),
             }));
 
-        return { summary, chartData, orders };
+        return { summary, chartData };
     },
 
 

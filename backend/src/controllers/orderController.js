@@ -32,15 +32,7 @@ exports.getOrderById = asyncHandler(async (req, res) => {
     res.status(HTTP_STATUS.OK).json({ success: true, data: order });
 });
 
-exports.updatePaymentStatus = asyncHandler(async (req, res) => {
-    const { paymentStatus } = req.body;
-    const order = await orderService.updatePaymentStatus(req.params.id, paymentStatus);
-    res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: 'Payment status updated successfully',
-        data: order
-    });
-});
+
 
 
 

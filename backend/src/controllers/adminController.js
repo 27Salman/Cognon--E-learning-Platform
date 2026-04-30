@@ -38,7 +38,7 @@ exports.verifyPasswordChange = asyncHandler(async (req, res) => {
     });
 });
 
-// User Management
+// User 
 exports.approveTutor = asyncHandler( async (req, res) => {
     const tutor = await adminService.approveTutor(req.params.id);
     res.status(HTTP_STATUS.OK).json({ success: true, message: 'Tutor approved successful', data: tutor });
@@ -79,7 +79,7 @@ exports.unblockUser = asyncHandler(async (req, res) => {
 });
 
 
-// Course Management
+// Course 
 exports.getCourses = asyncHandler(async (req, res) => {
     const { category, status, tutor, search, sort, page, limit } = req.query;
     const result = await adminService.getCourses({ category, status, tutor, search, sort, page, limit });

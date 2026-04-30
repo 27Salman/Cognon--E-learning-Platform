@@ -21,7 +21,8 @@ exports.removeFromWishlist = asyncHandler(async (req, res) => {
 });
 
 exports.getWishlist = asyncHandler(async (req, res) => {
-    const wishlist = await wishlistService.getWishlist(req.user.id);
+    const { page, limit } = req.query;
+    const wishlist = await wishlistService.getWishlist(req.user.id, { page, limit });
     res.status(HTTP_STATUS.OK).json({ success: true, data: wishlist });
 });
 

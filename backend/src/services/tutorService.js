@@ -104,10 +104,49 @@ const tutorService = {
             return sum + (course.studentsEnrolled ? course.studentsEnrolled.length : 0);
         }, 0);
 
-        const totalRevenue = courses.reduce((sum, course) => {
-            const enrolled = course.studentsEnrolled ? course.studentsEnrolled.length : 0;
-            return sum + (course.price * enrolled);
-        }, 0);
+        const orders = await Order.find({
+            'courses.tutor': tutorId,
+            paymentStatus: 'completed'
+        }).select('courses orderDate');
+
+        let totalRevenue = 0;
+        for (const order of orders) {
+            for (const item of order.courses) {
+                if (item.tutor.toString() === tutorId.toString()) {
+                    totalRevenue += item.tutorShare;
+                }
+            }
+        }
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const recentOrders = await Order.find({
+            'courses.tutor': tutorId,
+            paymentStatus: 'completed',
+            orderDate: { $gte: sevenDaysAgo }
+        }).select('courses orderDate');
+
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const weeklyMap = {};
+        days.forEach(d => { weeklyMap[d] = { day: d, students: 0, revenue: 0 }; });
+
+        for (const order of recentOrders) {
+            const dayName = days[new Date(order.orderDate).getDay()];
+            for (const item of order.courses) {
+                if (item.tutor.toString() === tutorId.toString()) {
+                    weeklyMap[dayName].students += 1;
+                    weeklyMap[dayName].revenue += item.tutorShare;
+                }
+            }
+        }
+
+        const weeklyChart = days.map(d => ({
+            day: d,
+            students: weeklyMap[d].students,
+            revenue: Math.round(weeklyMap[d].revenue)
+        }));
 
         const recentCourses = courses
             .sort((a, b) => b.createdAt - a.createdAt)
@@ -118,14 +157,15 @@ const tutorService = {
                 status: c.status,
                 price: c.price,
                 studentsCount: c.studentsEnrolled ? c.studentsEnrolled.length : 0,
-                revenue: c.price * (c.studentsEnrolled ? c.studentsEnrolled.length : 0)
+                revenue: c.revenue || 0
             }));
 
         return {
             totalCourses,
             activeCourses,
             totalStudents,
-            totalRevenue,
+            totalRevenue: Math.round(totalRevenue),
+            weeklyChart,
             recentCourses
         };
     },
@@ -144,8 +184,6 @@ const tutorService = {
             };
         }
 
-        const courseIds= courses.map(c => c._id);
-
         const orders = await Order.find({
             'courses.tutor': tutorId,
             paymentStatus: 'completed'
@@ -154,13 +192,20 @@ const tutorService = {
         .populate('courses.course', 'title thumbnail')
         .sort({ orderDate: -1 });
 
+        const courseRevenueMap = {};
         let totalEarnings = 0;
         const recentEnrollments = [];
 
         for (const order of orders) {
             for (const item of order.courses) {
                 if (item.tutor.toString() === tutorId.toString()) {
-                    totalEarnings += item.tutorShare;
+                    const cid = item.course?._id?.toString() || item.course?.toString();
+                    if (!courseRevenueMap[cid]) {
+                        courseRevenueMap[cid] = { grossRevenue: 0, tutorEarning: 0 };
+                    }
+                    courseRevenueMap[cid].grossRevenue += item.discountedPrice || 0;
+                    courseRevenueMap[cid].tutorEarning += item.tutorShare || 0;
+                    totalEarnings += item.tutorShare || 0;
 
                     if (recentEnrollments.length < 10) {
                         recentEnrollments.push({
@@ -181,6 +226,8 @@ const tutorService = {
         const monthlyRevenue = await this.getMonthlyRevenue(tutorId);
 
         const courseRevenue = courses.map(course => {
+            const cid = course._id.toString();
+            const revenueData = courseRevenueMap[cid] || { grossRevenue: 0, tutorEarning: 0 };
             const enrolledCount = course.studentsEnrolled ? course.studentsEnrolled.length : 0;
             return {
                 _id: course._id,
@@ -190,16 +237,19 @@ const tutorService = {
                 price: course.price,
                 status: course.status,
                 enrolledCount,
-                totalRevenue: course.revenue || 0,
-                tutorEarning: Math.round((course.revenue || 0) * 0.9),
+                totalRevenue: Math.round(revenueData.grossRevenue),
+                tutorEarning: Math.round(revenueData.tutorEarning),
                 createdAt: course.createdAt
             };
         });
 
         courseRevenue.sort((a, b) => b.totalRevenue - a.totalRevenue);
 
+        const totalGrossRevenue = courseRevenue.reduce((sum, c) => sum + c.totalRevenue, 0);
+
         const summary = {
             totalEarnings: Math.round(totalEarnings),
+            totalRevenue: Math.round(totalGrossRevenue),
             totalEnrollments: courses.reduce((sum, c) => sum + (c.studentsEnrolled?.length || 0), 0),
             totalCourses: courses.length,
             activeCourses: courses.filter(c => c.status === COURSE_STATUS.PUBLISHED).length
@@ -266,7 +316,9 @@ const tutorService = {
         const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 5));
         const skip = (pageNum - 1) * limitNum;
 
-        const [orders, totalFiltered] = await Promise.all([
+        // Fetch all orders for stats + paginated orders for the table
+        const [allOrders, pagedOrders, totalFiltered] = await Promise.all([
+            Order.find(query).select('courses couponCode'),
             Order.find(query)
                 .populate('user', 'name email profileImage')
                 .sort({ orderDate: -1 })
@@ -275,7 +327,25 @@ const tutorService = {
             Order.countDocuments(query)
         ]);
 
-        const enrollments = orders.map(order => {
+        let grossRevenue = 0;
+        let tutorTotalEarning = 0;
+        let totalDiscount = 0;
+        let couponUsageCount = 0;
+
+        for (const order of allOrders) {
+            const item = order.courses.find(c => c.course.toString() === courseId.toString());
+            if (item) {
+                grossRevenue     += item.discountedPrice || 0;
+                tutorTotalEarning += item.tutorShare     || 0;
+                totalDiscount    += (item.originalPrice - item.discountedPrice) || 0;
+                if (order.couponCode) couponUsageCount += 1;
+            }
+        }
+
+        const totalEnrollments = allOrders.length;
+        const avgDiscount = totalEnrollments > 0 ? Math.round(totalDiscount / totalEnrollments) : 0;
+
+        const enrollments = pagedOrders.map(order => {
             const courseItem = order.courses.find(
                 item => item.course.toString() === courseId.toString()
             );
@@ -309,9 +379,12 @@ const tutorService = {
                 _id: course._id,
                 title: course.title,
                 price: course.price,
-                totalEnrollments: course.studentsEnrolled?.length || 0,
-                totalRevenue: course.revenue || 0,
-                tutorTotalEarning: Math.round((course.revenue || 0) * 0.9)
+                status: course.status,
+                totalEnrollments,
+                grossRevenue:      Math.round(grossRevenue),
+                tutorTotalEarning: Math.round(tutorTotalEarning),
+                avgDiscount,
+                couponUsageCount,
             },
             enrollments: filtered,
             pagination

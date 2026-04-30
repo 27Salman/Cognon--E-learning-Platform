@@ -92,6 +92,9 @@ const categoryService = {
             throw new Error('Category not found');
         }
 
+        const oldName = category.name;
+        let nameChanged = false;
+
         if (name && name.trim() !== category.name) {
             const existingCategory = await Category.findOne({
                 name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
@@ -103,6 +106,7 @@ const categoryService = {
             }
 
             category.name = name.trim();
+            nameChanged = true;
         }
 
         if (description !== undefined) {
@@ -117,6 +121,13 @@ const categoryService = {
         }
 
         await category.save();
+
+        if (nameChanged) {
+            await Course.updateMany(
+                { category: oldName },
+                { $set: { category: category.name } }
+            );
+        }
 
         return {
             ...category.toJSON(),

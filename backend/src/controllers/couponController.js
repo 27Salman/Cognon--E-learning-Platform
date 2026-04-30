@@ -56,6 +56,9 @@ exports.validateCoupon = asyncHandler(async (req, res) => {
 });
 
 exports.getAvailableCoupons = asyncHandler(async (req, res) => {
-    const coupons = await couponService.getAvailableCoupons(req.user.id);
+    const courseIds = req.query.courseIds
+        ? req.query.courseIds.split(',').filter(Boolean)
+        : [];
+    const coupons = await couponService.getAvailableCoupons(req.user.id, courseIds);
     res.status(HTTP_STATUS.OK).json({ success: true, data: coupons });
 });

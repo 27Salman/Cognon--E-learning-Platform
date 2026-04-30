@@ -95,7 +95,7 @@ const orderService = {
         const [orders, totalFiltered, allOrders] = await Promise.all([
             Order.find(query)
                 .populate('user', 'name email phone')
-                .populate('courses.course', 'title thumbnail')
+                .populate('courses.course', 'title thumbnail category')
                 .populate('courses.tutor', 'name')
                 .sort(sortOption)
                 .skip(skip)
@@ -138,23 +138,8 @@ const orderService = {
         return order;
     },
 
-    async updatePaymentStatus(orderId, paymentStatus) {
-        const validStatuses = ['pending', 'completed', 'failed', 'refunded'];
-        if (!validStatuses.includes(paymentStatus)) {
-            throw new Error('Invalid payment status');
-        }
-
-        const order = await Order.findById(orderId);
-        if (!order) {
-            throw new Error('Order not found');
-        }
-
-        order.paymentStatus = paymentStatus;
-        await order.save();
-
-        return order;
-    }
 };
+
 
 module.exports = orderService;
 

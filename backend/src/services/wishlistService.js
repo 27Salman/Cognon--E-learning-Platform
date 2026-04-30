@@ -50,25 +50,36 @@ const wishlistService = {
         return { message: 'Course removed from wishlist' };
     },
 
-    async getWishlist(userId) {
+    async getWishlist(userId, { page = 1, limit = 5 } = {}) {
         let wishlist = await Wishlist.findOne({ user: userId })
             .populate({
                 path: 'courses',
-                select: 'title description price thumbnail category tutor status studentsEnrolled rating',
+                select: 'title description price thumbnail category tutor status studentsEnrolled rating offerPercentage',
                 populate: { path: 'tutor', select: 'name' }
             });
 
         if (!wishlist) {
-            return { courses: [], totalItems: 0 };
+            return { courses: [], totalItems: 0, pagination: { currentPage: 1, totalPages: 1, totalFiltered: 0, limit: 5 } };
         }
 
         const availableCourses = wishlist.courses.filter(
             course => course && course.status === COURSE_STATUS.PUBLISHED
         );
 
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 5));
+        const total = availableCourses.length;
+        const paginated = availableCourses.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+
         return {
-            courses: availableCourses,
-            totalItems: availableCourses.length
+            courses: paginated,
+            totalItems: total,
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(total / limitNum),
+                totalFiltered: total,
+                limit: limitNum
+            }
         };
     },
 

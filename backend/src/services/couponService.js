@@ -24,6 +24,26 @@ const couponService = {
             throw new Error('Coupon code already exists');
         }
 
+        const discountVal = Number(discountValue);
+        const minPurchase = Number(minPurchaseAmount) || 0;
+        const maxDiscount = maxDiscountAmount ? Number(maxDiscountAmount) : null;
+
+        if (discountVal <= 0) {
+            throw new Error('Discount value must be greater than 0');
+        }
+        if (discountType === 'percentage' && discountVal > 100) {
+            throw new Error('Percentage discount cannot exceed 100%');
+        }
+        if (discountType === 'fixed' && minPurchase > 0 && discountVal >= minPurchase) {
+            throw new Error(`Fixed discount (₹${discountVal}) must be less than minimum purchase amount (₹${minPurchase})`);
+        }
+        if (discountType === 'percentage' && maxDiscount && minPurchase > 0 && maxDiscount >= minPurchase) {
+            throw new Error(`Max discount cap (₹${maxDiscount}) must be less than minimum purchase amount (₹${minPurchase})`);
+        }
+        if (new Date(validUntil) <= new Date(validFrom)) {
+            throw new Error('Expiry date must be after start date');
+        }
+
         if (applicableTo !== 'all' && applicableIds && applicableIds.length > 0) {
             if (applicableTo === 'category') {
                 const categories = await Category.find({ _id: { $in: applicableIds } });
@@ -128,12 +148,37 @@ const couponService = {
         if (updateData.discountValue !== undefined) coupon.discountValue = updateData.discountValue;
         if (updateData.minPurchaseAmount !== undefined) coupon.minPurchaseAmount = updateData.minPurchaseAmount;
         if (updateData.maxDiscountAmount !== undefined) coupon.maxDiscountAmount = updateData.maxDiscountAmount;
-        if (updateData.applicableTo) coupon.applicableTo = updateData.applicableTo;
+        if (updateData.applicableTo) {
+            coupon.applicableTo = updateData.applicableTo;
+            coupon.applicableToModel = updateData.applicableTo === 'category' ? 'Category'
+                : updateData.applicableTo === 'course' ? 'Course'
+                : undefined;
+        }
         if (updateData.applicableIds) coupon.applicableIds = updateData.applicableIds;
         if (updateData.usageLimit !== undefined) coupon.usageLimit = updateData.usageLimit;
         if (updateData.perUserLimit !== undefined) coupon.perUserLimit = updateData.perUserLimit;
         if (updateData.validFrom) coupon.validFrom = new Date(updateData.validFrom);
         if (updateData.validUntil) coupon.validUntil = new Date(updateData.validUntil);
+
+        const discountVal = coupon.discountValue;
+        const minPurchase = coupon.minPurchaseAmount || 0;
+        const maxDiscount = coupon.maxDiscountAmount;
+
+        if (discountVal <= 0) {
+            throw new Error('Discount value must be greater than 0');
+        }
+        if (coupon.discountType === 'percentage' && discountVal > 100) {
+            throw new Error('Percentage discount cannot exceed 100%');
+        }
+        if (coupon.discountType === 'fixed' && minPurchase > 0 && discountVal >= minPurchase) {
+            throw new Error(`Fixed discount (₹${discountVal}) must be less than minimum purchase amount (₹${minPurchase})`);
+        }
+        if (coupon.discountType === 'percentage' && maxDiscount && minPurchase > 0 && maxDiscount >= minPurchase) {
+            throw new Error(`Max discount cap (₹${maxDiscount}) must be less than minimum purchase amount (₹${minPurchase})`);
+        }
+        if (coupon.validUntil <= coupon.validFrom) {
+            throw new Error('Expiry date must be after start date');
+        }
 
         await coupon.save();
         return coupon;
@@ -231,7 +276,7 @@ const couponService = {
         };
     },
 
-    async getAvailableCoupons(userId) {
+    async getAvailableCoupons(userId, courseIds = []) {
         const now = new Date();
         const coupons = await Coupon.find({
             isActive: true,
@@ -242,23 +287,45 @@ const couponService = {
                 { $expr: { $lt: ['$usageCount', '$usageLimit'] } }
             ]
         })
-        .select('code description discountType discountValue minPurchaseAmount maxDiscountAmount validUntil usedBy perUserLimit')
+        .populate('applicableIds')
+        .select('code description discountType discountValue minPurchaseAmount maxDiscountAmount validUntil usedBy perUserLimit applicableTo applicableIds')
         .sort({ discountValue: -1 })
         .limit(20);
 
-        return coupons.filter(coupon => {
+        const eligible = coupons.filter(coupon => {
             const userUsage = coupon.usedBy?.find(u => u.user?.toString() === userId?.toString());
             return !userUsage || userUsage.usedCount < coupon.perUserLimit;
-        }).map(c => ({
-            _id: c._id,
-            code: c.code,
-            description: c.description,
-            discountType: c.discountType,
-            discountValue: c.discountValue,
-            minPurchaseAmount: c.minPurchaseAmount,
-            maxDiscountAmount: c.maxDiscountAmount,
-            validUntil: c.validUntil
-        }));
+        });
+
+        let cartCourses = [];
+        if (courseIds.length > 0) {
+            cartCourses = await Course.find({ _id: { $in: courseIds } }).select('category');
+        }
+
+        return eligible.map(c => {
+            let applicable = true;
+            if (courseIds.length > 0 && c.applicableTo !== 'all') {
+                if (c.applicableTo === 'course') {
+                    const applicableCourseIds = c.applicableIds.map(id => id._id?.toString() || id.toString());
+                    applicable = courseIds.some(id => applicableCourseIds.includes(id.toString()));
+                } else if (c.applicableTo === 'category') {
+                    const applicableCategoryNames = c.applicableIds.map(cat => cat.name);
+                    applicable = cartCourses.some(course => applicableCategoryNames.includes(course.category));
+                }
+            }
+            return {
+                _id: c._id,
+                code: c.code,
+                description: c.description,
+                discountType: c.discountType,
+                discountValue: c.discountValue,
+                minPurchaseAmount: c.minPurchaseAmount,
+                maxDiscountAmount: c.maxDiscountAmount,
+                validUntil: c.validUntil,
+                applicableTo: c.applicableTo,
+                applicable, 
+            };
+        });
     }
 
 };
