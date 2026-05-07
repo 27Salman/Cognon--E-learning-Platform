@@ -1,10 +1,11 @@
 import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useState } from 'react';
 
 export default function AdminNavbar({ adminInfo }) {
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);  
 
   const displayName = user?.name || adminInfo?.name || 'Admin';
   const profileImage = adminInfo?.profileImage || null;

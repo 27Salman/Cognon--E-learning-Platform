@@ -33,7 +33,7 @@ export default function Wishlist() {
         setActionLoading(prev => ({ ...prev, [courseId]: 'removing' }));
         try {
             await studentAPI.removeFromWishlist(courseId);
-            // If last item on page > 1, go back a page
+            window.dispatchEvent(new Event('wishlist-updated'));
             const newPage = wishlist.length === 1 && page > 1 ? page - 1 : page;
             setPage(newPage);
             fetchWishlist(newPage);
@@ -49,7 +49,8 @@ export default function Wishlist() {
         setActionLoading(prev => ({ ...prev, [courseId]: 'carting' }));
         try {
             await studentAPI.addToCart(courseId);
-            await studentAPI.removeFromWishlist(courseId);
+            window.dispatchEvent(new Event('cart-updated'));
+            window.dispatchEvent(new Event('wishlist-updated'));
             const newPage = wishlist.length === 1 && page > 1 ? page - 1 : page;
             setPage(newPage);
             fetchWishlist(newPage);

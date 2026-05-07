@@ -38,7 +38,7 @@ export const tutorAPI = {
         api.get('/tutor/dashboard/download/excel', { responseType: 'blob' }),
 
     // Categories 
-    getCategories: () => api.get('/categories/public'),
+    getCategories: () => api.get('/categories/public', { params: { limit: 100, _t: Date.now() } }),
 
     // Wallet
     getWallet: (params = {}) =>

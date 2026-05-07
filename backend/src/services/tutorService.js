@@ -12,7 +12,8 @@ const buildImageURL = (profileImage) => {
     if (!profileImage) return null;
     if (profileImage.startsWith('http')) return profileImage;
     const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    return `${BASE_URL}/uploads/${profileImage}`;
+    const subfolder = profileImage.startsWith('user-') ? 'profiles/' : '';
+    return `${BASE_URL}/uploads/${subfolder}${profileImage}`;
 };
 
 const tutorService = {
@@ -316,7 +317,6 @@ const tutorService = {
         const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 5));
         const skip = (pageNum - 1) * limitNum;
 
-        // Fetch all orders for stats + paginated orders for the table
         const [allOrders, pagedOrders, totalFiltered] = await Promise.all([
             Order.find(query).select('courses couponCode'),
             Order.find(query)

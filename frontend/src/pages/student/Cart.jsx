@@ -32,6 +32,7 @@ export default function Cart() {
         try {
             const res = await studentAPI.removeFromCart(courseId);
             setCart(res.data);
+            window.dispatchEvent(new Event('cart-updated'));
             toast.success('Removed from cart');
         } catch {
             toast.error('Failed to remove');

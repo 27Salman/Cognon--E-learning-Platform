@@ -50,6 +50,11 @@ exports.login = asyncHandler(async (req, res) => {
             email: user.email,
             role: user.role,
             phone: user.phone,
+            profileImage: user.profileImage
+                ? (user.profileImage.startsWith('http')
+                    ? user.profileImage
+                    : `${process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`}/uploads/${user.profileImage.startsWith('user-') ? 'profiles/' : ''}${user.profileImage}`)
+                : null,
             ...(user.role === 'tutor' && {
                 tutorProfile: {
                     bio: user.tutorProfile?.bio,
@@ -85,7 +90,9 @@ exports.getCurrentUser = asyncHandler(async (req, res) => {
   
     const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
     const profileImageURL = user.profileImage
-        ? (user.profileImage.startsWith('http') ? user.profileImage : `${BASE_URL}/uploads/${user.profileImage}`)
+        ? (user.profileImage.startsWith('http')
+            ? user.profileImage
+            : `${BASE_URL}/uploads/${user.profileImage.startsWith('user-') ? 'profiles/' : ''}${user.profileImage}`)
         : null;
 
     res.status(HTTP_STATUS.OK).json({

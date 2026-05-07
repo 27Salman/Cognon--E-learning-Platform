@@ -70,8 +70,12 @@ const Signup = () => {
 
     if (!formData.name.trim()) {
       errors.name = 'Name is required';
-    } else if (formData.name.trim().length < 3) {
-      errors.name = 'Name must be at least 3 characters';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters';
+    } else if (formData.name.trim().length > 50) {
+      errors.name = 'Name cannot exceed 50 characters';
+    } else if (!/^[a-zA-Z]+([ '\-\.][a-zA-Z]+)*$/.test(formData.name.trim())) {
+      errors.name = 'Name can only contain letters, spaces, hyphens, apostrophes and dots';
     }
 
     if (!formData.email.trim()) {
@@ -215,12 +219,12 @@ Cognon provides a smart platform for learning, growing, and achieving your goals
           {/* Signup Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="User name"
+              label="Full Name"
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Enter your User name"
+              placeholder="Enter your full name"
               error={formErrors.name}
               required
             />

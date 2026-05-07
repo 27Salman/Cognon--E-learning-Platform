@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
         password: {
             type: String,
             required: [true, 'Password is required'],
-            minlength: [6, 'Password must be at least 6 characters'],
+            minlength: [8, 'Password must be at least 8 characters'],
             select: false
         },
         phone: {
@@ -173,7 +173,8 @@ userSchema.methods.comparePassword = async function(candidatePassword){
 userSchema.methods.getProfileImageURL = function() {
     if (!this.profileImage) return null;
     if (this.profileImage.startsWith('http')) return this.profileImage;
-    return `${process.env.API_URL || 'http://localhost:5000'}/uploads/${this.profileImage}`;
+    const subfolder = this.profileImage.startsWith('user-') ? 'profiles/' : '';
+    return `${process.env.API_URL || 'http://localhost:5000'}/uploads/${subfolder}${this.profileImage}`;
 };
 
 userSchema.methods.toJSON = function() {

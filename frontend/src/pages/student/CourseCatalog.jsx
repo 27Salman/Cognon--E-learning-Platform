@@ -127,12 +127,14 @@ export default function CourseCatalog() {
 
     useEffect(() => {
         studentAPI.getProfile()
-            .then(res => setStudentInfo(res.data || res))
+            .then(res => {
+                const data = res.data || res;
+                setStudentInfo({ ...data, profileImage: data.profileImageURL || data.profileImage || null });
+            })
             .catch(() => {});
         dispatch(fetchPublishedCourses({}));
         dispatch(fetchEnrolledCourses());
 
-        // Fetch admin-managed categories
         fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/public`)
             .then(r => r.json())
             .then(data => {

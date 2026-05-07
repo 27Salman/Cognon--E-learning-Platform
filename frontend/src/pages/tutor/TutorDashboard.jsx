@@ -17,6 +17,9 @@ export default function TutorDashboard() {
     const dispatch = useDispatch();
     const { dashboard, loading } = useSelector(state => state.courses);
     const [downloading, setDownloading] = useState('');
+    const [chartPeriod, setChartPeriod] = useState('week'); 
+    const [monthlyData, setMonthlyData] = useState([]);
+    const [monthlyLoading, setMonthlyLoading] = useState(false);
 
     const approvalStatus = tutorInfo?.tutorProfile?.approvalStatus;
     const isApproved = approvalStatus === TUTOR_APPROVAL_STATUS.APPROVED;
@@ -25,6 +28,19 @@ export default function TutorDashboard() {
     useEffect(() => {
         dispatch(fetchDashboard());
     }, [dispatch]);
+
+    useEffect(() => {
+        if (chartPeriod === 'month' && monthlyData.length === 0) {
+            setMonthlyLoading(true);
+            tutorAPI.getRevenueDashboard()
+                .then(res => {
+                    const data = res.data || res;
+                    setMonthlyData(data.monthlyRevenue || []);
+                })
+                .catch(() => {})
+                .finally(() => setMonthlyLoading(false));
+        }
+    }, [chartPeriod]);
 
     const handleDownload = async (type) => {
         setDownloading(type);
@@ -57,7 +73,23 @@ export default function TutorDashboard() {
     const defaultWeekly = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => ({
         day, students: 0, revenue: 0
     }));
-    const chartData = dashboard?.weeklyChart || defaultWeekly;
+
+    const weeklyChartData = dashboard?.weeklyChart || defaultWeekly;
+
+    const monthlyChartData = monthlyData.map(m => {
+        const [year, mon] = (m.month || '').split('-');
+        const label = mon
+            ? new Date(Number(year), Number(mon) - 1, 1).toLocaleString('default', { month: 'short' })
+            : m.month;
+        return {
+            day: label,
+            students: m.enrollments || 0,
+            revenue: m.revenue || 0,
+        };
+    });
+
+    const activeChartData = chartPeriod === 'week' ? weeklyChartData : monthlyChartData;
+    const isChartLoading = chartPeriod === 'month' ? monthlyLoading : loading;
 
     const stats = [
         {
@@ -141,21 +173,48 @@ export default function TutorDashboard() {
                 <div className="bg-white rounded-xl p-4">
                     <div className="flex items-center justify-between mb-3">
                         <p className="text-sm font-medium text-gray-700">Analysis</p>
-                        <span className="text-xs text-gray-400">This week</span>
+                        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                            <button
+                                onClick={() => setChartPeriod('week')}
+                                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                                    chartPeriod === 'week'
+                                        ? 'bg-white text-purple-700 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                Week
+                            </button>
+                            <button
+                                onClick={() => setChartPeriod('month')}
+                                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                                    chartPeriod === 'month'
+                                        ? 'bg-white text-purple-700 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                Month
+                            </button>
+                        </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                            <XAxis dataKey="day" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
-                            <Tooltip
-                                contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }}
-                            />
-                            <Legend />
-                            <Line type="monotone" dataKey="students" stroke="#ef4444" strokeWidth={2} dot={false} name="Students" />
-                            <Line type="monotone" dataKey="revenue" stroke="#7c3aed" strokeWidth={2} dot={false} name="Revenue" />
-                        </LineChart>
-                    </ResponsiveContainer>
+                    {isChartLoading ? (
+                        <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm animate-pulse">
+                            Loading chart…
+                        </div>
+                    ) : (
+                        <ResponsiveContainer width="100%" height={200}>
+                            <LineChart data={activeChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="day" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
+                                <Tooltip
+                                    contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }}
+                                />
+                                <Legend />
+                                <Line type="monotone" dataKey="students" stroke="#ef4444" strokeWidth={2} dot={false} name="Students" />
+                                <Line type="monotone" dataKey="revenue" stroke="#7c3aed" strokeWidth={2} dot={false} name="Revenue (₹)" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    )}
                 </div>
             </div>
 

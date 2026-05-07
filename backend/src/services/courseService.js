@@ -1,12 +1,18 @@
 const Course = require('../models/Course');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
+const Category = require('../models/Category');
 const { COURSE_STATUS } = require('../config/constants');
 
 const courseService = {
 
     async createCourse(tutorId, courseData, file){
         const { title, description, price, offerPercentage, category } = courseData;
+
+        const categoryDoc = await Category.findOne({ name: category, isActive: true });
+        if (!categoryDoc) {
+            throw new Error('The selected category is not available. Please choose an active category.');
+        }
 
         const course = new Course({
             title, 

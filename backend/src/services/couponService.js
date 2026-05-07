@@ -249,14 +249,22 @@ const couponService = {
                 throw new Error('This coupon is not applicable to the courses in your cart');
             }
         } else if (coupon.applicableTo === 'category') {
-            const courses = await Course.find({ _id: { $in: courseIds } });
-            const applicableCategoryNames = coupon.applicableIds.map(cat => cat.name);
+            const applicableCategoryIds = coupon.applicableIds.map(id => 
+                id._id ? id._id.toString() : id.toString()
+            );
+            const applicableCategories = await Category.find({
+                _id: { $in: applicableCategoryIds }
+            }).select('name');
+            const applicableCategoryNames = applicableCategories.map(cat => cat.name);
+            const courses = await Course.find({ _id: { $in: courseIds } }).select('category')
             const hasApplicableCategory = courses.some(course => 
                 applicableCategoryNames.includes(course.category)
             );
+
             if (!hasApplicableCategory) {
                 throw new Error('This coupon is not applicable to the courses in your cart');
             }
+
         }
 
         let discount = 0;
@@ -288,7 +296,7 @@ const couponService = {
             ]
         })
         .populate('applicableIds')
-        .select('code description discountType discountValue minPurchaseAmount maxDiscountAmount validUntil usedBy perUserLimit applicableTo applicableIds')
+        .select('code description discountType discountValue minPurchaseAmount maxDiscountAmount validUntil usedBy perUserLimit applicableTo applicableIds applicableToModel')
         .sort({ discountValue: -1 })
         .limit(20);
 
@@ -309,8 +317,12 @@ const couponService = {
                     const applicableCourseIds = c.applicableIds.map(id => id._id?.toString() || id.toString());
                     applicable = courseIds.some(id => applicableCourseIds.includes(id.toString()));
                 } else if (c.applicableTo === 'category') {
-                    const applicableCategoryNames = c.applicableIds.map(cat => cat.name);
-                    applicable = cartCourses.some(course => applicableCategoryNames.includes(course.category));
+                   const applicableCategoryNames = c.applicableIds
+                        .filter(cat => cat && cat.name) 
+                        .map(cat => cat.name);
+                    applicable = applicableCategoryNames.length > 0 
+                        ? cartCourses.some(course => applicableCategoryNames.includes(course.category))
+                        : false;
                 }
             }
             return {

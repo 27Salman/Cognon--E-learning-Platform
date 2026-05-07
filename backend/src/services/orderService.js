@@ -92,7 +92,7 @@ const orderService = {
             sortOption[sort] = 1;
         }
 
-        const [orders, totalFiltered, allOrders] = await Promise.all([
+        const [orders, totalFiltered, summaryAgg] = await Promise.all([
             Order.find(query)
                 .populate('user', 'name email phone')
                 .populate('courses.course', 'title thumbnail category')
@@ -101,17 +101,32 @@ const orderService = {
                 .skip(skip)
                 .limit(limitNum),
             Order.countDocuments(query),
-            Order.find({}).select('paymentStatus finalAmount')
+            Order.aggregate([
+                {
+                    $group: {
+                        _id: '$paymentStatus',
+                        count: { $sum: 1 },
+                        revenue: { $sum: '$finalAmount' }
+                    }
+                }
+            ])
         ]);
 
+        const summaryMap = { completed: 0, pending: 0, failed: 0, refunded: 0 };
+        let totalCount = 0;
+        let totalRevenue = 0;
+        for (const row of summaryAgg) {
+            summaryMap[row._id] = row.count;
+            totalCount += row.count;
+            if (row._id === 'completed') totalRevenue = row.revenue;
+        }
+
         const summary = {
-            total: allOrders.length,
-            completed: allOrders.filter(o => o.paymentStatus === 'completed').length,
-            pending: allOrders.filter(o => o.paymentStatus === 'pending').length,
-            failed: allOrders.filter(o => o.paymentStatus === 'failed').length,
-            totalRevenue: allOrders
-                .filter(o => o.paymentStatus === 'completed')
-                .reduce((sum, o) => sum + o.finalAmount, 0)
+            total: totalCount,
+            completed: summaryMap.completed,
+            pending: summaryMap.pending,
+            failed: summaryMap.failed,
+            totalRevenue
         };
 
         const pagination = {

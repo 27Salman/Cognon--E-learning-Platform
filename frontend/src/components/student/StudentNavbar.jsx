@@ -19,16 +19,34 @@ const getAvatarColors = (name) => {
 export default function StudentNavbar({ studentInfo }) {
     const navigate = useNavigate();
     const [cartCount, setCartCount] = useState(0);
+    const [wishlistCount, setWishlistCount] = useState(0);
 
     useEffect(() => {
         const fetchCartCount = async () => {
             try {
                 const res = await studentAPI.getCart();
-                setCartCount(res.data.data.totalItems || 0);
+                setCartCount(res.data?.data?.totalItems || res.data?.totalItems || 0);
             } catch {
             }
         };
+
+        const fetchWishlistCount = async () => {
+            try {
+                const res = await studentAPI.getWishlist({ page: 1, limit: 1 });
+                setWishlistCount(res.data?.pagination?.totalFiltered || res.data?.courses?.length || 0);
+            } catch {
+            }
+        };
+
         fetchCartCount();
+        fetchWishlistCount();
+
+        window.addEventListener('cart-updated', fetchCartCount);
+        window.addEventListener('wishlist-updated', fetchWishlistCount);
+        return () => {
+            window.removeEventListener('cart-updated', fetchCartCount);
+            window.removeEventListener('wishlist-updated', fetchWishlistCount);
+        };
     }, []);
 
     return (
@@ -47,8 +65,13 @@ export default function StudentNavbar({ studentInfo }) {
                 </nav>
 
                 <div className="flex items-center gap-4">
-                    <button onClick={() => navigate('/student/wishlist')} className="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Wishlist">
+                    <button onClick={() => navigate('/student/wishlist')} className="relative p-2 hover:bg-gray-100 rounded-full transition-colors" title="Wishlist">
                         <Heart className="w-5 h-5 text-gray-700" />
+                        {wishlistCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                {wishlistCount}
+                            </span>
+                        )}
                     </button>
                     <button onClick={() => navigate('/student/cart')} className="relative p-2 hover:bg-gray-100 rounded-full transition-colors" title="Cart">
                         <ShoppingCart className="w-5 h-5 text-gray-700" />

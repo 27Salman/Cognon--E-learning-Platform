@@ -47,6 +47,17 @@ export default function AdminDashboard() {
   const [preset, setPreset] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [dateError, setDateError] = useState('');
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const validateDateRange = (from, to) => {
+    if (!from && !to) return '';
+    if (from && !to) return 'Please select an end date';
+    if (!from && to) return 'Please select a start date';
+    if (from > to) return 'Start date cannot be after end date';
+    return '';
+  };
 
   useEffect(() => {
     (async () => {
@@ -80,6 +91,7 @@ export default function AdminDashboard() {
 
   const handlePreset = (p) => {
     setPreset(p);
+    setDateError('');
     if (p === 'all') {
       setDateFrom(''); setDateTo('');
       fetchReport('', '');
@@ -91,6 +103,9 @@ export default function AdminDashboard() {
   };
 
   const handleApply = () => {
+    const error = validateDateRange(dateFrom, dateTo);
+    if (error) { setDateError(error); return; }
+    setDateError('');
     setPreset('custom');
     fetchReport(dateFrom, dateTo);
   };
@@ -265,29 +280,47 @@ export default function AdminDashboard() {
           <input
             type="date"
             value={dateFrom}
-            onChange={e => { setDateFrom(e.target.value); setPreset('custom'); }}
+            max={dateTo || today}
+            onChange={e => {
+              const val = e.target.value;
+              setDateFrom(val);
+              setPreset('custom');
+              setDateError(validateDateRange(val, dateTo));
+            }}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <span className="text-gray-400 text-sm">to</span>
           <input
             type="date"
             value={dateTo}
-            onChange={e => { setDateTo(e.target.value); setPreset('custom'); }}
+            min={dateFrom || undefined}
+            max={today}
+            onChange={e => {
+              const val = e.target.value;
+              setDateTo(val);
+              setPreset('custom');
+              setDateError(validateDateRange(dateFrom, val));
+            }}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <button
             onClick={handleApply}
-            disabled={reportLoading}
+            disabled={reportLoading || !!validateDateRange(dateFrom, dateTo)}
             className="px-5 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
           >
             {reportLoading ? 'Loading…' : 'Apply'}
           </button>
           <button
-            onClick={() => handlePreset('all')}
+            onClick={() => { handlePreset('all'); setDateError(''); }}
             className="px-4 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
           >
             Reset
           </button>
+          {dateError && (
+            <span className="text-xs text-red-500 font-medium w-full mt-1">
+              ⚠ {dateError}
+            </span>
+          )}
         </div>
       </div>
 

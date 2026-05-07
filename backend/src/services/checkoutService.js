@@ -110,8 +110,13 @@ const checkoutService = {
         });
 
         const orderCourses = priceData.items.map(item => {
-            const tutorShare = Math.round(item.finalPrice * PLATFORM_COMMISSION.TUTOR_SHARE);
-            const platformShare = Math.round(item.finalPrice * PLATFORM_COMMISSION.RATE);
+            const courseWeight = priceData.subtotal > 0
+                ? item.finalPrice / priceData.subtotal
+                : 1 / priceData.items.length;
+            const courseActualAmount = Math.round(priceData.finalAmount * courseWeight);
+
+            const tutorShare = Math.round(courseActualAmount * PLATFORM_COMMISSION.TUTOR_SHARE);
+            const platformShare = Math.round(courseActualAmount * PLATFORM_COMMISSION.RATE);
             return {
                 course: item.course._id,
                 tutor: item.course.tutor._id,
@@ -187,7 +192,7 @@ const checkoutService = {
         order.razorpaySignature = razorpaySignature;
         await order.save();
 
-        // Enroll student 
+        // Enroll 
         const courseIds = order.courses.map(c => c.course);
         await Course.updateMany(
             { _id: { $in: courseIds } },
@@ -213,7 +218,7 @@ const checkoutService = {
             }
         }
 
-        // Update revenue
+        //revenue
         for (const item of order.courses) {
             await Course.findByIdAndUpdate(item.course, {
                 $inc: { revenue: item.discountedPrice }

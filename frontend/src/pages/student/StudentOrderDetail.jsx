@@ -258,6 +258,7 @@ export default function StudentOrderDetail() {
                                     link.click();
                                     link.remove();
                                     window.URL.revokeObjectURL(url);
+                                    toast.success('Downloaded successfully!');
                                 } catch {
                                     toast.error('Failed to download invoice');
                                 }

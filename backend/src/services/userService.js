@@ -7,7 +7,8 @@ const buildImageURL = (profileImage) => {
     if (!profileImage) return null;
     if (profileImage.startsWith('http')) return profileImage;
     const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    return `${BASE_URL}/uploads/${profileImage}`;
+    const subfolder = profileImage.startsWith('user-') ? 'profiles/' : '';
+    return `${BASE_URL}/uploads/${subfolder}${profileImage}`;
 };
 
 const userService = {

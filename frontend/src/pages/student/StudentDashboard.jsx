@@ -15,7 +15,13 @@ const StudentDashboard = () => {
   });
 
   useEffect(() => {
-    studentAPI.getProfile().then(res => setStudentInfo(res.data || res)).catch(() => {});
+    studentAPI.getProfile().then(res => {
+      const data = res.data || res;
+      setStudentInfo({
+        ...data,
+        profileImage: data.profileImageURL || data.profileImage || null,
+      });
+    }).catch(() => {});
     dispatch(fetchPublishedCourses({}));
     dispatch(fetchEnrolledCourses());
   }, [dispatch]);

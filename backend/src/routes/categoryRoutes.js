@@ -8,6 +8,7 @@ const { uploadProfile } = require('../config/multer');
 
 router.get('/public', (req, res, next) => {
     req.query.isActive = 'true';
+    if (!req.query.limit) req.query.limit = '100';
     next();
 }, categoryController.getCategories);
 

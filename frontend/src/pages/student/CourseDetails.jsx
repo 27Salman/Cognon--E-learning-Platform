@@ -24,9 +24,11 @@ export default function CourseDetails() {
     useEffect(() => {
         dispatch(fetchCourseDetails(id));
         dispatch(fetchPublishedCourses({}));
-        studentAPI.getProfile().then(res => setStudentInfo(res.data || res)).catch(() => {});
+        studentAPI.getProfile().then(res => {
+            const data = res.data || res;
+            setStudentInfo({ ...data, profileImage: data.profileImageURL || data.profileImage || null });
+        }).catch(() => {});
 
-        // Check wishlist and cart status
         studentAPI.getWishlist().then(res => {
             const courses = res.data?.courses || [];
             setInWishlist(courses.some(c => c._id === id));
@@ -43,6 +45,7 @@ export default function CourseDetails() {
         try {
             await studentAPI.addToCart(id);
             setInCart(true);
+            window.dispatchEvent(new Event('cart-updated'));
             toast.success('Added to cart!');
         } catch (err) {
             const msg = err.response?.data?.message || '';
@@ -69,6 +72,7 @@ export default function CourseDetails() {
                 setInWishlist(true);
                 toast.success('Added to wishlist!');
             }
+            window.dispatchEvent(new Event('wishlist-updated'));
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to update wishlist');
         } finally {

@@ -73,19 +73,17 @@ exports.downloadDashboardPDF = asyncHandler(async (req, res) => {
     const dark = '#111827';
     const gray = '#6b7280';
 
-    // Header
     doc.rect(0, 0, 595, 75).fill(purple);
     doc.fontSize(22).font('Helvetica-Bold').fillColor('#ffffff').text('Tutor Dashboard Report', 50, 22);
     doc.fontSize(9).font('Helvetica').fillColor('#e9d5ff')
         .text(`Generated: ${new Date().toLocaleString('en-IN')}`, 50, 52);
 
-    // Summary
     let y = 95;
     const boxes = [
-        { label: 'Total Students',  value: String(data.totalStudents) },
-        { label: 'Total Courses',   value: String(data.totalCourses) },
-        { label: 'Active Courses',  value: String(data.activeCourses) },
-        { label: 'Total Revenue',   value: `Rs.${data.totalRevenue.toLocaleString('en-IN')}` },
+        { label: 'Total Students',  value: String(data.totalStudents || 0) },
+        { label: 'Total Courses',   value: String(data.totalCourses || 0) },
+        { label: 'Active Courses',  value: String(data.activeCourses || 0) },
+        { label: 'Total Revenue',   value: `Rs.${(data.totalRevenue || 0).toLocaleString('en-IN')}` },
     ];
     const bw = 115, bh = 50, gap = 10;
     boxes.forEach((b, i) => {
@@ -95,7 +93,6 @@ exports.downloadDashboardPDF = asyncHandler(async (req, res) => {
         doc.fontSize(12).font('Helvetica-Bold').fillColor(dark).text(b.value, bx + 8, y + 24, { width: bw - 16 });
     });
 
-    // Course table
     y += 70;
     doc.fontSize(12).font('Helvetica-Bold').fillColor(dark).text('Course Overview', 50, y);
     y += 18;
@@ -114,7 +111,7 @@ exports.downloadDashboardPDF = asyncHandler(async (req, res) => {
         doc.fillColor(dark);
         doc.text(course.title, cols[0], y, { width: 145 });
         doc.text(String(course.enrolledCount), cols[1], y, { width: 85 });
-        doc.text(`Rs.${course.totalRevenue.toLocaleString('en-IN')}`, cols[2], y, { width: 75 });
+        doc.text(`Rs.${(course.totalRevenue || 0).toLocaleString('en-IN')}`, cols[2], y, { width: 75 });
         doc.text(course.status, cols[3], y, { width: 90 });
         y += 14;
     });
@@ -135,7 +132,6 @@ exports.downloadDashboardExcel = asyncHandler(async (req, res) => {
     const purpleFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE9FE' } };
     const headerFont = { bold: true, color: { argb: 'FF7C3AED' } };
 
-    // Summary sheet
     const summarySheet = workbook.addWorksheet('Summary');
     summarySheet.columns = [
         { header: 'Metric', key: 'metric', width: 25 },
@@ -150,7 +146,6 @@ exports.downloadDashboardExcel = asyncHandler(async (req, res) => {
         { metric: 'Total Revenue (Rs.)', value: data.totalRevenue },
     ]);
 
-    // Courses sheet
     const coursesSheet = workbook.addWorksheet('Courses');
     coursesSheet.columns = [
         { header: 'Course Name',       key: 'title',         width: 35 },

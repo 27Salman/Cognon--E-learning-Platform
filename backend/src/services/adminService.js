@@ -7,12 +7,12 @@ const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
 
-
 const buildImageURL = (profileImage) => {
     if(!profileImage) return null;
     if(profileImage.startsWith('http')) return profileImage;
     const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    return `${BASE_URL}/uploads/${profileImage}`;
+    const subfolder = profileImage.startsWith('user-') ? 'profiles/' : '';
+    return `${BASE_URL}/uploads/${subfolder}${profileImage}`;
 }
 
 const adminService = {
@@ -550,7 +550,7 @@ const adminService = {
                 tutorRevenue:    Math.round(m.tutorRevenue),
             }));
 
-        return { summary, chartData };
+        return { summary, chartData, orders };
     },
 
 
