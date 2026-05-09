@@ -16,7 +16,6 @@ export default function TutorDashboard() {
     const { tutorInfo } = useOutletContext();
     const dispatch = useDispatch();
     const { dashboard, loading } = useSelector(state => state.courses);
-    const [downloading, setDownloading] = useState('');
     const [chartPeriod, setChartPeriod] = useState('week'); 
     const [monthlyData, setMonthlyData] = useState([]);
     const [monthlyLoading, setMonthlyLoading] = useState(false);
@@ -41,34 +40,6 @@ export default function TutorDashboard() {
                 .finally(() => setMonthlyLoading(false));
         }
     }, [chartPeriod]);
-
-    const handleDownload = async (type) => {
-        setDownloading(type);
-        try {
-            const mimeType = type === 'pdf'
-                ? 'application/pdf'
-                : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-            const ext = type === 'pdf' ? 'pdf' : 'xlsx';
-
-            const res = type === 'pdf'
-                ? await tutorAPI.downloadDashboardPDF()
-                : await tutorAPI.downloadDashboardExcel();
-
-            const blob = new Blob([res.data], { type: mimeType });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `tutor-dashboard-${Date.now()}.${ext}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        } catch {
-            toast.error(`Failed to download ${type.toUpperCase()}`);
-        } finally {
-            setDownloading('');
-        }
-    };
 
     const defaultWeekly = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => ({
         day, students: 0, revenue: 0
@@ -134,24 +105,6 @@ export default function TutorDashboard() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => handleDownload('pdf')}
-                            disabled={!!downloading || loading}
-                            className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
-                        >
-                            <FileText className="w-3.5 h-3.5" />
-                            {downloading === 'pdf' ? 'Downloading…' : 'Download PDF'}
-                        </button>
-                        <button
-                            onClick={() => handleDownload('excel')}
-                            disabled={!!downloading || loading}
-                            className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
-                        >
-                            <FileSpreadsheet className="w-3.5 h-3.5" />
-                            {downloading === 'excel' ? 'Downloading…' : 'Download Excel'}
-                        </button>
-                    </div>
                 </div>
 
                 {/* Stats row */}

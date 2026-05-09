@@ -1,5 +1,7 @@
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
+const Order = require('../models/Order');
+const Course = require('../models/Course');
 
 const fmt = (n) => `Rs.${Math.round(n).toLocaleString('en-IN')}`;
 
@@ -186,6 +188,32 @@ const salesReportService = {
         await workbook.xlsx.write(res);
         res.end();
     },
+
+    async getTutorSalesReport(tutorId, { dateFrom, dateTo, period = 'monthly' } = {} ){
+        const query = {
+            'courses.tutor': tutorId,
+            paymentStatus: 'completed',
+        }
+
+        if( dateFrom || dateTo ){
+            query.orderDate = {};
+            if(dateFrom) query.orderDate.$gte = new Date(dateFrom);
+            if(dateTo){
+                const end = new Date(dateTo);
+                end.setHours(23,59,59,999);
+                query.orderDate.$lte = end;
+            }
+        }
+
+        const orders = await Order.find(query)
+            .populate('user', 'name email')
+            .populate('courses.course', ' title category')
+            .populate('couponApplied', 'code')
+            .sort({ orderDate: -1 });
+
+        
+            
+    }
 };
 
 module.exports = salesReportService;

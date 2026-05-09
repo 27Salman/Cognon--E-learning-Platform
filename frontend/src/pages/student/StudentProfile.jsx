@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Lock, Pencil } from 'lucide-react';
+import { Camera, Lock, Pencil, BookOpen, CheckCircle, User, Clock, Award } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import StudentChangePasswordModal from '../../components/student/StudentChangePasswordModal';
 import { studentAPI } from '../../api/studentAPI';
@@ -130,58 +130,115 @@ export default function StudentProfile() {
     };
 
     return (
-        <div className="p-8 max-w-3xl">
+        <div className="p-8">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-                {!isEditing && (
-                    <button
-                        onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
-                    >
-                        <Pencil className="w-4 h-4" />
-                        Edit Profile
-                    </button>
-                )}
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-8">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Enrolled</p>
+                            <p className="text-3xl font-bold text-gray-900">3</p>
+                        </div>
+                        <div className="w-14 h-14 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <BookOpen className="w-7 h-7 text-purple-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Completed</p>
+                            <p className="text-3xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div className="w-14 h-14 bg-green-100 rounded-lg flex items-center justify-center">
+                            <CheckCircle className="w-7 h-7 text-green-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Pending</p>
+                            <p className="text-3xl font-bold text-gray-900">3</p>
+                        </div>
+                        <div className="w-14 h-14 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <Clock className="w-7 h-7 text-yellow-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Certificates</p>
+                            <p className="text-3xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <Award className="w-7 h-7 text-blue-600" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {/* Left Column - Profile Card */}
+                <div className="lg:col-span-2 xl:col-span-3 bg-white rounded-lg shadow-sm p-8">
 
                 {/* Avatar */}
-                <div className="flex items-start gap-6 mb-8">
-                    <div className="relative flex-shrink-0">
-                        {isValidImageSrc(formData.profileImage) ? (
-                            <img
-                                src={formData.profileImage}
-                                alt="Profile"
-                                className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
-                            />
-                        ) : (
-                            (() => {
-                                const [from, to] = getAvatarColors(formData.name);
-                                const letter = formData.name?.charAt(0)?.toUpperCase() || 'S';
-                                return (
-                                    <div
-                                        className="w-24 h-24 rounded-full flex items-center justify-center border-4 border-white shadow-md select-none"
-                                        style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
-                                    >
-                                        <span className="text-white font-bold text-4xl drop-shadow-sm">
-                                            {letter}
-                                        </span>
-                                    </div>
-                                );
-                            })()
-                        )}
-                        {isEditing && (
-                            <label className="absolute bottom-0 right-0 bg-purple-600 rounded-full p-1.5 cursor-pointer hover:bg-purple-700 transition-colors shadow-lg">
-                                <Camera className="w-4 h-4 text-white" />
-                                <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleImageChange} className="hidden" />
-                            </label>
+                <div className="mb-8">
+                    <div className="flex justify-end mb-4">
+                        {!isEditing && (
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                            >
+                                <Pencil className="w-4 h-4" />
+                                Edit Profile
+                            </button>
                         )}
                     </div>
-                    <div className="pt-2">
-                        <h2 className="text-xl font-bold text-gray-900">{formData.name || 'Student'}</h2>
-                        <p className="text-gray-500 text-sm">{formData.email}</p>
+                    <div className="flex flex-col items-center">
+                        <div className="relative flex-shrink-0 mb-4">
+                            {isValidImageSrc(formData.profileImage) ? (
+                                <img
+                                    src={formData.profileImage}
+                                    alt="Profile"
+                                    className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
+                                />
+                            ) : (
+                                (() => {
+                                    const [from, to] = getAvatarColors(formData.name);
+                                    const letter = formData.name?.charAt(0)?.toUpperCase() || 'S';
+                                    return (
+                                        <div
+                                            className="w-32 h-32 rounded-full flex items-center justify-center border-4 border-white shadow-md select-none"
+                                            style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
+                                        >
+                                            <span className="text-white font-bold text-5xl drop-shadow-sm">
+                                                {letter}
+                                            </span>
+                                        </div>
+                                    );
+                                })()
+                            )}
+                            {isEditing && (
+                                <label className="absolute bottom-0 right-0 bg-purple-600 rounded-full p-1.5 cursor-pointer hover:bg-purple-700 transition-colors shadow-lg">
+                                    <Camera className="w-4 h-4 text-white" />
+                                    <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleImageChange} className="hidden" />
+                                </label>
+                            )}
+                        </div>
+                        <div className="text-center">
+                            <h2 className="text-2xl font-bold text-gray-900">{formData.name || 'Student'}</h2>
+                            <p className="text-gray-500 text-base">{formData.email}</p>
+                        </div>
                     </div>
                 </div>
 
@@ -261,12 +318,30 @@ export default function StudentProfile() {
                 )}
             </div>
 
-            {showPasswordModal && (
-                <StudentChangePasswordModal
-                    studentInfo={{ ...studentInfo, email: formData.email }}
-                    onClose={() => setShowPasswordModal(false)}
-                />
-            )}
+            {/* Right Column - Completed Certificates */}
+            <div className="space-y-6">
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Award className="w-5 h-5 text-blue-600" />
+                        Completed Certificates
+                    </h3>
+                    <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Award className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 text-sm">No certificates earned yet</p>
+                        <p className="text-gray-400 text-xs mt-1">Complete courses to earn certificates</p>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        {showPasswordModal && (
+            <StudentChangePasswordModal
+                studentInfo={{ ...studentInfo, email: formData.email }}
+                onClose={() => setShowPasswordModal(false)}
+            />
+        )}
+    </div>
     );
 }

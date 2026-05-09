@@ -63,51 +63,51 @@ export default function Wishlist() {
     };
 
     return (
-        <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-                        <Heart className="w-6 h-6 text-purple-600" />
-                        <h1 className="text-2xl font-bold text-gray-800">My Wishlist</h1>
-                        <span className="bg-purple-100 text-purple-700 text-sm font-medium px-2.5 py-0.5 rounded-full">
+        <div className="p-8">
+            <div className="flex items-center gap-3 mb-8">
+                        <Heart className="w-7 h-7 text-purple-600" />
+                        <h1 className="text-3xl font-bold text-gray-800">My Wishlist</h1>
+                        <span className="bg-purple-100 text-purple-700 text-sm font-medium px-3 py-1 rounded-full">
                             {pagination.totalFiltered ?? wishlist.length}
                         </span>
                     </div>
 
                     {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            {[...Array(3)].map((_, i) => (
-                                <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
-                                    <div className="h-36 bg-gray-200 rounded-lg mb-3" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+                                    <div className="h-44 bg-gray-200 rounded-lg mb-4" />
                                     <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
                                     <div className="h-3 bg-gray-200 rounded w-1/2" />
                                 </div>
                             ))}
                         </div>
                     ) : wishlist.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-center">
-                            <Heart className="w-16 h-16 text-gray-300 mb-4" />
-                            <h2 className="text-xl font-semibold text-gray-600 mb-2">Your wishlist is empty</h2>
-                            <p className="text-gray-400 mb-6">Save courses you're interested in to your wishlist</p>
+                        <div className="flex flex-col items-center justify-center py-24 text-center">
+                            <Heart className="w-20 h-20 text-gray-300 mb-6" />
+                            <h2 className="text-2xl font-semibold text-gray-600 mb-3">Your wishlist is empty</h2>
+                            <p className="text-gray-400 mb-8 text-lg">Save courses you're interested in to your wishlist</p>
                             <button
                                 onClick={() => navigate('/student/courses')}
-                                className="bg-purple-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-purple-700"
+                                className="bg-purple-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-purple-700"
                             >
                                 Browse Courses
                             </button>
                         </div>
                     ) : (
                         <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {wishlist.map((course) => (
-                                <div key={course._id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                                <div key={course._id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
                                     <div
                                         className="relative cursor-pointer"
                                         onClick={() => navigate(`/student/courses/${course._id}`)}
                                     >
                                         {course.thumbnailURL ? (
-                                            <img src={course.thumbnailURL} alt={course.title} className="w-full h-36 object-cover" />
+                                            <img src={course.thumbnailURL} alt={course.title} className="w-full h-44 object-cover" />
                                         ) : (
-                                            <div className="w-full h-36 bg-purple-100 flex items-center justify-center">
-                                                <BookOpen className="w-10 h-10 text-purple-400" />
+                                            <div className="w-full h-44 bg-purple-100 flex items-center justify-center">
+                                                <BookOpen className="w-12 h-12 text-purple-400" />
                                             </div>
                                         )}
                                         {course.offer && (
@@ -116,41 +116,41 @@ export default function Wishlist() {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="p-4">
+                                    <div className="p-5 flex-1 flex flex-col">
                                         <h3
-                                            className="font-semibold text-gray-800 text-sm mb-1 cursor-pointer hover:text-purple-600 line-clamp-2"
+                                            className="font-semibold text-gray-800 text-base mb-2 cursor-pointer hover:text-purple-600 line-clamp-2"
                                             onClick={() => navigate(`/student/courses/${course._id}`)}
                                         >
                                             {course.title}
                                         </h3>
-                                        <p className="text-xs text-gray-500 mb-3">{course.tutor?.name}</p>
-                                        <div className="flex items-center justify-between mb-3">
+                                        <p className="text-sm text-gray-500 mb-4">{course.tutor?.name}</p>
+                                        <div className="flex items-center justify-between mb-4">
                                             <div>
                                                 {course.offer ? (
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-gray-800">₹{course.offer.discountedPrice}</span>
-                                                        <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
+                                                        <span className="font-bold text-gray-800 text-lg">₹{course.offer.discountedPrice}</span>
+                                                        <span className="text-sm text-gray-400 line-through">₹{course.price}</span>
                                                     </div>
                                                 ) : (
-                                                    <span className="font-bold text-gray-800">₹{course.price}</span>
+                                                    <span className="font-bold text-gray-800 text-lg">₹{course.price}</span>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2 mt-auto">
                                             <button
                                                 onClick={() => handleMoveToCart(course._id)}
                                                 disabled={!!actionLoading[course._id]}
-                                                className="flex-1 flex items-center justify-center gap-1.5 bg-purple-600 text-white py-2 rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50"
+                                                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
                                             >
-                                                <ShoppingCart className="w-3.5 h-3.5" />
+                                                <ShoppingCart className="w-4 h-4" />
                                                 {actionLoading[course._id] === 'carting' ? 'Adding...' : 'Add to Cart'}
                                             </button>
                                             <button
                                                 onClick={() => handleRemove(course._id)}
                                                 disabled={!!actionLoading[course._id]}
-                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                                                className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-5 h-5" />
                                             </button>
                                         </div>
                                     </div>
@@ -159,19 +159,19 @@ export default function Wishlist() {
                         </div>
 
                         {pagination.totalPages > 1 && (
-                            <div className="flex justify-center items-center gap-2 mt-8">
+                            <div className="flex justify-center items-center gap-2 mt-10">
                                 <button
                                     onClick={() => setPage(p => Math.max(1, p - 1))}
                                     disabled={page === 1}
-                                    className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                                    className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
                                 >
-                                    <ChevronLeft className="w-4 h-4" />
+                                    <ChevronLeft className="w-5 h-5" />
                                 </button>
                                 {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
                                     <button
                                         key={p}
                                         onClick={() => setPage(p)}
-                                        className={`w-9 h-9 rounded-full text-sm font-medium transition-colors ${
+                                        className={`w-10 h-10 rounded-full text-sm font-medium transition-colors ${
                                             p === page
                                                 ? 'bg-purple-600 text-white'
                                                 : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
@@ -183,9 +183,9 @@ export default function Wishlist() {
                                 <button
                                     onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
                                     disabled={page === pagination.totalPages}
-                                    className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                                    className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
                                 >
-                                    <ChevronRight className="w-4 h-4" />
+                                    <ChevronRight className="w-5 h-5" />
                                 </button>
                             </div>
                         )}

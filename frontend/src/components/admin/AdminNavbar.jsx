@@ -2,6 +2,7 @@ import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useState } from 'react';
+import Logo from '../common/Logo';
 
 export default function AdminNavbar({ adminInfo }) {
   const navigate = useNavigate();
@@ -15,14 +16,12 @@ export default function AdminNavbar({ adminInfo }) {
       <div className="flex items-center justify-between px-6 py-3">
 
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <h1
-            className="text-xl font-bold text-purple-600 cursor-pointer"
-            onClick={() => navigate('/admin/dashboard')}
-          >
-            Cognon
-          </h1>
-          <span className="text-sm text-gray-500 font-medium">Admin</span>
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/admin/dashboard')}>
+          <Logo size={36} />
+          <div>
+            <h1 className="text-xl font-bold text-purple-600">Cognon</h1>
+            <span className="text-sm text-gray-500 font-medium">Admin</span>
+          </div>
         </div>
 
         {/* Right side */}

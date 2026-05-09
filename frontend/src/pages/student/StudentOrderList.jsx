@@ -37,28 +37,28 @@ export default function StudentOrderList() {
     useEffect(() => { fetchOrders(); }, [search, statusFilter, page]);
 
     return (
-        <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-                <ShoppingCart className="w-6 h-6 text-purple-600" />
-                <h1 className="text-2xl font-bold text-gray-800">My Orders</h1>
+        <div className="p-8">
+            <div className="flex items-center gap-3 mb-8">
+                <ShoppingCart className="w-7 h-7 text-purple-600" />
+                <h1 className="text-3xl font-bold text-gray-800">My Orders</h1>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap gap-3 mb-5">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="flex flex-wrap gap-4 mb-6">
+                <div className="relative flex-1 min-w-[250px] max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
                         placeholder="Search Order ID..."
                         value={search}
                         onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                        className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                 </div>
                 <select
                     value={statusFilter}
                     onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                     <option value="all">All Status</option>
                     <option value="completed">Completed</option>
@@ -68,19 +68,19 @@ export default function StudentOrderList() {
             </div>
 
             {loading ? (
-                <div className="space-y-3">
-                    {[...Array(3)].map((_, i) => (
-                        <div key={i} className="h-16 bg-white rounded-xl border border-gray-200 animate-pulse" />
+                <div className="space-y-4">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="h-20 bg-white rounded-xl border border-gray-200 animate-pulse" />
                     ))}
                 </div>
             ) : orders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <ShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
-                    <h2 className="text-xl font-semibold text-gray-600 mb-2">No orders yet</h2>
-                    <p className="text-gray-400 mb-6">Your purchase history will appear here</p>
+                <div className="flex flex-col items-center justify-center py-24 text-center">
+                    <ShoppingCart className="w-20 h-20 text-gray-300 mb-6" />
+                    <h2 className="text-2xl font-semibold text-gray-600 mb-3">No orders yet</h2>
+                    <p className="text-gray-400 mb-8 text-lg">Your purchase history will appear here</p>
                     <button
                         onClick={() => navigate('/student/courses')}
-                        className="bg-purple-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-purple-700"
+                        className="bg-purple-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-purple-700"
                     >
                         Browse Courses
                     </button>
@@ -90,11 +90,11 @@ export default function StudentOrderList() {
                     <table className="w-full text-sm">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Order ID</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Course</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Amount</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Date</th>
-                                <th className="text-left px-5 py-3 font-semibold text-gray-500 uppercase text-xs tracking-wider">Status</th>
+                                <th className="text-left px-6 py-4 font-semibold text-gray-500 uppercase text-xs tracking-wider">Order ID</th>
+                                <th className="text-left px-6 py-4 font-semibold text-gray-500 uppercase text-xs tracking-wider">Course</th>
+                                <th className="text-left px-6 py-4 font-semibold text-gray-500 uppercase text-xs tracking-wider">Amount</th>
+                                <th className="text-left px-6 py-4 font-semibold text-gray-500 uppercase text-xs tracking-wider">Date</th>
+                                <th className="text-left px-6 py-4 font-semibold text-gray-500 uppercase text-xs tracking-wider">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -104,25 +104,25 @@ export default function StudentOrderList() {
                                     onClick={() => navigate(`/student/orders/${order._id}`)}
                                     className="hover:bg-purple-50 cursor-pointer transition-colors"
                                 >
-                                    <td className="px-5 py-4 font-mono text-xs text-purple-700 font-bold">
+                                    <td className="px-6 py-5 font-mono text-sm text-purple-700 font-bold">
                                         {order.orderId}
                                     </td>
-                                    <td className="px-5 py-4 text-gray-700 max-w-[200px]">
+                                    <td className="px-6 py-5 text-gray-700 max-w-[300px]">
                                         {order.courses?.length === 1
                                             ? <span className="truncate block">{order.courses[0].courseTitle}</span>
                                             : <span className="text-gray-500">{order.courses?.length} courses</span>
                                         }
                                     </td>
-                                    <td className="px-5 py-4 font-semibold text-gray-800">
+                                    <td className="px-6 py-5 font-semibold text-gray-800 text-base">
                                         ₹{order.finalAmount}
                                     </td>
-                                    <td className="px-5 py-4 text-gray-500 text-xs whitespace-nowrap">
+                                    <td className="px-6 py-5 text-gray-500 text-sm whitespace-nowrap">
                                         {new Date(order.orderDate).toLocaleDateString('en-IN', {
                                             day: '2-digit', month: '2-digit', year: 'numeric'
                                         })}
                                     </td>
-                                    <td className="px-5 py-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[order.paymentStatus]}`}>
+                                    <td className="px-6 py-5">
+                                        <span className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize ${STATUS_COLORS[order.paymentStatus]}`}>
                                             {order.paymentStatus}
                                         </span>
                                     </td>
@@ -135,11 +135,11 @@ export default function StudentOrderList() {
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-6">
+                <div className="flex justify-center items-center gap-2 mt-8">
                     <button
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         disabled={page === 1}
-                        className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                        className="w-10 h-10 rounded-full flex items-center justify-center border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
                     >
                         ‹
                     </button>
@@ -147,7 +147,7 @@ export default function StudentOrderList() {
                         <button
                             key={p}
                             onClick={() => setPage(p)}
-                            className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                            className={`w-10 h-10 rounded-full text-sm font-medium transition-colors ${
                                 p === page
                                     ? 'bg-purple-600 text-white'
                                     : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
@@ -159,7 +159,7 @@ export default function StudentOrderList() {
                     <button
                         onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
                         disabled={page === pagination.totalPages}
-                        className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                        className="w-10 h-10 rounded-full flex items-center justify-center border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
                     >
                         ›
                     </button>

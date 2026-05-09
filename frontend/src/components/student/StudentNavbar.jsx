@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Heart, ShoppingCart, Bell } from 'lucide-react';
 import { studentAPI } from '../../api/studentAPI';
+import Logo from '../common/Logo';
 
 const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
 
@@ -52,9 +53,10 @@ export default function StudentNavbar({ studentInfo }) {
     return (
         <header className="bg-white shadow-sm border-b sticky top-0 z-50">
             <div className="flex items-center justify-between h-16 px-6 w-full">
-                <h1 className="text-2xl font-bold text-purple-600 cursor-pointer" onClick={() => navigate('/student/dashboard')}>
-                    Cognon
-                </h1>
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/student/dashboard')}>
+                    <Logo size={40} />
+                    <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
+                </div>
 
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
                     <button onClick={() => navigate('/student/dashboard')} className="text-gray-700 hover:text-purple-600 transition">Home</button>

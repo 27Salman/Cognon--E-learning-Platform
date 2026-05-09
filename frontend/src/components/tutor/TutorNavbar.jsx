@@ -1,5 +1,6 @@
 import { Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Logo from "../common/Logo";
 
 export default function TutorNavbar({ tutorInfo }) {
     const navigate = useNavigate();
@@ -9,14 +10,12 @@ export default function TutorNavbar({ tutorInfo }) {
             <div className="flex items-center justify-between px-6 py-4">
 
                 {/* Left - Logo */}
-                <div className="flex items-center space-x-3">
-                    <h1
-                        className="text-2xl font-bold text-purple-600 cursor-pointer"
-                        onClick={() => navigate("/tutor/dashboard")}
-                    >
-                        Cognon
-                    </h1>
-                    <span className="text-sm text-gray-500 font-medium">Tutor</span>
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/tutor/dashboard')}>
+                    <Logo size={40} />
+                    <div>
+                        <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
+                        <span className="text-sm text-gray-500 font-medium">Tutor</span>
+                    </div>
                 </div>
 
                 {/* Right - Bell + Avatar */}

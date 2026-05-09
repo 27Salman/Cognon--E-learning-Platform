@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setAuthFromStorage } from './store/slices/authSlice';
@@ -53,16 +53,25 @@ import TutorRevenue from './pages/tutor/TutorRevenue';
 import AdminCoupons from './pages/admin/AdminCoupons';
 import TutorWallet from './pages/tutor/TutorWallet';
 import AdminWallet from './pages/admin/AdminWallet';
+import Loader from './components/Loader';
 
 
 function App() {
   const dispatch = useDispatch();
+  const [showLoader, setShowLoader] = useState(true);
 
   useEffect(() => {
     dispatch(setAuthFromStorage());
   }, [dispatch]);
 
+  const handleLoaderComplete = () => {
+    setShowLoader(false);
+  };
+
   return (
+    <>
+      <Loader onComplete={handleLoaderComplete} />
+      {!showLoader && (
     <Routes>
       {/* Public Routes */}
       <Route path={ROUTES.HOME} element={<Home />} />
@@ -231,10 +240,12 @@ function App() {
 
       </Route>
 
-      {/* Fallback */}
-      <Route path="/unauthorized" element={<Unauthorized />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+          {/* Fallback */}
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      )}
+    </>
   );
 }
 

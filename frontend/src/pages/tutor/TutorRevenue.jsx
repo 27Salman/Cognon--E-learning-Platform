@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { tutorAPI } from '../../api/tutorAPI';
-import { Search, ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Users, BookOpen, TrendingUp } from 'lucide-react';
+import { Search, FileText, FileSpreadsheet, ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Users, BookOpen, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
+
 
 //List 
 function RevenueList({ onCourseClick }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [downloading, setDownloading] = useState('');
     const [sort, setSort] = useState('relevance');
     const [page, setPage] = useState(1);
     const LIMIT = 5;
@@ -24,6 +26,34 @@ function RevenueList({ onCourseClick }) {
             }
         })();
     }, []);
+
+    const handleDownload = async (type) => {
+        setDownloading(type);
+        try {
+            const mimeType = type === 'pdf'
+                ? 'application/pdf'
+                : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            const ext = type === 'pdf' ? 'pdf' : 'xlsx';
+
+            const res = type === 'pdf'
+                ? await tutorAPI.downloadDashboardPDF()
+                : await tutorAPI.downloadDashboardExcel();
+
+            const blob = new Blob([res.data], { type: mimeType });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tutor-sales-${Date.now()}.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch {
+            toast.error(`Failed to download ${type.toUpperCase()}`);
+        } finally {
+            setDownloading('');
+        }
+    };
 
     if (loading) {
         return (
@@ -92,9 +122,26 @@ function RevenueList({ onCourseClick }) {
                     </div>
                 ))}
             </div>
-
+            <div className="flex justify-end gap-3 mb-6">
+                <button
+                    onClick={() => handleDownload('pdf')}
+                    disabled={!!downloading || loading}
+                    className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-medium px-4 py-3 rounded-lg transition-colors"
+                >
+                    <FileText className="w-3.5 h-3.5" />
+                    {downloading === 'pdf' ? 'Downloading…' : 'Download PDF'}
+                </button>
+                <button
+                    onClick={() => handleDownload('excel')}
+                    disabled={!!downloading || loading}
+                    className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    {downloading === 'excel' ? 'Downloading…' : 'Download Excel'}
+                </button>
+            </div>
             {/* Search + Sort */}
-            <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+            <div className="flex items-center justify-between mb-5 gap-4 flex-wrap p-4 border rounded">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input

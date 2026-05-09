@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
 import { ROUTES, ROLES } from '../utils/constants';
 import { BookOpen, Star, Users } from 'lucide-react';
+import Logo from '../components/common/Logo';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
@@ -79,7 +80,10 @@ const Home = () => {
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
+            <div className="flex items-center gap-3">
+              <Logo size={40} />
+              <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
+            </div>
             <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
               <a href="#home" className="text-gray-700 hover:text-purple-600 transition">Home</a>
               <a href="#about" className="text-gray-700 hover:text-purple-600 transition">About</a>
