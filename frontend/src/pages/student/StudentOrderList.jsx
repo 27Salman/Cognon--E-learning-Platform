@@ -40,7 +40,7 @@ export default function StudentOrderList() {
         <div className="p-8">
             <div className="flex items-center gap-3 mb-8">
                 <ShoppingCart className="w-7 h-7 text-purple-600" />
-                <h1 className="text-3xl font-bold text-gray-800">My Orders</h1>
+                <h1 className="text-2xl font-bold text-gray-800">My Orders</h1>
             </div>
 
             {/* Filters */}

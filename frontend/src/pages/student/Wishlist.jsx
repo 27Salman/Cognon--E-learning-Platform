@@ -66,7 +66,7 @@ export default function Wishlist() {
         <div className="p-8">
             <div className="flex items-center gap-3 mb-8">
                         <Heart className="w-7 h-7 text-purple-600" />
-                        <h1 className="text-3xl font-bold text-gray-800">My Wishlist</h1>
+                        <h1 className="text-2xl font-bold text-gray-800">My Wishlist</h1>
                         <span className="bg-purple-100 text-purple-700 text-sm font-medium px-3 py-1 rounded-full">
                             {pagination.totalFiltered ?? wishlist.length}
                         </span>

@@ -117,7 +117,7 @@ export default function StudentOrderDetail() {
     if (!order) return null;
 
     return (
-        <div className="p-8">
+        <div className="p-6">
             <button
                 onClick={() => navigate('/student/orders')}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-8 text-base font-medium"
@@ -125,15 +125,15 @@ export default function StudentOrderDetail() {
                 <ArrowLeft className="w-5 h-5" /> Back to Orders
             </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column - Order Details */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="mb-6">
-                        <h1 className="text-3xl font-bold text-gray-800">Order Details</h1>
+                        <h1 className="text-2xl font-bold text-gray-800">Order Details</h1>
                     </div>
 
                     {/* Order Info */}
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                         <h2 className="font-semibold text-gray-700 mb-4 text-base uppercase tracking-wide">Order Information</h2>
                         <div className="grid grid-cols-2 gap-4 text-base">
                             <div>
@@ -158,7 +158,7 @@ export default function StudentOrderDetail() {
                     </div>
 
                     {/* Purchased Courses */}
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                         <h2 className="font-semibold text-gray-700 mb-5 text-base uppercase tracking-wide">Purchased Courses</h2>
                         <div className="space-y-4">
                             {order.courses?.map((item, i) => (
@@ -216,7 +216,7 @@ export default function StudentOrderDetail() {
                     </div>
 
                     {/* Price Breakdown */}
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                         <h2 className="font-semibold text-gray-700 mb-4 text-base uppercase tracking-wide">Price Breakdown</h2>
                         <div className="space-y-3 text-base">
                             <div className="flex justify-between text-gray-600">

@@ -1,8 +1,20 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { useState } from 'react';
 import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { BarChart3, User, BookOpen, TrendingUp, MessageSquare, LogOut, Wallet } from 'lucide-react';
+
+const API_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : 'http://localhost:5000';
+
+const getFullImageUrl = (src) => {
+  if (!src) return null;
+  if (src.startsWith('http') || src.startsWith('data:')) return src;
+  const subfolder = src.startsWith('user-') ? 'profiles/' : '';
+  return `${API_BASE}/uploads/${subfolder}${src}`;
+};
 
 const menuItems = [
     { name: 'Dashboard',    path: '/tutor/dashboard', icon: BarChart3 },
@@ -17,6 +29,7 @@ export default function TutorSidebar({ tutorInfo }) {
     const navigate = useNavigate();
     const location = useLocation();
     const dispatch = useDispatch();
+    const [imgError, setImgError] = useState(false);
 
     const isActive = (path) => location.pathname.startsWith(path);
 
@@ -27,12 +40,19 @@ export default function TutorSidebar({ tutorInfo }) {
         navigate('/login', { replace: true });
     };
 
+    const imageSrc = getFullImageUrl(tutorInfo?.profileImageURL || tutorInfo?.profileImage);
+    const showImage = imageSrc && !imgError;
+
     return (
         <aside className="bg-white w-56 min-h-screen flex-shrink-0 border-r border-gray-200 flex flex-col">
             <div className="px-4 pt-6 pb-5 border-b border-gray-100 flex flex-col items-center">
-                {tutorInfo?.profileImage ? (
-                    <img src={tutorInfo.profileImage} alt="Tutor"
-                        className="w-16 h-16 rounded-full object-cover border-2 border-purple-200 shadow-sm" />
+                {showImage ? (
+                    <img
+                        src={imageSrc}
+                        alt="Tutor"
+                        className="w-16 h-16 rounded-full object-cover border-2 border-purple-200 shadow-sm"
+                        onError={() => setImgError(true)}
+                    />
                 ) : (
                     <div className="w-16 h-16 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-sm border-2 border-purple-200">
                         {tutorInfo?.name?.charAt(0)?.toUpperCase() || 'T'}

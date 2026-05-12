@@ -36,8 +36,8 @@ function RevenueList({ onCourseClick }) {
             const ext = type === 'pdf' ? 'pdf' : 'xlsx';
 
             const res = type === 'pdf'
-                ? await tutorAPI.downloadDashboardPDF()
-                : await tutorAPI.downloadDashboardExcel();
+                ? await tutorAPI.downloadSalesReportPDF()
+                : await tutorAPI.downloadSalesReportExcel();
 
             const blob = new Blob([res.data], { type: mimeType });
             const url = window.URL.createObjectURL(blob);

@@ -31,11 +31,11 @@ export const tutorAPI = {
     getCourseRevenueDetails: (courseId, params = {}) =>
         api.get(`/tutor/revenue/${courseId}`, { params }),
 
-    downloadDashboardPDF: () =>
-        api.get('/tutor/dashboard/download/pdf', { responseType: 'blob' }),
+    downloadSalesReportPDF: () =>
+        api.get('/tutor/revenue/download/pdf', { responseType: 'blob' }),
 
-    downloadDashboardExcel: () =>
-        api.get('/tutor/dashboard/download/excel', { responseType: 'blob' }),
+    downloadSalesReportExcel: () =>
+        api.get('/tutor/revenue/download/excel', { responseType: 'blob' }),
 
     // Categories 
     getCategories: () => api.get('/categories/public', { params: { limit: 100, _t: Date.now() } }),

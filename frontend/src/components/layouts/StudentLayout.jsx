@@ -35,7 +35,8 @@ export default function StudentLayout() {
                     name: data.name,
                     email: data.email,
                     phone: data.phone,
-                    profileImage: data.profileImageURL || data.profileImage || null,
+                    profileImage: data.profileImage || null,
+                    profileImageURL: data.profileImageURL || null,
                     role: data.role,
                     status: data.status,
                 };
@@ -59,7 +60,6 @@ export default function StudentLayout() {
 
     const handleUpdateProfile = (updatedData) => {
         const { password, ...toStore } = updatedData;
-        toStore.profileImage = toStore.profileImageURL || toStore.profileImage || null;
         setStudentInfo(toStore);
         localStorage.setItem('studentInfo', JSON.stringify(toStore));
     };

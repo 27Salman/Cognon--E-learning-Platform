@@ -4,7 +4,19 @@ import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard } from 'lucide-react';
 
-const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
+const API_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : 'http://localhost:5000';
+
+const getFullImageUrl = (src) => {
+  if (!src) return null;
+  if (src.startsWith('http') || src.startsWith('data:')) return src;
+  // src is a raw filename like "user-abc123.jpg" — build the full uploads path
+  const subfolder = src.startsWith('user-') ? 'profiles/' : '';
+  return `${API_BASE}/uploads/${subfolder}${src}`;
+};
+
+const isValidImageSrc = (src) => !!src;
 
 const getAvatarColors = (name) => {
     const palettes = [
@@ -55,9 +67,9 @@ export default function StudentSidebar({ studentInfo }) {
 
             {/* Avatar + Name */}
             <div className="px-4 pt-6 pb-5 border-b border-gray-100 flex flex-col items-center">
-                {isValidImageSrc(studentInfo?.profileImage) ? (
+                {isValidImageSrc(studentInfo?.profileImageURL || studentInfo?.profileImage) ? (
                     <img
-                        src={studentInfo.profileImage}
+                        src={getFullImageUrl(studentInfo.profileImageURL || studentInfo.profileImage)}
                         alt="Student"
                         className="w-16 h-16 rounded-full object-cover border-2 border-purple-200 shadow-sm"
                     />

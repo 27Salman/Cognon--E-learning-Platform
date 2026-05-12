@@ -54,7 +54,7 @@ export default function CourseLessons() {
 
             <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-xl font-bold text-gray-800">{currentCourse.title}</h1>
+                    <h1 className="text-2xl font-bold text-gray-800">{currentCourse.title}</h1>
                     <p className="text-sm text-gray-500 mt-0.5">By {currentCourse.tutor?.name}</p>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-500">

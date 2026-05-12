@@ -150,7 +150,7 @@ export default function CategoryPage() {
             {/* Search header */}
             <div className="bg-white border-b border-gray-200 py-5 px-6">
                 <div className="max-w-2xl mx-auto">
-                    <h1 className="text-xl font-bold text-gray-800 mb-3 text-center">Browse by Category</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-3 text-center">Browse by Category</h1>
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input

@@ -25,7 +25,7 @@ export default function OrderSuccess() {
                     </div>
                 </div>
 
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Order Complete</h1>
+                <h1 className="text-2xl font-bold text-gray-800 mb-2">Order Complete</h1>
                 <p className="text-gray-500 mb-2">You Will Receive a confirmation email soon!</p>
                 <p className="text-sm font-mono text-purple-700 font-bold mb-4">
                     Order ID: {order.orderId}

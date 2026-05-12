@@ -7,7 +7,17 @@ import { Camera, Pencil, User, Mail, Phone, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminChangePasswordModal from '../../components/admin/AdminChangePasswordModal';
 
-const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
+const API_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : 'http://localhost:5000';
+
+const getFullImageUrl = (src) => {
+  if (!src) return null;
+  if (src.startsWith('http') || src.startsWith('data:')) return src;
+  return `${API_BASE}${src}`;
+};
+
+const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/'));
 
 export default function AdminProfile() {
   const { adminInfo, onUpdateProfile } = useOutletContext();
@@ -100,11 +110,11 @@ export default function AdminProfile() {
   };
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-6 max-w-4xl">
       <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
       <p className="text-sm text-gray-500 mt-1 mb-8">Manage your admin profile</p>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-lg font-bold text-gray-800">Admin Profile</h2>
           {!isEditing ? (
@@ -139,7 +149,7 @@ export default function AdminProfile() {
             <div className="relative">
               {isValidImageSrc(formData.profileImage) ? (
                 <img
-                  src={formData.profileImage}
+                  src={getFullImageUrl(formData.profileImage)}
                   alt="Profile"
                   className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md"
                 />
@@ -171,7 +181,7 @@ export default function AdminProfile() {
             <p className="text-xs text-gray-500">System Administrator</p>
           </div>
 
-          <div className="flex-1 space-y-5">
+          <div className="flex-1 space-y-4">
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1.5">
                 <User className="w-3.5 h-3.5" /> Full Name

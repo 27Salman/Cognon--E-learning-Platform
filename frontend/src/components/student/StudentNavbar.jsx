@@ -4,7 +4,19 @@ import { Heart, ShoppingCart, Bell } from 'lucide-react';
 import { studentAPI } from '../../api/studentAPI';
 import Logo from '../common/Logo';
 
-const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
+const API_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : 'http://localhost:5000';
+
+const getFullImageUrl = (src) => {
+  if (!src) return null;
+  if (src.startsWith('http') || src.startsWith('data:')) return src;
+  // src is a raw filename like "user-abc123.jpg" — build the full uploads path
+  const subfolder = src.startsWith('user-') ? 'profiles/' : '';
+  return `${API_BASE}/uploads/${subfolder}${src}`;
+};
+
+const isValidImageSrc = (src) => !!src;
 
 const getAvatarColors = (name) => {
     const palettes = [
@@ -88,8 +100,8 @@ export default function StudentNavbar({ studentInfo }) {
                     </button>
 
                     <button onClick={() => navigate('/student/profile')} className="focus:outline-none" title="My Profile">
-                        {isValidImageSrc(studentInfo?.profileImage) ? (
-                            <img src={studentInfo.profileImage} alt="Student" className="w-9 h-9 rounded-full object-cover border-2 border-purple-200 hover:border-purple-400 transition-colors" />
+                        {isValidImageSrc(studentInfo?.profileImageURL || studentInfo?.profileImage) ? (
+                            <img src={getFullImageUrl(studentInfo.profileImageURL || studentInfo.profileImage)} alt="Student" className="w-9 h-9 rounded-full object-cover border-2 border-purple-200 hover:border-purple-400 transition-colors" />
                         ) : (
                             (() => {
                                 const [from, to] = getAvatarColors(studentInfo?.name);

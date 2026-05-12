@@ -28,7 +28,7 @@ export default function AdminOrderDetail() {
     try {
       const res = await adminAPI.getOrderById(id);
       setOrder(res.data);
-    } catch {
+    } catch (err) {
       toast.error('Failed to load order', { id: 'admin-order-detail-error' });
     } finally {
       setLoading(false);
@@ -60,7 +60,7 @@ export default function AdminOrderDetail() {
   const tutorRevenue = order.courses?.reduce((sum, item) => sum + (item.tutorShare || 0), 0) || 0;
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-5 max-w-3xl">
       {/* Back Button */}
       <button
         onClick={() => navigate('/admin/orders')}
@@ -77,7 +77,7 @@ export default function AdminOrderDetail() {
       </div>
 
       {/* Order Summary */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-4">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-4">
         <h2 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Order Summary</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
@@ -114,7 +114,7 @@ export default function AdminOrderDetail() {
       </div>
 
       {/* Student Info */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-4">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-4">
         <h2 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Student Information</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
@@ -133,7 +133,7 @@ export default function AdminOrderDetail() {
       </div>
 
       {/* Purchased Courses */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-4">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-4">
         <h2 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Purchased Courses</h2>
         <div className="space-y-3">
           {order.courses?.map((item, i) => (
@@ -147,8 +147,10 @@ export default function AdminOrderDetail() {
                   </div>
                 )}
                 <div>
-                  <p className="font-medium text-gray-800 text-sm">{item.courseTitle}</p>
-                  <p className="text-xs text-gray-500">Tutor: {item.tutor?.name}</p>
+                  <p className="font-medium text-gray-800 text-sm">{item.courseTitle || item.course?.title || 'No title'}</p>
+                  <p className="text-xs text-gray-500">Tutor: {item.tutor?.name || 'No tutor'}</p>
+                  <p className="text-xs text-purple-600">Category: {item.courseCategory || item.course?.category || 'No category'}</p>
+                  <p className="text-xs text-gray-400">Tutor Share: ₹{item.tutorShare || 0}</p>
                 </div>
               </div>
               <div className="text-right text-sm flex-shrink-0 ml-4">
@@ -164,7 +166,7 @@ export default function AdminOrderDetail() {
       </div>
 
       {/* Price Breakdown */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-4">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-4">
         <h2 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Price Breakdown</h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-gray-600">

@@ -125,8 +125,8 @@ export default function CourseDetails() {
 
             {/* Main content */}
             <div className="flex-1">
-                <div className="w-full px-6 py-8">
-                    <div className="flex flex-col lg:flex-row gap-8">
+                <div className="w-full px-5 py-6">
+                    <div className="flex flex-col lg:flex-row gap-6">
 
                         {/* LEFT — course details + instructor + syllabus */}
                         <div className="flex-1 min-w-0">
@@ -156,17 +156,50 @@ export default function CourseDetails() {
                             </div>
 
                             {tutor && (
-                                <div className="mb-8">
-                                    <h2 className="text-lg font-bold text-gray-800 mb-4">Instructor</h2>
+                                <div className="mb-8 p-5 bg-white rounded-xl border border-gray-200">
+                                    <h2 className="text-lg font-bold text-gray-800 mb-4">About the Instructor</h2>
                                     <div className="flex items-start gap-4">
-                                        <div className="w-16 h-16 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-                                            {tutor.name?.charAt(0)?.toUpperCase() || 'T'}
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-gray-800 text-base">{tutor.name}</p>
-                                            {tutor.tutorProfile?.subject && (
-                                                <p className="text-purple-600 text-sm mb-1">{tutor.tutorProfile.subject}</p>
+                                        {/* Avatar — real image or initial */}
+                                        <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 bg-purple-600 flex items-center justify-center">
+                                            {tutor.profileImageURL || tutor.profileImage ? (
+                                                <img
+                                                    src={tutor.profileImageURL || tutor.profileImage}
+                                                    alt={tutor.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentNode.innerHTML = `<span class="text-white font-bold text-xl">${(tutor.name?.charAt(0) || 'T').toUpperCase()}</span>`;
+                                                    }}
+                                                />
+                                            ) : (
+                                                <span className="text-white font-bold text-xl">
+                                                    {tutor.name?.charAt(0)?.toUpperCase() || 'T'}
+                                                </span>
                                             )}
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-gray-900 text-base">{tutor.name}</p>
+                                            {tutor.tutorProfile?.subject && (
+                                                <p className="text-purple-600 text-sm mb-2">{tutor.tutorProfile.subject}</p>
+                                            )}
+
+                                            {/* Stats row */}
+                                            <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
+                                                {tutor.totalCourses > 0 && (
+                                                    <span className="flex items-center gap-1">
+                                                        <BookOpen className="w-4 h-4 text-purple-400" />
+                                                        {tutor.totalCourses} {tutor.totalCourses === 1 ? 'Course' : 'Courses'}
+                                                    </span>
+                                                )}
+                                                {tutor.totalStudents > 0 && (
+                                                    <span className="flex items-center gap-1">
+                                                        <Users className="w-4 h-4 text-purple-400" />
+                                                        {tutor.totalStudents.toLocaleString()} {tutor.totalStudents === 1 ? 'Student' : 'Students'}
+                                                    </span>
+                                                )}
+                                            </div>
+
                                             {tutor.tutorProfile?.bio && (
                                                 <p className="text-gray-600 text-sm leading-relaxed">{tutor.tutorProfile.bio}</p>
                                             )}
@@ -180,15 +213,18 @@ export default function CourseDetails() {
                                     <h2 className="text-lg font-bold text-gray-800 mb-3">Syllabus</h2>
                                     <div className="space-y-2">
                                         {lessons.map((lesson, idx) => (
-                                            <div key={lesson._id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-purple-200 transition">
-                                                <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                            <div key={lesson._id} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-purple-200 transition">
+                                                <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                                                     <PlayCircle className="w-4 h-4 text-purple-600" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-gray-800 truncate">{idx + 1}. {lesson.title}</p>
+                                                    <p className="text-sm font-medium text-gray-800">{idx + 1}. {lesson.title}</p>
+                                                    {lesson.description && (
+                                                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{lesson.description}</p>
+                                                    )}
                                                 </div>
                                                 {lesson.duration > 0 && (
-                                                    <span className="text-xs text-gray-400 flex-shrink-0">{lesson.duration} min</span>
+                                                    <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">{lesson.duration} min</span>
                                                 )}
                                             </div>
                                         ))}
@@ -210,7 +246,7 @@ export default function CourseDetails() {
                                     )}
                                 </div>
 
-                                <div className="p-5">
+                                <div className="p-4">
                                     {/* Price */}
                                     <div className="mb-4">
                                         {discountedPrice ? (
@@ -301,7 +337,7 @@ export default function CourseDetails() {
                 </div>
 
                 {moreCourses.length > 0 && (
-                    <div className="w-full px-6 py-10 bg-white border-t border-gray-100">
+                    <div className="w-full px-5 py-8 bg-white border-t border-gray-100">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-gray-800">More Courses Like This</h2>
                             <button onClick={() => navigate('/student/courses')} className="text-sm text-purple-600 font-medium hover:underline">See all</button>

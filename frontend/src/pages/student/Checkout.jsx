@@ -22,16 +22,18 @@ export default function Checkout() {
     const [availableCoupons, setAvailableCoupons] = useState([]);
     const [couponsLoading, setCouponsLoading] = useState(false);
 
-    const fetchPriceData = async (code) => {
-        setLoading(true);
+    const fetchPriceData = async (code, isInitial = false) => {
+        if (isInitial) setLoading(true);
+        else setCouponLoading(true);
         try {
             const res = await studentAPI.calculatePrice(code || null);
             setPriceData(res.data);
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to load checkout');
-            navigate('/student/cart');
+            if (isInitial) navigate('/student/cart');
         } finally {
-            setLoading(false);
+            if (isInitial) setLoading(false);
+            else setCouponLoading(false);
         }
     };
 
@@ -62,7 +64,7 @@ export default function Checkout() {
                     }
                 }
             }
-            await fetchPriceData(couponCode);
+            await fetchPriceData(couponCode, true);
         };
         init();
     }, []);
@@ -82,7 +84,6 @@ export default function Checkout() {
     const handleApplyCoupon = async (codeOverride) => {
         const code = (codeOverride || couponInput).trim().toUpperCase();
         if (!code) return toast.error('Enter a coupon code');
-        setCouponLoading(true);
         try {
             await fetchPriceData(code);
             setCouponCode(code);
@@ -90,8 +91,6 @@ export default function Checkout() {
             toast.success('Coupon applied!');
         } catch {
             toast.error('Invalid or inapplicable coupon');
-        } finally {
-            setCouponLoading(false);
         }
     };
 
@@ -381,7 +380,7 @@ export default function Checkout() {
                                                 <p className="text-xs text-green-600">You save ₹{couponDiscount}</p>
                                             </div>
                                         </div>
-                                        <button onClick={handleRemoveCoupon} className="text-gray-400 hover:text-gray-600 ml-2">
+                                        <button onClick={handleRemoveCoupon} disabled={couponLoading} className="text-gray-400 hover:text-gray-600 ml-2 disabled:opacity-50">
                                             <X className="w-4 h-4" />
                                         </button>
                                     </div>

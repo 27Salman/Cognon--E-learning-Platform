@@ -111,7 +111,7 @@ export default function LessonViewer() {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Purple header */}
-            <div className="bg-purple-700 text-white px-6 py-5">
+            <div className="bg-purple-700 text-white px-5 py-4">
                 <div className="flex items-start justify-between">
                     <button
                         onClick={() => navigate(`/student/courses/${courseId}/lessons`)}
@@ -120,7 +120,7 @@ export default function LessonViewer() {
                         <ChevronLeft className="w-4 h-4" /> Back
                     </button>
                     <div className="text-center flex-1 px-4">
-                        <h1 className="text-xl font-bold">{currentCourse.title}</h1>
+                        <h1 className="text-2xl font-bold">{currentCourse.title}</h1>
                         {currentCourse.description && (
                             <p className="text-purple-200 text-sm mt-0.5 line-clamp-1">{currentCourse.description}</p>
                         )}
@@ -186,7 +186,7 @@ export default function LessonViewer() {
                         </div>
                     </div>
 
-                    <div className="max-w-4xl mx-auto px-6 py-6">
+                    <div className="max-w-4xl mx-auto px-5 py-5">
                         {/* Lesson title */}
                         <h2 className="text-lg font-bold text-gray-800 mb-4">{currentLesson?.title}</h2>
 
@@ -252,7 +252,7 @@ export default function LessonViewer() {
 
                         {/* Tutor card */}
                         {tutor && (
-                            <div className="bg-purple-700 rounded-xl p-5 flex items-start gap-4 mb-8">
+                            <div className="bg-purple-700 rounded-xl p-4 flex items-start gap-4 mb-6">
                                 <div className="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                                     {tutor.name?.charAt(0)?.toUpperCase() || 'T'}
                                 </div>
@@ -270,7 +270,7 @@ export default function LessonViewer() {
 
                         {/* Student also bought */}
                         {alsoBoought.length > 0 && (
-                            <div className="mb-8">
+                            <div className="mb-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-gray-800">Student also bought</h3>
                                     <button
