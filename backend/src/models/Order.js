@@ -15,6 +15,9 @@ const orderCourseSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    courseCategory: {
+        type: String
+    },
     originalPrice: {
         type: Number,
         required: true,

@@ -21,6 +21,21 @@ const tutorService = {
     async getProfile(tutorId) {
         const tutor = await User.findById(tutorId).select('-password');
         if (!tutor) throw new Error('Tutor not found');
+
+        const courses = await Course.find({ tutor: tutorId });
+        const totalCourses = courses.length; // all courses, not just published
+
+        // Count unique students across all courses (not sum of per-course counts)
+        const uniqueStudentIds = new Set();
+        courses.forEach(course => {
+            (course.studentsEnrolled || []).forEach(id => uniqueStudentIds.add(id.toString()));
+        });
+        const totalStudents = uniqueStudentIds.size;
+
+        tutor.totalCourses = totalCourses;
+        tutor.totalStudents = totalStudents;
+        await tutor.save();
+
         return tutor;
     },
 
@@ -389,7 +404,108 @@ const tutorService = {
             enrollments: filtered,
             pagination
         };
-    }
+    },
+
+    async getTutorSalesReport(tutorId, { dateFrom, dateTo } = {}){
+        const query = {
+            'courses.tutor': tutorId,
+            paymentStatus: 'completed',
+        };
+
+        if(dateFrom || dateTo){
+            query.orderDate = {};
+            if(dateFrom) query.orderDate.$gte = new Date(dateFrom);
+            if(dateTo){
+                const end = new Date(dateTo);
+                end.setHours(23, 59, 59, 999);
+                query.orderDate.$lte = end;
+            }
+        }
+
+        const orders = await Order.find(query)
+            .populate('user', 'name')
+            .sort({ orderDate: -1 });
+
+        let totalEarnings = 0;
+        let totalGross = 0;
+        let totalEnrollments = 0;
+        const courseMap = {};
+
+        for(const order of orders){
+            for(const item of order.courses){
+                if(item.tutor.toString() !== tutorId.toString()) continue;
+
+                totalEarnings += item.tutorShare || 0;
+                totalGross += item.discountedPrice || 0;
+                totalEnrollments += 1;
+
+                const key = item.courseTitle || 'unknown';
+
+                if (!courseMap[key]) {
+                    courseMap[key] = {
+                        courseTitle:    key,
+                        courseCategory: item.courseCategory || '-',
+                        enrollments:    0,
+                        grossRevenue:   0,
+                        earnings:       0,
+                        totalSalePrice: 0,
+                    };
+                }
+
+                courseMap[key].enrollments  += 1;
+                courseMap[key].grossRevenue += item.discountedPrice || 0;
+                courseMap[key].earnings     += item.tutorShare || 0;
+                courseMap[key].totalSalePrice += item.discountedPrice || 0;
+
+            }
+        }
+
+        const round = (n) => Math.round( n * 100 ) / 100;
+
+        const summary = {
+            totalEarnings: round(totalEarnings),
+            totalGross: round(totalGross),
+            platformFee: round(totalGross - totalEarnings),
+            totalEnrollments,
+            totalCourses: Object.keys(courseMap).length,
+        };
+
+        const courseBreakdown = Object.values(courseMap).map(c => ({
+            courseTitle:    c.courseTitle,
+            courseCategory: c.courseCategory,
+            enrollments:    c.enrollments,
+            grossRevenue:   round(c.grossRevenue),
+            earnings:       round(c.earnings),
+            avgSalePrice:   c.enrollments > 0 ? round(c.totalSalePrice / c.enrollments) : 0,
+        })).sort((a, b) => b.earnings - a.earnings);
+
+        const transactions = [];
+        for(const order of orders){
+            for(const item of order.courses){
+                if(item.tutor.toString() !== tutorId.toString()) continue;
+
+                const fullName = order.user?.name || 'Student';
+                const parts = fullName.trim().split(' ');
+                const studentDisplay = parts.length > 1
+                    ? `${parts[0]} ${parts[parts.length - 1][0]}.`
+                    : parts[0];
+
+                transactions.push({
+                    date:         order.orderDate,
+                    courseTitle:  item.courseTitle || '-',
+                    student:      studentDisplay,
+                    salePrice:    round(item.discountedPrice || 0),
+                    earnings:     round(item.tutorShare || 0),
+                    coupon:       order.couponCode || '-',
+                });
+
+            }
+
+        }
+
+        return { summary, courseBreakdown, transactions, dateFrom, dateTo };
+
+    },
 
 
 };

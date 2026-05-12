@@ -534,20 +534,22 @@ const adminService = {
             }
         }
 
+        const round2 = (n) => Math.round(n * 100) / 100;
+
         const summary = {
             totalOrders:          orders.length,
-            totalRevenue:         orders.reduce((s, o) => s + o.finalAmount, 0),
-            totalPlatformRevenue: orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.platformShare || 0), 0), 0),
-            totalTutorRevenue:    orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.tutorShare    || 0), 0), 0),
+            totalRevenue:         round2(orders.reduce((s, o) => s + o.finalAmount, 0)),
+            totalPlatformRevenue: round2(orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.platformShare || 0), 0), 0)),
+            totalTutorRevenue:    round2(orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.tutorShare    || 0), 0), 0)),
         };
 
         const chartData = Object.values(groupMap)
             .sort((a, b) => a.period.localeCompare(b.period))
             .map(m => ({
                 ...m,
-                revenue:         Math.round(m.revenue),
-                platformRevenue: Math.round(m.platformRevenue),
-                tutorRevenue:    Math.round(m.tutorRevenue),
+                revenue:         round2(m.revenue),
+                platformRevenue: round2(m.platformRevenue),
+                tutorRevenue:    round2(m.tutorRevenue),
             }));
 
         return { summary, chartData, orders };

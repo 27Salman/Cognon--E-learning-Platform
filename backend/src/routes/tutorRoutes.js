@@ -13,8 +13,8 @@ const {
     getDashboard,
     getRevenueDashboard,
     getCourseRevenueDetails,
-    downloadDashboardPDF,
-    downloadDashboardExcel,
+    downloadSalesReportPDF,
+    downloadSalesReportExcel,
 } = require('../controllers/tutorController');
 
 router.use(protect);
@@ -30,8 +30,8 @@ router.post('/change-password/request', requestPasswordChange);
 router.post('/change-password/verify', verifyPasswordChange);
 
 router.get('/dashboard', getDashboard);
-router.get('/dashboard/download/pdf', downloadDashboardPDF);
-router.get('/dashboard/download/excel', downloadDashboardExcel);
+router.get('/revenue/download/pdf',   downloadSalesReportPDF);
+router.get('/revenue/download/excel', downloadSalesReportExcel);
 router.get('/revenue', getRevenueDashboard);
 router.get('/revenue/:courseId', getCourseRevenueDetails);
 

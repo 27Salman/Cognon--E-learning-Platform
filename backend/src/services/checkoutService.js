@@ -45,14 +45,16 @@ const checkoutService = {
             };
         }
 
+        // Keep 2 decimal places — only round at the Razorpay API boundary (paise)
         const finalAmount = Math.max(0, subtotal - couponDiscount);
+        const round2 = (n) => Math.round(n * 100) / 100;
 
         return {
             items: cartData.items,
-            subtotal,
-            couponDiscount: Math.round(couponDiscount),
+            subtotal: round2(subtotal),
+            couponDiscount: round2(couponDiscount),
             coupon: couponInfo,
-            finalAmount: Math.round(finalAmount),
+            finalAmount: round2(finalAmount),
             totalItems: cartData.totalItems
         };
 
@@ -79,7 +81,7 @@ const checkoutService = {
 
             if (isSameCart && isSameAmount) {
                 const razorpayOrder = await razorpay.orders.create({
-                    amount: existingOrder.finalAmount * 100,
+                    amount: Math.round(existingOrder.finalAmount * 100),
                     currency: 'INR',
                     receipt: `reuse_${Date.now()}`,
                     notes: { userId: userId.toString() }
@@ -100,7 +102,8 @@ const checkoutService = {
         }
 
         const razorpayOrder = await razorpay.orders.create({
-            amount: priceData.finalAmount * 100,
+            // Razorpay requires integer paise — round only here
+            amount: Math.round(priceData.finalAmount * 100),
             currency: 'INR',
             receipt: `receipt_${Date.now()}`,
             notes: {
@@ -109,18 +112,31 @@ const checkoutService = {
             }
         });
 
-        const orderCourses = priceData.items.map(item => {
+        // Distribute finalAmount across courses proportionally, preserving decimals.
+        const round2 = (n) => Math.round(n * 100) / 100;
+        let allocatedTotal = 0;
+        const orderCourses = priceData.items.map((item, idx) => {
+            const isLast = idx === priceData.items.length - 1;
             const courseWeight = priceData.subtotal > 0
                 ? item.finalPrice / priceData.subtotal
                 : 1 / priceData.items.length;
-            const courseActualAmount = Math.round(priceData.finalAmount * courseWeight);
 
-            const tutorShare = Math.round(courseActualAmount * PLATFORM_COMMISSION.TUTOR_SHARE);
-            const platformShare = Math.round(courseActualAmount * PLATFORM_COMMISSION.RATE);
+            // Last item gets the exact remainder to avoid any drift
+            const courseActualAmount = isLast
+                ? round2(priceData.finalAmount - allocatedTotal)
+                : round2(priceData.finalAmount * courseWeight);
+
+            allocatedTotal = round2(allocatedTotal + courseActualAmount);
+
+            // tutorShare + platformShare === courseActualAmount exactly
+            const tutorShare = round2(courseActualAmount * PLATFORM_COMMISSION.TUTOR_SHARE);
+            const platformShare = round2(courseActualAmount - tutorShare);
+
             return {
                 course: item.course._id,
                 tutor: item.course.tutor._id,
                 courseTitle: item.course.title,
+                courseCategory: item.course.category || '',
                 originalPrice: item.originalPrice,
                 discountedPrice: item.finalPrice,
                 tutorShare,
@@ -260,7 +276,7 @@ const checkoutService = {
         }
 
         const razorpayOrder = await razorpay.orders.create({
-            amount: order.finalAmount * 100,
+            amount: Math.round(order.finalAmount * 100),
             currency: 'INR',
             receipt: `retry_${Date.now()}`,
             notes: { userId: userId.toString(), retryOrderId: order._id.toString() }

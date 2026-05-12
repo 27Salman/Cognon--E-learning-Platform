@@ -93,7 +93,7 @@ const catalogService = {
         const Lesson = require('../models/Lesson');
 
         const course = await Course.findById(courseId)
-            .populate('tutor', 'name profileImage bio');
+            .populate('tutor', 'name email profileImage tutorProfile');
 
         if (!course) {
             throw new Error('Course not found');
@@ -110,7 +110,22 @@ const catalogService = {
             .sort({ order: 1, createdAt: 1 });
 
         const courseObj = course.toJSON();
-        delete courseObj.studentsEnrolled; 
+
+        // Capture count before deleting the array
+        courseObj.enrolledCount = course.studentsEnrolled?.length || 0;
+        delete courseObj.studentsEnrolled;
+
+        // Compute unique students across all tutor's courses (fresh, not stale DB value)
+        const tutorCourses = await Course.find({ tutor: course.tutor._id }).select('studentsEnrolled');
+        const uniqueStudentIds = new Set();
+        tutorCourses.forEach(c => {
+            (c.studentsEnrolled || []).forEach(id => uniqueStudentIds.add(id.toString()));
+        });
+        courseObj.tutor = {
+            ...courseObj.tutor,
+            totalCourses: tutorCourses.length,
+            totalStudents: uniqueStudentIds.size,
+        };
 
         courseObj.lessons = lessons.map(l => {
             const lesson = l.toJSON();
@@ -121,6 +136,9 @@ const catalogService = {
             }
             return lesson;
         });
+
+        // Compute totalDuration from lessons
+        courseObj.totalDuration = lessons.reduce((sum, l) => sum + (l.duration || 0), 0);
 
         if (course.offerPercentage > 0) {
             const discountedPrice = Math.round(

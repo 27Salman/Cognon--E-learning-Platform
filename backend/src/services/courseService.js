@@ -126,7 +126,7 @@ const courseService = {
 
     async getCourseById(courseId, userId = null, userRole = null) {
         const course = await Course.findById(courseId)
-            .populate('tutor', 'name email profileImage tutorProfile');
+            .populate('tutor', 'name email profileImage tutorProfile totalCourses totalStudents');
 
         if (!course) throw new Error('Course not found');
 

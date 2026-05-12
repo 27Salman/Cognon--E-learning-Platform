@@ -112,12 +112,14 @@ const cartService = {
                 };
             }
 
+            const round2 = (n) => Math.round(n * 100) / 100;
+
             validItems.push({
                 _id: item._id,
                 course: item.course,
                 originalPrice: item.course.price,
-                discountAmount: Math.round(discountAmount),
-                finalPrice: Math.round(finalPrice),
+                discountAmount: round2(discountAmount),
+                finalPrice: round2(finalPrice),
                 offer: offerInfo,
                 addedAt: item.addedAt
             });
@@ -125,9 +127,11 @@ const cartService = {
             subtotal += finalPrice;
         }
 
+        const round2 = (n) => Math.round(n * 100) / 100;
+
         return {
             items: validItems,
-            subtotal: Math.round(subtotal),
+            subtotal: round2(subtotal),
             totalItems: validItems.length
         };
     },

@@ -144,6 +144,15 @@ const userSchema = new mongoose.Schema(
             }
         },
 
+        totalCourses: {
+            type: Number,
+            default: 0
+        },
+        totalStudents: {
+            type: Number,
+            default: 0
+        },
+
         lastLogin: {
             type: Date
         }
