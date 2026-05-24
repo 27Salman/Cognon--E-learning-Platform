@@ -1,8 +1,9 @@
 const Wallet = require('../models/Wallet');
 const WithdrawalRequest = require('../models/WithdrawalRequest');
-const Order = require('../models/Order');
 const User = require('../models/User');
-const { PLATFORM_COMMISSION } = require('../config/constants');
+const { PLATFORM_COMMISSION, TUTOR_HOLD_DAYS } = require('../config/constants');
+
+const round2 = (n) => Math.round(n * 100) / 100;
 
 const walletService = {
 
@@ -22,19 +23,21 @@ const walletService = {
     },
 
     async creditFromOrder(order) {
+        const releaseAt = new Date(Date.now() + TUTOR_HOLD_DAYS * 24 * 60 * 60 * 1000);
+
         for (const item of order.courses) {
             const tutorWallet = await walletService.getOrCreateWallet(item.tutor, 'tutor');
             const amount = item.tutorShare;
 
-            tutorWallet.balance = Math.round((tutorWallet.balance + amount) * 100) / 100;
-            tutorWallet.totalEarnings = Math.round((tutorWallet.totalEarnings + amount) * 100) / 100;
+            tutorWallet.totalEarnings = round2(tutorWallet.totalEarnings + amount);
             tutorWallet.transactions.push({
                 type: 'credit',
                 amount,
                 description: `Earnings from order ${order.orderId} — ${item.courseTitle}`,
                 orderId: order.orderId,
                 orderRef: order._id,
-                status: 'completed'
+                status: 'pending',  
+                releaseAt
             });
             await tutorWallet.save();
         }
@@ -42,11 +45,13 @@ const walletService = {
         const adminUser = await User.findOne({ role: 'admin' }).select('_id');
         if (adminUser) {
             const adminWallet = await walletService.getOrCreateWallet(adminUser._id, 'admin');
-            const platformTotal = order.courses.reduce((sum, item) => sum + (item.platformShare || 0), 0);
+            const platformTotal = round2(
+                order.courses.reduce((sum, item) => sum + (item.platformShare || 0), 0)
+            );
             const commissionPct = Math.round(PLATFORM_COMMISSION.RATE * 100);
 
-            adminWallet.balance = Math.round((adminWallet.balance + platformTotal) * 100) / 100;
-            adminWallet.totalEarnings = Math.round((adminWallet.totalEarnings + platformTotal) * 100) / 100;
+            adminWallet.balance = round2(adminWallet.balance + platformTotal);
+            adminWallet.totalEarnings = round2(adminWallet.totalEarnings + platformTotal);
             adminWallet.transactions.push({
                 type: 'credit',
                 amount: platformTotal,
@@ -59,6 +64,102 @@ const walletService = {
         }
     },
 
+    
+    async reverseEarning(tutorId, orderRef, amount) {
+        const wallet = await Wallet.findOne({ owner: tutorId });
+        if (!wallet) throw new Error('Tutor wallet not found');
+
+        const transaction = wallet.transactions.find(
+            t => t.orderRef?.toString() === orderRef.toString()
+        );
+
+        if (!transaction) throw new Error('Earning transaction not found for this order');
+        if (transaction.status === 'refunded' || transaction.status === 'cancelled') {
+            throw new Error('This earning has already been reversed');
+        }
+
+        const now = new Date();
+        const isStillHeld = transaction.releaseAt && transaction.releaseAt > now;
+
+        if (isStillHeld) {
+            transaction.status = 'cancelled';
+            wallet.totalEarnings = round2(wallet.totalEarnings - amount);
+        } else {
+            transaction.status = 'refunded';
+            wallet.balance = round2(wallet.balance - amount);
+            wallet.totalEarnings = round2(wallet.totalEarnings - amount);
+        }
+
+        await wallet.save();
+        return { message: 'Tutor earning reversed successfully', wasHeld: isStillHeld };
+    },
+
+    
+    async refundToStudent(studentId, amount, orderId) {
+        const adminUser = await User.findOne({ role: 'admin' }).select('_id');
+        if (!adminUser) throw new Error('Admin not found');
+
+        const adminWallet = await walletService.getOrCreateWallet(adminUser._id, 'admin');
+
+        adminWallet.balance = round2(adminWallet.balance - amount);
+        adminWallet.transactions.push({
+            type: 'debit',
+            amount,
+            description: `Refund to student for order ${orderId}`,
+            orderId,
+            status: 'completed'
+        });
+        await adminWallet.save();
+
+        const studentWallet = await walletService.getOrCreateWallet(studentId, 'student');
+        studentWallet.balance = round2(studentWallet.balance + amount);
+        studentWallet.transactions.push({
+            type: 'credit',
+            amount,
+            description: `Refund for order ${orderId}`,
+            orderId,
+            status: 'completed'
+        });
+        await studentWallet.save();
+
+        return { message: 'Refund processed successfully', refundAmount: amount };
+    },
+
+    
+    async _releaseMatureHolds(wallet) {
+        const now = new Date();
+        let released = 0;
+
+        for (const txn of wallet.transactions) {
+            if (txn.status === 'pending' && txn.releaseAt && txn.releaseAt <= now) {
+                txn.status = 'completed';
+                released = round2(released + txn.amount);
+            }
+        }
+
+        if (released > 0) {
+            wallet.balance = round2(wallet.balance + released);
+            await wallet.save();
+        }
+
+        return released;
+    },
+
+    async getStudentWallet(userId) {
+        const wallet = await walletService.getOrCreateWallet(userId, 'student');
+
+        const transactions = [...(wallet.transactions || [])]
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        return {
+            balance: round2(wallet.balance),
+            totalEarnings: round2(wallet.totalEarnings || 0),
+            totalWithdrawals: round2(wallet.totalWithdrawals || 0),
+            ownerType: 'student',
+            transactions,
+        };
+    },
+
     async getWallet(userId, { page = 1, limit = 10, type } = {}) {
         const wallet = await walletService.getOrCreateWallet(userId, null);
 
@@ -67,6 +168,21 @@ const walletService = {
             wallet.ownerType = user?.role === 'admin' ? 'admin' : 'tutor';
             await wallet.save();
         }
+
+        if (wallet.ownerType === 'tutor') {
+            return await walletService.getWalletWithHold(userId, 'tutor');
+        }
+
+        const now = new Date();
+        const allTutorWallets = await Wallet.find({ ownerType: 'tutor' });
+        const tutorHoldAmount = round2(
+            allTutorWallets.reduce((sum, w) => {
+                const held = w.transactions
+                    .filter(t => t.status === 'pending' && t.releaseAt && t.releaseAt > now)
+                    .reduce((s, t) => s + t.amount, 0);
+                return sum + held;
+            }, 0)
+        );
 
         let txns = [...wallet.transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         if (type && ['credit', 'debit'].includes(type)) {
@@ -78,8 +194,50 @@ const walletService = {
         const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 10));
         const paginated = txns.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
+        return {
+            balance: wallet.balance,
+            totalEarnings: wallet.totalEarnings,
+            totalWithdrawals: wallet.totalWithdrawals,
+            ownerType: wallet.ownerType,
+            pendingAmount: 0,
+            availableBalance: wallet.balance,
+            tutorHoldAmount,   // total tutor earnings still in 3-day hold
+            transactions: paginated,
+            pendingWithdrawals: [],
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(total / limitNum),
+                totalFiltered: total,
+                limit: limitNum
+            }
+        };
+    },
+
+    async getWalletWithHold(userId, ownerType) {
+        const wallet = await walletService.getOrCreateWallet(userId, ownerType);
+
+        await walletService._releaseMatureHolds(wallet);
+
+        const freshWallet = await Wallet.findOne({ owner: userId });
+
+        const now = new Date();
+
+        const pendingAmount = round2(
+            freshWallet.transactions
+                .filter(t => t.status === 'pending' && t.releaseAt && t.releaseAt > now)
+                .reduce((sum, t) => sum + t.amount, 0)
+        );
+
+        const availableBalance = round2(freshWallet.balance);
+
+        let txns = [...freshWallet.transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const total = txns.length;
+        const pageNum = 1;
+        const limitNum = 10;
+        const paginated = txns.slice(0, limitNum);
+
         let pendingWithdrawals = [];
-        if (wallet.ownerType === 'tutor') {
+        if (ownerType === 'tutor') {
             pendingWithdrawals = await WithdrawalRequest.find({
                 tutor: userId,
                 status: 'pending'
@@ -87,10 +245,12 @@ const walletService = {
         }
 
         return {
-            balance: wallet.balance,
-            totalEarnings: wallet.totalEarnings,
-            totalWithdrawals: wallet.totalWithdrawals,
-            ownerType: wallet.ownerType,
+            balance: freshWallet.balance,
+            totalEarnings: freshWallet.totalEarnings,
+            totalWithdrawals: freshWallet.totalWithdrawals,
+            ownerType: freshWallet.ownerType,
+            pendingAmount,
+            availableBalance,
             transactions: paginated,
             pendingWithdrawals,
             pagination: {
@@ -107,15 +267,21 @@ const walletService = {
         if (!wallet) throw new Error('Wallet not found');
         if (amount <= 0) throw new Error('Withdrawal amount must be greater than 0');
 
+        await walletService._releaseMatureHolds(wallet);
+        const freshWallet = await Wallet.findOne({ owner: tutorId });
+
         const pendingTotal = await WithdrawalRequest.aggregate([
             { $match: { tutor: tutorId, status: 'pending' } },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
-        const pendingAmount = pendingTotal[0]?.total || 0;
-        const availableBalance = wallet.balance - pendingAmount;
+        const pendingWithdrawalAmount = pendingTotal[0]?.total || 0;
+        const availableBalance = round2(freshWallet.balance - pendingWithdrawalAmount);
 
         if (amount > availableBalance) {
-            throw new Error(`Insufficient available balance. Available: ₹${availableBalance.toFixed(2)} (₹${pendingAmount.toFixed(2)} pending approval)`);
+            throw new Error(
+                `Insufficient available balance. Available: ₹${availableBalance.toFixed(2)}` +
+                (pendingWithdrawalAmount > 0 ? ` (₹${pendingWithdrawalAmount.toFixed(2)} pending approval)` : '')
+            );
         }
 
         const request = await WithdrawalRequest.create({
@@ -172,8 +338,8 @@ const walletService = {
             throw new Error(`Insufficient wallet balance. Available: ₹${wallet.balance}`);
         }
 
-        wallet.balance = Math.round((wallet.balance - request.amount) * 100) / 100;
-        wallet.totalWithdrawals = Math.round((wallet.totalWithdrawals + request.amount) * 100) / 100;
+        wallet.balance = round2(wallet.balance - request.amount);
+        wallet.totalWithdrawals = round2(wallet.totalWithdrawals + request.amount);
         wallet.transactions.push({
             type: 'debit',
             amount: request.amount,
@@ -203,7 +369,7 @@ const walletService = {
         await request.save();
 
         return { request, message: `Withdrawal request rejected for ${request.tutor.name}` };
-    }
+    },
 };
 
 module.exports = walletService;

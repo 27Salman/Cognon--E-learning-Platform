@@ -12,7 +12,7 @@ export default function CourseDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const { currentCourse, loading, catalog } = useSelector(state => state.student);
+    const { currentCourse, loading, catalog, courseError } = useSelector(state => state.student);
     const [studentInfo, setStudentInfo] = useState(() => {
         try { return JSON.parse(localStorage.getItem("studentInfo")) || {}; } catch { return {}; }
     });
@@ -88,7 +88,7 @@ export default function CourseDetails() {
     const tutor = currentCourse?.tutor;
     const moreCourses = catalog.filter(c => c._id !== id).slice(0, 4);
 
-    if (loading || !currentCourse) {
+    if (loading) {
         return (
             <div className="min-h-screen bg-gray-50">
                 <div className="h-16 bg-white border-b animate-pulse" />
@@ -100,6 +100,32 @@ export default function CourseDetails() {
                     </div>
                     <div className="h-80 bg-gray-200 rounded-xl animate-pulse" />
                 </div>
+            </div>
+        );
+    }
+
+    if (!currentCourse || courseError) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col">
+                <StudentNavbar studentInfo={studentInfo} />
+                <div className="flex-1 flex items-center justify-center px-6 py-20">
+                    <div className="text-center max-w-md">
+                        <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-8">
+                            <BookOpen className="w-12 h-12 text-purple-400" />
+                        </div>
+                        <h2 className="text-3xl font-bold text-gray-800 mb-4">Course Unavailable</h2>
+                        <p className="text-gray-500 text-base leading-relaxed mb-10">
+                            Sorry for the inconvenience. This course is currently unavailable. It may have been removed or unlisted by the instructor.
+                        </p>
+                        <button
+                            onClick={() => navigate('/student/courses')}
+                            className="px-8 py-3.5 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition text-base"
+                        >
+                            Browse All Courses
+                        </button>
+                    </div>
+                </div>
+                <Footer />
             </div>
         );
     }

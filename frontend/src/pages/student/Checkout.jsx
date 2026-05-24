@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { studentAPI } from '../../api/studentAPI';
-import { BookOpen, Tag, X, CreditCard, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { BookOpen, Tag, X, CreditCard, ChevronDown, ChevronUp, Check, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentNavbar from '../../components/student/StudentNavbar';
 import { useSelector } from 'react-redux';
@@ -14,6 +14,8 @@ export default function Checkout() {
     const [priceData, setPriceData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [walletPaying, setWalletPaying] = useState(false);
 
     const [couponCode, setCouponCode] = useState(location.state?.couponCode || '');
     const [couponInput, setCouponInput] = useState(location.state?.couponCode || '');
@@ -69,6 +71,18 @@ export default function Checkout() {
         init();
     }, []);
 
+    // Fetch wallet balance
+    useEffect(() => {
+        const fetchWallet = async () => {
+            try {
+                const res = await studentAPI.getMyWallet();
+                setWalletBalance(res.data?.balance || 0);
+            } catch {
+            }
+        };
+        fetchWallet();
+    }, []);
+
     const handleToggleCouponPanel = () => {
         const next = !couponOpen;
         setCouponOpen(next);
@@ -98,6 +112,19 @@ export default function Checkout() {
         setCouponCode('');
         setCouponInput('');
         await fetchPriceData('');
+    };
+
+    const handleWalletPayment = async () => {
+        if (walletPaying) return;
+        setWalletPaying(true);
+        try {
+            const res = await studentAPI.payWithWallet(couponCode || null);
+            toast.success('Payment successful!');
+            navigate('/student/order-success', { state: { order: res.data } });
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Wallet payment failed');
+            setWalletPaying(false);
+        }
     };
 
     const handlePayment = async () => {
@@ -396,7 +423,7 @@ export default function Checkout() {
                                 {offerDiscount > 0 && (
                                     <div className="flex justify-between text-green-600">
                                         <span>Offer Discount</span>
-                                        <span>- ₹{offerDiscount}</span>
+                                        <span>- ₹{Number(offerDiscount).toFixed(2)}</span>
                                     </div>
                                 )}
                                 {couponDiscount > 0 && (
@@ -415,12 +442,40 @@ export default function Checkout() {
                             <div className="px-5 pb-5">
                                 <button
                                     onClick={handlePayment}
-                                    disabled={paying}
+                                    disabled={paying || walletPaying}
                                     className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
                                 >
                                     <CreditCard className="w-4 h-4" />
                                     {paying ? 'Processing...' : `Pay ₹${finalAmount}`}
                                 </button>
+
+                                {/* Wallet payment section */}
+                                {walletBalance > 0 && (
+                                    <div className="mt-3 p-3 bg-purple-50 rounded-xl border border-purple-100">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <Wallet className="w-4 h-4 text-purple-600" />
+                                                <span className="text-sm text-gray-700 font-medium">Wallet Balance</span>
+                                            </div>
+                                            <span className="text-sm font-bold text-purple-700">₹{walletBalance.toFixed(2)}</span>
+                                        </div>
+                                        {walletBalance >= finalAmount ? (
+                                            <button
+                                                onClick={handleWalletPayment}
+                                                disabled={walletPaying || paying}
+                                                className="w-full bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 text-sm transition-colors"
+                                            >
+                                                <Wallet className="w-4 h-4" />
+                                                {walletPaying ? 'Processing...' : `Pay with Wallet (₹${finalAmount})`}
+                                            </button>
+                                        ) : (
+                                            <p className="text-xs text-gray-400 text-center">
+                                                Insufficient balance (need ₹{(finalAmount - walletBalance).toFixed(2)} more)
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
                                 <p className="text-xs text-gray-400 text-center mt-2">Secured by Razorpay</p>
                             </div>
                         </div>

@@ -124,6 +124,9 @@ export default function CourseCatalog() {
     });
 
     const [dynamicCategories, setDynamicCategories] = useState([]);
+    const [recommendedPage, setRecommendedPage] = useState(0);
+    const [topRatedPage, setTopRatedPage] = useState(0);
+    const coursesPerPage = 4;
 
     useEffect(() => {
         studentAPI.getProfile()
@@ -152,13 +155,24 @@ export default function CourseCatalog() {
 
     const unenrolled = catalog.filter(c => !enrolledIds.has(c._id));
 
-    const recommended = unenrolled.slice(0, 4);
+    const recommended = unenrolled;
     const technical = unenrolled.filter(c =>
         ["Development", "Web Development", "Data Science"].includes(c.category)
-    ).slice(0, 4);
-    const topRated = unenrolled.slice().sort((a, b) => (b.enrolledCount || 0) - (a.enrolledCount || 0)).slice(0, 4);
+    );
+    const topRated = unenrolled.slice().sort((a, b) => (b.enrolledCount || 0) - (a.enrolledCount || 0));
 
     const inProgress = enrolledCourses.filter(c => (c.progress || 0) < 100).slice(0, 6);
+
+    const recommendedTotalPages = Math.ceil(recommended.length / coursesPerPage);
+    const topRatedTotalPages = Math.ceil(topRated.length / coursesPerPage);
+
+    const recommendedStart = recommendedPage * coursesPerPage;
+    const recommendedEnd = recommendedStart + coursesPerPage;
+    const displayedRecommended = recommended.slice(recommendedStart, recommendedEnd);
+
+    const topRatedStart = topRatedPage * coursesPerPage;
+    const topRatedEnd = topRatedStart + coursesPerPage;
+    const displayedTopRated = topRated.slice(topRatedStart, topRatedEnd);
 
     return (
         <div className="min-h-screen bg-white flex flex-col">
@@ -263,13 +277,32 @@ export default function CourseCatalog() {
                                         <button className="text-sm text-purple-600 font-medium hover:underline">See all</button>
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-                                        {recommended.map(c => <CourseCardLarge key={c._id} course={c} />)}
+                                        {displayedRecommended.map(c => <CourseCardLarge key={c._id} course={c} />)}
                                     </div>
                                     <div className="flex justify-end gap-2 mt-4">
-                                        <button className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50">
+                                        <button
+                                            onClick={() => setRecommendedPage(p => Math.max(0, p - 1))}
+                                            disabled={recommendedPage === 0}
+                                            className={`p-2 rounded-full ${
+                                                recommendedPage === 0
+                                                    ? 'bg-gray-100 border border-gray-200 cursor-not-allowed'
+                                                    : 'bg-white border border-gray-200 hover:bg-gray-50'
+                                            }`}
+                                        >
                                             <ChevronLeft className="w-4 h-4 text-gray-600" />
                                         </button>
-                                        <button className="p-2 bg-purple-600 rounded-full hover:bg-purple-700">
+                                        <span className="text-sm text-gray-600 self-center">
+                                            {recommendedPage + 1} / {recommendedTotalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => setRecommendedPage(p => Math.min(recommendedTotalPages - 1, p + 1))}
+                                            disabled={recommendedPage === recommendedTotalPages - 1}
+                                            className={`p-2 rounded-full ${
+                                                recommendedPage === recommendedTotalPages - 1
+                                                    ? 'bg-gray-100 border border-gray-200 cursor-not-allowed'
+                                                    : 'bg-purple-600 hover:bg-purple-700'
+                                            }`}
+                                        >
                                             <ChevronRight className="w-4 h-4 text-white" />
                                         </button>
                                     </div>
@@ -304,13 +337,32 @@ export default function CourseCatalog() {
                                         <button className="text-sm text-purple-600 font-medium hover:underline">See all</button>
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-                                        {topRated.map(c => <CourseCardLarge key={c._id} course={c} />)}
+                                        {displayedTopRated.map(c => <CourseCardLarge key={c._id} course={c} />)}
                                     </div>
                                     <div className="flex justify-end gap-2 mt-4">
-                                        <button className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50">
+                                        <button
+                                            onClick={() => setTopRatedPage(p => Math.max(0, p - 1))}
+                                            disabled={topRatedPage === 0}
+                                            className={`p-2 rounded-full ${
+                                                topRatedPage === 0
+                                                    ? 'bg-gray-100 border border-gray-200 cursor-not-allowed'
+                                                    : 'bg-white border border-gray-200 hover:bg-gray-50'
+                                            }`}
+                                        >
                                             <ChevronLeft className="w-4 h-4 text-gray-600" />
                                         </button>
-                                        <button className="p-2 bg-purple-600 rounded-full hover:bg-purple-700">
+                                        <span className="text-sm text-gray-600 self-center">
+                                            {topRatedPage + 1} / {topRatedTotalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => setTopRatedPage(p => Math.min(topRatedTotalPages - 1, p + 1))}
+                                            disabled={topRatedPage === topRatedTotalPages - 1}
+                                            className={`p-2 rounded-full ${
+                                                topRatedPage === topRatedTotalPages - 1
+                                                    ? 'bg-gray-100 border border-gray-200 cursor-not-allowed'
+                                                    : 'bg-purple-600 hover:bg-purple-700'
+                                            }`}
+                                        >
                                             <ChevronRight className="w-4 h-4 text-white" />
                                         </button>
                                     </div>

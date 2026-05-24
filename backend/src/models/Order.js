@@ -101,6 +101,10 @@ const orderSchema = new mongoose.Schema(
             type: Date,
             default: Date.now
         },
+        paymentCompletedAt: {
+            type: Date,
+            default: null
+        },
         invoiceUrl: {
             type: String
         },

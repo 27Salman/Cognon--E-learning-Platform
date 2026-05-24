@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { tutorAPI } from '../../api/tutorAPI';
-import { Search, FileText, FileSpreadsheet, ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Users, BookOpen, TrendingUp } from 'lucide-react';
+import { Search, FileText, FileSpreadsheet, ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Users, BookOpen, TrendingUp, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 
@@ -12,6 +12,9 @@ function RevenueList({ onCourseClick }) {
     const [downloading, setDownloading] = useState('');
     const [sort, setSort] = useState('relevance');
     const [page, setPage] = useState(1);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    const today = new Date().toISOString().split('T')[0];
     const LIMIT = 5;
 
     useEffect(() => {
@@ -28,16 +31,23 @@ function RevenueList({ onCourseClick }) {
     }, []);
 
     const handleDownload = async (type) => {
+        if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+            toast.error('Start date cannot be after end date');
+            return;
+        }
         setDownloading(type);
         try {
             const mimeType = type === 'pdf'
                 ? 'application/pdf'
                 : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
             const ext = type === 'pdf' ? 'pdf' : 'xlsx';
+            const params = {};
+            if (dateFrom) params.dateFrom = dateFrom;
+            if (dateTo) params.dateTo = dateTo;
 
             const res = type === 'pdf'
-                ? await tutorAPI.downloadSalesReportPDF()
-                : await tutorAPI.downloadSalesReportExcel();
+                ? await tutorAPI.downloadSalesReportPDF(params)
+                : await tutorAPI.downloadSalesReportExcel(params);
 
             const blob = new Blob([res.data], { type: mimeType });
             const url = window.URL.createObjectURL(blob);
@@ -48,6 +58,7 @@ function RevenueList({ onCourseClick }) {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
+            toast.success(`${type.toUpperCase()} report downloaded`);
         } catch {
             toast.error(`Failed to download ${type.toUpperCase()}`);
         } finally {
@@ -122,23 +133,72 @@ function RevenueList({ onCourseClick }) {
                     </div>
                 ))}
             </div>
-            <div className="flex justify-end gap-3 mb-6">
-                <button
-                    onClick={() => handleDownload('pdf')}
-                    disabled={!!downloading || loading}
-                    className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-medium px-4 py-3 rounded-lg transition-colors"
-                >
-                    <FileText className="w-3.5 h-3.5" />
-                    {downloading === 'pdf' ? 'Downloading…' : 'Download PDF'}
-                </button>
-                <button
-                    onClick={() => handleDownload('excel')}
-                    disabled={!!downloading || loading}
-                    className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
-                >
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    {downloading === 'excel' ? 'Downloading…' : 'Download Excel'}
-                </button>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+                <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-purple-500" />
+                    Download Sales Report
+                </p>
+                <div className="flex flex-wrap items-end gap-3">
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">From</label>
+                        <input
+                            type="date"
+                            value={dateFrom}
+                            max={dateTo || today}
+                            onChange={e => setDateFrom(e.target.value)}
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">To</label>
+                        <input
+                            type="date"
+                            value={dateTo}
+                            min={dateFrom || undefined}
+                            max={today}
+                            onChange={e => setDateTo(e.target.value)}
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                    </div>
+                    {(dateFrom || dateTo) && (
+                        <button
+                            onClick={() => { setDateFrom(''); setDateTo(''); }}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r bg-purple-500 hover:from-purple-600 hover:to-violet-700 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"                        >
+                            <span>✕</span> Clear
+                        </button>
+                    )}
+                    <div className="flex gap-2 ml-auto">
+                        <button
+                            onClick={() => handleDownload('pdf')}
+                            disabled={!!downloading || loading}
+                            className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-medium px-4 py-2.5 rounded-lg transition-colors"
+                        >
+                            <FileText className="w-3.5 h-3.5" />
+                            {downloading === 'pdf' ? 'Downloading…' : 'PDF'}
+                        </button>
+                        <button
+                            onClick={() => handleDownload('excel')}
+                            disabled={!!downloading || loading}
+                            className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-medium px-4 py-2.5 rounded-lg transition-colors"
+                        >
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
+                            {downloading === 'excel' ? 'Downloading…' : 'Excel'}
+                        </button>
+                    </div>
+                </div>
+                {(dateFrom || dateTo) && (
+                    <p className="text-xs text-gray-400 mt-2">
+                        {dateFrom && dateTo
+                            ? `Report: ${new Date(dateFrom).toLocaleDateString('en-IN')} — ${new Date(dateTo).toLocaleDateString('en-IN')}`
+                            : dateFrom
+                            ? `From ${new Date(dateFrom).toLocaleDateString('en-IN')}`
+                            : `Up to ${new Date(dateTo).toLocaleDateString('en-IN')}`
+                        }
+                    </p>
+                )}
+                {!dateFrom && !dateTo && (
+                    <p className="text-xs text-gray-400 mt-2">No date filter — downloads all-time report</p>
+                )}
             </div>
             {/* Search + Sort */}
             <div className="flex items-center justify-between mb-5 gap-4 flex-wrap p-4 border rounded">

@@ -8,6 +8,9 @@ const {
     updateProfile,
     requestPasswordChange,
     verifyPasswordChange,
+    getMyWallet,
+    cancelOrder,
+    payWithWallet,
 } = require('../controllers/userController');
 const wishlistController = require('../controllers/wishlistController');
 const cartController = require('../controllers/cartController');
@@ -53,6 +56,10 @@ router.post('/checkout/mark-failed', checkoutController.markOrderFailed);
 router.get('/orders', orderController.getMyOrders);
 router.get('/orders/:id', orderController.getMyOrderById);
 router.get('/orders/:id/invoice', orderController.downloadInvoice);
+
+router.get('/wallet', getMyWallet);
+router.post('/orders/:orderId/cancel', cancelOrder);
+router.post('/checkout/wallet', payWithWallet);
 
 module.exports = { userRoutes: router, publicCatalogRoutes: publicRouter };
 

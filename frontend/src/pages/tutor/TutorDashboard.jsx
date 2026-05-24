@@ -1,25 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Users, BookOpen, DollarSign, TrendingUp, FileText, FileSpreadsheet } from 'lucide-react';
+import { Users, BookOpen, DollarSign, TrendingUp } from 'lucide-react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, Legend
+    Tooltip, ResponsiveContainer, Legend, BarChart, Bar
 } from 'recharts';
 import { fetchDashboard } from '../../store/slices/courseSlice';
 import { tutorAPI } from '../../api/tutorAPI';
 import { TUTOR_APPROVAL_STATUS } from '../../utils/constants';
-import toast from 'react-hot-toast';
 
+const PERIODS = [
+    { key: 'today', label: 'Today' },
+    { key: 'week', label: 'Week' },
+    { key: 'month', label: 'Month' },
+];
 
 export default function TutorDashboard() {
     const { tutorInfo } = useOutletContext();
     const dispatch = useDispatch();
     const { dashboard, loading } = useSelector(state => state.courses);
-    const [chartPeriod, setChartPeriod] = useState('week'); 
+    const [chartPeriod, setChartPeriod] = useState('week');
     const [monthlyData, setMonthlyData] = useState([]);
     const [monthlyLoading, setMonthlyLoading] = useState(false);
-
     const approvalStatus = tutorInfo?.tutorProfile?.approvalStatus;
     const isApproved = approvalStatus === TUTOR_APPROVAL_STATUS.APPROVED;
     const showPendingWarning = approvalStatus && !isApproved;
@@ -29,7 +32,8 @@ export default function TutorDashboard() {
     }, [dispatch]);
 
     useEffect(() => {
-        if (chartPeriod === 'month' && monthlyData.length === 0) {
+        const needsMonthly = chartPeriod === 'month';        
+        if (needsMonthly && monthlyData.length === 0) {
             setMonthlyLoading(true);
             tutorAPI.getRevenueDashboard()
                 .then(res => {
@@ -47,10 +51,13 @@ export default function TutorDashboard() {
 
     const weeklyChartData = dashboard?.weeklyChart || defaultWeekly;
 
-    const monthlyChartData = monthlyData.map(m => {
+    const todayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
+    const todayData = weeklyChartData.filter(d => d.day === todayName);
+
+    const allMonthlyChartData = monthlyData.map(m => {
         const [year, mon] = (m.month || '').split('-');
         const label = mon
-            ? new Date(Number(year), Number(mon) - 1, 1).toLocaleString('default', { month: 'short' })
+            ? new Date(Number(year), Number(mon) - 1, 1).toLocaleString('default', { month: 'short', year: '2-digit' })
             : m.month;
         return {
             day: label,
@@ -59,34 +66,31 @@ export default function TutorDashboard() {
         };
     });
 
-    const activeChartData = chartPeriod === 'week' ? weeklyChartData : monthlyChartData;
+    const getActiveData = () => {
+        switch (chartPeriod) {
+            case 'today':
+                return todayData;
+
+            case 'week':
+                return weeklyChartData;
+
+            case 'month':
+                return allMonthlyChartData;
+
+            default:
+                return weeklyChartData;
+        }
+    };
+
+    const activeChartData = getActiveData();
     const isChartLoading = chartPeriod === 'month' ? monthlyLoading : loading;
+    const useBarChart = chartPeriod === 'today';
 
     const stats = [
-        {
-            label: 'Students',
-            value: dashboard?.totalStudents ?? 0,
-            icon: Users,
-            color: 'text-blue-500',
-        },
-        {
-            label: 'Total Courses',
-            value: dashboard?.totalCourses ?? 0,
-            icon: BookOpen,
-            color: 'text-purple-300',
-        },
-        {
-            label: 'Active Courses',
-            value: dashboard?.activeCourses ?? 0,
-            icon: TrendingUp,
-            color: 'text-green-300',
-        },
-        {
-            label: 'Total Revenue',
-            value: `₹${(dashboard?.totalRevenue ?? 0).toLocaleString('en-IN')}`,
-            icon: DollarSign,
-            color: 'text-yellow-300',
-        },
+        { label: 'Students',      value: dashboard?.totalStudents ?? 0,                                    icon: Users,      color: 'text-blue-500' },
+        { label: 'Total Courses', value: dashboard?.totalCourses ?? 0,                                     icon: BookOpen,   color: 'text-purple-300' },
+        { label: 'Active Courses',value: dashboard?.activeCourses ?? 0,                                    icon: TrendingUp, color: 'text-green-300' },
+        { label: 'Total Revenue', value: `₹${(dashboard?.totalRevenue ?? 0).toLocaleString('en-IN')}`,    icon: DollarSign, color: 'text-yellow-300' },
     ];
 
     return (
@@ -102,7 +106,6 @@ export default function TutorDashboard() {
 
             {/* Dashboard card */}
             <div className="bg-purple-700 rounded-2xl p-6 mb-6">
-                {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <h1 className="text-2xl font-bold text-white">Dashboard</h1>
                 </div>
@@ -127,41 +130,48 @@ export default function TutorDashboard() {
                     <div className="flex items-center justify-between mb-3">
                         <p className="text-sm font-medium text-gray-700">Analysis</p>
                         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                            <button
-                                onClick={() => setChartPeriod('week')}
-                                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                                    chartPeriod === 'week'
-                                        ? 'bg-white text-purple-700 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                Week
-                            </button>
-                            <button
-                                onClick={() => setChartPeriod('month')}
-                                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                                    chartPeriod === 'month'
-                                        ? 'bg-white text-purple-700 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                Month
-                            </button>
+                            {PERIODS.map(({ key, label }) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setChartPeriod(key)}
+                                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                                        chartPeriod === key
+                                            ? 'bg-white text-purple-700 shadow-sm'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
                         </div>
                     </div>
                     {isChartLoading ? (
                         <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm animate-pulse">
                             Loading chart…
                         </div>
+                    ) : activeChartData.length === 0 ? (
+                        <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">
+                            No data for this period
+                        </div>
+                    ) : useBarChart ? (
+                        <ResponsiveContainer width="100%" height={200}>
+                            <BarChart data={activeChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="day" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
+                                <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
+                                <Legend />
+                                <Bar dataKey="students" fill="#ef4444" name="Students" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="revenue" fill="#7c3aed" name="Revenue (₹)" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     ) : (
                         <ResponsiveContainer width="100%" height={200}>
                             <LineChart data={activeChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                 <XAxis dataKey="day" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
                                 <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
-                                <Tooltip
-                                    contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }}
-                                />
+                                <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
                                 <Legend />
                                 <Line type="monotone" dataKey="students" stroke="#ef4444" strokeWidth={2} dot={false} name="Students" />
                                 <Line type="monotone" dataKey="revenue" stroke="#7c3aed" strokeWidth={2} dot={false} name="Revenue (₹)" />
@@ -222,3 +232,5 @@ export default function TutorDashboard() {
         </div>
     );
 }
+
+

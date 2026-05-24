@@ -53,6 +53,7 @@ import TutorRevenue from './pages/tutor/TutorRevenue';
 import AdminCoupons from './pages/admin/AdminCoupons';
 import TutorWallet from './pages/tutor/TutorWallet';
 import AdminWallet from './pages/admin/AdminWallet';
+import StudentWallet from './pages/student/StudentWallet';
 import Loader from './components/Loader';
 
 
@@ -114,6 +115,7 @@ function App() {
         <Route path="my-courses" element={<MyCourses />} />
         <Route path="courses/:courseId/lessons" element={<CourseLessons />} />
         <Route path="wishlist" element={<Wishlist />} />
+        <Route path="wallet" element={<StudentWallet />} />
         <Route path="orders" element={<StudentOrderList />} />
         <Route path="orders/:id" element={<StudentOrderDetail />} />
       </Route>

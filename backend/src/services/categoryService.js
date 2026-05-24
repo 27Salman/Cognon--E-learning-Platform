@@ -51,7 +51,7 @@ const categoryService = {
 
         const [categories, totalFiltered] = await Promise.all([
             Category.find(query)
-                .sort({ createdAt: -1 })
+                .sort({ name: 1 })
                 .skip(skip)
                 .limit(limitNum),
             Category.countDocuments(query)

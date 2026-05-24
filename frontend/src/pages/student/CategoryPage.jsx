@@ -5,7 +5,7 @@ import { fetchPublishedCourses, setFilters } from "../../store/slices/studentSli
 import StudentNavbar from "../../components/student/StudentNavbar";
 import Footer from "../../components/common/Footer";
 import { studentAPI } from "../../api/studentAPI";
-import { BookOpen, Search, X, Clock, SlidersHorizontal } from "lucide-react";
+import { BookOpen, Search, X, Clock, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 
 const SORT_OPTIONS = [
     { value: "newest",    label: "Newest" },
@@ -78,6 +78,7 @@ export default function CategoryPage() {
     const [sortBy, setSortBy] = useState("newest");
     const [categoryFilter, setCategoryFilter] = useState(focusCategory || "");
     const [adminCategories, setAdminCategories] = useState([]);
+    const [categoryPages, setCategoryPages] = useState({});
 
     useEffect(() => {
         studentAPI.getProfile().then(res => {
@@ -110,6 +111,19 @@ export default function CategoryPage() {
 
     const handleClear = () => {
         setSearchValue("");
+    };
+
+    const handleCategoryPageChange = (category, direction) => {
+        const courses = grouped[category];
+        const coursesPerPage = 4;
+        const totalPages = Math.ceil(courses.length / coursesPerPage);
+        const currentPage = categoryPages[category] || 0;
+
+        let newPage = currentPage + direction;
+        if (newPage < 0) newPage = 0;
+        if (newPage >= totalPages) newPage = totalPages - 1;
+
+        setCategoryPages(prev => ({ ...prev, [category]: newPage }));
     };
 
     const allCategories = adminCategories.length > 0
@@ -254,26 +268,67 @@ export default function CategoryPage() {
                     </div>
                 ) : (
                     <div className="space-y-10">
-                        {displayCategories.map(category => (
-                            <section key={category}>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-xl font-bold text-gray-800">{category}</h2>
-                                    {grouped[category].length > 4 && (
-                                        <button
-                                            onClick={() => navigate(`/student/categories?category=${encodeURIComponent(category)}`)}
-                                            className="text-sm text-purple-600 font-medium hover:underline"
-                                        >
-                                            See all
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-                                    {(categoryFilter ? grouped[category] : grouped[category].slice(0, 4)).map(course => (
-                                        <CourseCard key={course._id} course={course} />
-                                    ))}
-                                </div>
-                            </section>
-                        ))}
+                        {displayCategories.map(category => {
+                            const courses = grouped[category];
+                            const coursesPerPage = 4;
+                            const currentPage = categoryPages[category] || 0;
+                            const totalPages = Math.ceil(courses.length / coursesPerPage);
+                            const startIndex = currentPage * coursesPerPage;
+                            const endIndex = startIndex + coursesPerPage;
+                            const displayedCourses = categoryFilter ? courses : courses.slice(startIndex, endIndex);
+
+                            return (
+                                <section key={category}>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-xl font-bold text-gray-800">{category}</h2>
+                                        <div className="flex items-center gap-3">
+                                            {totalPages > 1 && !categoryFilter && (
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleCategoryPageChange(category, -1)}
+                                                        disabled={currentPage === 0}
+                                                        className={`p-1.5 rounded-lg border ${
+                                                            currentPage === 0
+                                                                ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                                                                : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        <ChevronLeft className="w-4 h-4" />
+                                                    </button>
+                                                    <span className="text-sm text-gray-600">
+                                                        {currentPage + 1} / {totalPages}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleCategoryPageChange(category, 1)}
+                                                        disabled={currentPage === totalPages - 1}
+                                                        className={`p-1.5 rounded-lg border ${
+                                                            currentPage === totalPages - 1
+                                                                ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                                                                : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        <ChevronRight className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {courses.length > 4 && (
+                                                <button
+                                                    onClick={() => navigate(`/student/categories?category=${encodeURIComponent(category)}`)}
+                                                    className="text-sm text-purple-600 font-medium hover:underline"
+                                                >
+                                                    See all
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                                        {displayedCourses.map(course => (
+                                            <CourseCard key={course._id} course={course} />
+                                        ))}
+                                    </div>
+                                </section>
+                            );
+                        })}
                     </div>
                 )}
             </div>

@@ -87,9 +87,6 @@ export const studentAPI = {
     markOrderFailed: (razorpayOrderId) =>
         api.post('/student/checkout/mark-failed', { razorpayOrderId }),
 
-    markOrderFailed: (razorpayOrderId) =>
-    api.post('/student/checkout/mark-failed', { razorpayOrderId }),
-
 
     // Orders
     getMyOrders: (params = {}) => 
@@ -100,6 +97,19 @@ export const studentAPI = {
 
     downloadInvoice: (id) =>
         api.get(`/student/orders/${id}/invoice`, { responseType: 'blob' }),
+
+    //wallet
+    getMyWallet: () => 
+        api.get('/student/wallet'),
+
+    //refund
+    cancelOrder: (orderId) => 
+        api.post(`/student/orders/${orderId}/cancel`),
+
+    // wallet payment
+    payWithWallet: (couponCode) =>
+        api.post('/student/checkout/wallet', { couponCode }),
+    
 };
 
 

@@ -24,8 +24,12 @@ const walletTransactionSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['completed', 'pending', 'failed'],
+        enum: ['completed', 'pending', 'failed', 'refunded', 'cancelled'],
         default: 'completed'
+    },
+    releaseAt: {
+        type: Date,
+        default: null
     },
     createdAt: {
         type: Date,
@@ -43,13 +47,12 @@ const walletSchema = new mongoose.Schema(
         },
         ownerType: {
             type: String,
-            enum: ['admin', 'tutor'],
+            enum: ['admin', 'tutor','student'],
             required: true
         },
         balance: {
             type: Number,
-            default: 0,
-            min: 0
+            default: 0
         },
         totalEarnings: {
             type: Number,

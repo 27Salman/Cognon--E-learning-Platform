@@ -150,15 +150,15 @@ export default function AdminOrderDetail() {
                   <p className="font-medium text-gray-800 text-sm">{item.courseTitle || item.course?.title || 'No title'}</p>
                   <p className="text-xs text-gray-500">Tutor: {item.tutor?.name || 'No tutor'}</p>
                   <p className="text-xs text-purple-600">Category: {item.courseCategory || item.course?.category || 'No category'}</p>
-                  <p className="text-xs text-gray-400">Tutor Share: ₹{item.tutorShare || 0}</p>
+                  <p className="text-xs text-gray-400">Tutor Share: ₹{Number(item.tutorShare || 0).toFixed(2)}</p>
                 </div>
               </div>
               <div className="text-right text-sm flex-shrink-0 ml-4">
                 {item.originalPrice !== item.discountedPrice && (
-                  <p className="text-gray-400 line-through text-xs">₹{item.originalPrice}</p>
+                  <p className="text-gray-400 line-through text-xs">₹{Number(item.originalPrice).toFixed(2)}</p>
                 )}
-                <p className="font-bold text-gray-800">₹{item.discountedPrice}</p>
-                <p className="text-xs text-gray-400">Tutor share: ₹{item.tutorShare}</p>
+                <p className="font-bold text-gray-800">₹{Number(item.discountedPrice).toFixed(2)}</p>
+                <p className="text-xs text-gray-400">Tutor share: ₹{Number(item.tutorShare).toFixed(2)}</p>
               </div>
             </div>
           ))}
@@ -171,26 +171,26 @@ export default function AdminOrderDetail() {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-gray-600">
             <span>Subtotal</span>
-            <span>₹{order.subtotal}</span>
+            <span>₹{Number(order.subtotal).toFixed(2)}</span>
           </div>
           {order.discount > 0 && (
             <div className="flex justify-between text-green-600">
               <span>Discount {order.couponCode && `(${order.couponCode})`}</span>
-              <span>- ₹{order.discount}</span>
+              <span>- ₹{Number(order.discount).toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-gray-800 text-base pt-2 border-t border-gray-100">
             <span>Total Paid</span>
-            <span>₹{order.finalAmount}</span>
+            <span>₹{Number(order.finalAmount).toFixed(2)}</span>
           </div>
           <div className="pt-2 border-t border-gray-100 space-y-1">
             <div className="flex justify-between text-xs text-gray-500">
               <span>Platform Revenue (10%)</span>
-              <span>₹{Math.round(platformRevenue)}</span>
+              <span>₹{Number(platformRevenue).toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-xs text-gray-500">
               <span>Tutor Revenue (90%)</span>
-              <span>₹{Math.round(tutorRevenue)}</span>
+              <span>₹{Number(tutorRevenue).toFixed(2)}</span>
             </div>
           </div>
         </div>

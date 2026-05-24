@@ -34,6 +34,8 @@ const salesReportService = {
             { label: 'Tutor Payouts',    value: fmt(summary.totalTutorRevenue) },
             { label: 'Platform Revenue', value: fmt(summary.totalPlatformRevenue) },
             { label: 'Total Orders',     value: String(summary.totalOrders) },
+            { label: 'Razorpay Orders',  value: String(summary.paymentMethods?.razorpay?.count || 0) },
+            { label: 'Wallet Orders',    value: String(summary.paymentMethods?.wallet?.count || 0) },
         ];
         const boxW = 115, boxH = 55, boxY = 110, gap = 10;
         boxes.forEach((b, i) => {
@@ -68,8 +70,7 @@ const salesReportService = {
             y += 14;
         });
 
-        // Order Details table — one row per course item
-        // 7 columns: Order ID | Student | Course | Amount | Tutor | Date | Coupon
+
         y += 12;
         if (y > 680) { doc.addPage(); y = 50; }
         doc.fontSize(12).font('Helvetica-Bold').fillColor(dark).text('Order Details', 50, y);
@@ -142,6 +143,10 @@ const salesReportService = {
             { metric: 'Tutor Payouts (Rs.)',    value: Math.round(summary.totalTutorRevenue) },
             { metric: 'Platform Revenue (Rs.)', value: Math.round(summary.totalPlatformRevenue) },
             { metric: 'Total Orders',           value: summary.totalOrders },
+            { metric: 'Razorpay Orders',        value: summary.paymentMethods?.razorpay?.count || 0 },
+            { metric: 'Razorpay Revenue (Rs.)', value: Math.round(summary.paymentMethods?.razorpay?.revenue || 0) },
+            { metric: 'Wallet Orders',          value: summary.paymentMethods?.wallet?.count || 0 },
+            { metric: 'Wallet Revenue (Rs.)',    value: Math.round(summary.paymentMethods?.wallet?.revenue || 0) },
         ]);
 
         // Period
@@ -241,6 +246,8 @@ const salesReportService = {
             { label: 'Gross Revenue',    value: fmt(summary.totalGross) },
             { label: 'Platform Fee',     value: fmt(summary.platformFee) },
             { label: 'Total Sales',      value: String(summary.totalEnrollments) },
+            { label: 'Razorpay Orders',  value: String(summary.paymentMethods?.razorpay?.count || 0) },
+            { label: 'Wallet Orders',    value: String(summary.paymentMethods?.wallet?.count || 0) },
         ];
         const bw = 115, bh = 55, bY = 110, gap = 10;
         boxes.forEach((b, i) => {
@@ -343,6 +350,10 @@ const salesReportService = {
             { metric: 'Platform Fee (Rs.)',      value: summary.platformFee },
             { metric: 'Total Sales',             value: summary.totalEnrollments },
             { metric: 'Courses with Sales',      value: summary.totalCourses },
+            { metric: 'Razorpay Orders',        value: summary.paymentMethods?.razorpay?.count || 0 },
+            { metric: 'Razorpay Earnings (Rs.)', value: Math.round(summary.paymentMethods?.razorpay?.revenue || 0) },
+            { metric: 'Wallet Orders',          value: summary.paymentMethods?.wallet?.count || 0 },
+            { metric: 'Wallet Earnings (Rs.)',    value: Math.round(summary.paymentMethods?.wallet?.revenue || 0) },
         ]);
 
         // Course 

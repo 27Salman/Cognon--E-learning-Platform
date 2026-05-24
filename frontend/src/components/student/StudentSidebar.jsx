@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
-import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard } from 'lucide-react';
+import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard, Wallet } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
@@ -11,7 +11,6 @@ const API_BASE = import.meta.env.VITE_API_URL
 const getFullImageUrl = (src) => {
   if (!src) return null;
   if (src.startsWith('http') || src.startsWith('data:')) return src;
-  // src is a raw filename like "user-abc123.jpg" — build the full uploads path
   const subfolder = src.startsWith('user-') ? 'profiles/' : '';
   return `${API_BASE}/uploads/${subfolder}${src}`;
 };
@@ -38,6 +37,7 @@ const menuItems = [
     { name: 'Profile',      path: '/student/profile',      icon: User },
     { name: 'My Courses',   path: '/student/my-courses',   icon: ShoppingBag },
     { name: 'My Orders',    path: '/student/orders',       icon: ShoppingCart },
+    { name: 'Wallet',       path: '/student/wallet',       icon: Wallet},
     { name: 'Wishlist',     path: '/student/wishlist',     icon: Heart },
     { name: 'Certificates', path: '/student/certificates', icon: Award },
 ];
@@ -50,7 +50,6 @@ export default function StudentSidebar({ studentInfo }) {
     const isActive = (path) => {
         if (location.pathname === path) return true;
         if (location.pathname.startsWith(path + '/')) return true;
-        // My Courses also highlights when viewing course lessons
         if (path === '/student/my-courses' && location.pathname.includes('/student/courses/') && location.pathname.endsWith('/lessons')) return true;
         return false;
     };

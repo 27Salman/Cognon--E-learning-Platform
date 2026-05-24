@@ -1,6 +1,9 @@
 const asyncHandler = require('../middleware/asyncHandler');
 const userService = require('../services/userService');
 const { HTTP_STATUS } = require('../config/constants');
+const walletService = require('../services/walletService');
+const orderService = require('../services/orderService');
+const checkoutService = require('../services/checkoutService');
 
 exports.getProfile = asyncHandler(async (req, res) => {
     const data = await userService.getProfile(req.user.id);
@@ -22,3 +25,23 @@ exports.verifyPasswordChange = asyncHandler(async (req, res) => {
     await userService.verifyPasswordChange(req.user.id, req.user.email, newPassword, otp);
     res.status(HTTP_STATUS.OK).json({ success: true, message: 'Password changed successfully. Please login again.' });
 });
+
+exports.getMyWallet = asyncHandler( async (req, res) => {
+    const wallet = await walletService.getStudentWallet(req.user.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data: wallet });
+});
+
+exports.cancelOrder = asyncHandler( async (req, res) =>{
+    const result = await orderService.cancelCourse(req.user.id, req.params.orderId);
+    res.status(HTTP_STATUS.OK).json({ success: true, ...result});
+});
+
+exports.payWithWallet = asyncHandler(async (req, res) => {
+    const { couponCode } = req.body;
+    const order = await checkoutService.payWithWallet(req.user.id, couponCode || null);
+    res.status(HTTP_STATUS.OK).json({ success: true, data: order });
+});
+
+
+
+

@@ -289,7 +289,7 @@ const adminService = {
         const [students, totalFiltered, allStudents] = await Promise.all([
             User.find(query)
                 .select('-password')
-                .sort({ createdAt: -1 })
+                .sort({ name: 1})
                 .skip(skip)
                 .limit(limitNum),
             User.countDocuments(query),
@@ -471,7 +471,7 @@ const adminService = {
 
     //Sales report
     async getSalesReport({ dateFrom, dateTo, groupBy = 'monthly' } = {}) {
-        const query = { paymentStatus: 'completed' };
+        const query = { paymentStatus: { $nin: ['refunded', 'failed', 'pending'] } };
 
         const from = dateFrom ? new Date(dateFrom) : null;
         const to   = dateTo   ? (() => { const d = new Date(dateTo); d.setHours(23, 59, 59, 999); return d; })() : null;
@@ -487,7 +487,6 @@ const adminService = {
             .populate('courses.tutor', 'name')
             .sort({ orderDate: 1 });
 
-        // Pre-fill all periods in range so chart always has continuous data points
         const groupMap = {};
         const rangeStart = from || (orders.length > 0 ? new Date(orders[0].orderDate) : (() => { const d = new Date(); d.setMonth(d.getMonth() - 11); return d; })());
         const rangeEnd   = to   || new Date();
@@ -534,22 +533,39 @@ const adminService = {
             }
         }
 
-        const round2 = (n) => Math.round(n * 100) / 100;
+        const round = (n) => Math.round(n * 100) / 100;
+
+        // Calculate payment method breakdown
+        const paymentMethods = {
+            razorpay: { count: 0, revenue: 0 },
+            wallet: { count: 0, revenue: 0 }
+        };
+
+        for (const order of orders) {
+            if (order.paymentMethod === 'razorpay') {
+                paymentMethods.razorpay.count += 1;
+                paymentMethods.razorpay.revenue += order.finalAmount;
+            } else if (order.paymentMethod === 'wallet') {
+                paymentMethods.wallet.count += 1;
+                paymentMethods.wallet.revenue += order.finalAmount;
+            }
+        }
 
         const summary = {
             totalOrders:          orders.length,
-            totalRevenue:         round2(orders.reduce((s, o) => s + o.finalAmount, 0)),
-            totalPlatformRevenue: round2(orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.platformShare || 0), 0), 0)),
-            totalTutorRevenue:    round2(orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.tutorShare    || 0), 0), 0)),
+            totalRevenue:         round(orders.reduce((s, o) => s + o.finalAmount, 0)),
+            totalPlatformRevenue: round(orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.platformShare || 0), 0), 0)),
+            totalTutorRevenue:    round(orders.reduce((s, o) => s + o.courses.reduce((cs, c) => cs + (c.tutorShare    || 0), 0), 0)),
+            paymentMethods:        paymentMethods
         };
 
         const chartData = Object.values(groupMap)
             .sort((a, b) => a.period.localeCompare(b.period))
             .map(m => ({
                 ...m,
-                revenue:         round2(m.revenue),
-                platformRevenue: round2(m.platformRevenue),
-                tutorRevenue:    round2(m.tutorRevenue),
+                revenue:         round(m.revenue),
+                platformRevenue: round(m.platformRevenue),
+                tutorRevenue:    round(m.tutorRevenue),
             }));
 
         return { summary, chartData, orders };

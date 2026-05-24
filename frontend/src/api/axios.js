@@ -23,7 +23,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     if (response.config?.responseType === 'blob') {
-      toast.success('Downloaded successfully!', { id: 'download-success' });
       return response;
     }
     return response.data;

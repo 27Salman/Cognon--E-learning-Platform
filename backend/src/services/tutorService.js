@@ -5,6 +5,7 @@ const { COURSE_STATUS } = require('../config/constants');
 const { deleteOldProfileImage } = require('./fileService');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
+const mongoose = require('mongoose');
 
 
 
@@ -23,9 +24,7 @@ const tutorService = {
         if (!tutor) throw new Error('Tutor not found');
 
         const courses = await Course.find({ tutor: tutorId });
-        const totalCourses = courses.length; // all courses, not just published
-
-        // Count unique students across all courses (not sum of per-course counts)
+        const totalCourses = courses.length; 
         const uniqueStudentIds = new Set();
         courses.forEach(course => {
             (course.studentsEnrolled || []).forEach(id => uniqueStudentIds.add(id.toString()));
@@ -409,7 +408,7 @@ const tutorService = {
     async getTutorSalesReport(tutorId, { dateFrom, dateTo } = {}){
         const query = {
             'courses.tutor': tutorId,
-            paymentStatus: 'completed',
+            paymentStatus: { $nin: ['refunded', 'failed', 'pending'] },
         };
 
         if(dateFrom || dateTo){
@@ -439,7 +438,7 @@ const tutorService = {
                 totalGross += item.discountedPrice || 0;
                 totalEnrollments += 1;
 
-                const key = item.courseTitle || 'unknown';
+                const key = item.course?.toString() || item.courseTitle || 'unknown';
 
                 if (!courseMap[key]) {
                     courseMap[key] = {
@@ -460,6 +459,42 @@ const tutorService = {
             }
         }
 
+        // Payment method 
+        const paymentMethodAgg = await Order.aggregate([
+            {
+                $match: query
+            },
+            {
+                $unwind: '$courses'
+            },
+            {
+                $match: {
+                    'courses.tutor': new mongoose.Types.ObjectId(tutorId)
+                }
+            },
+            {
+                $group: {
+                    _id: '$paymentMethod',
+                    count: { $sum: 1 },
+                    revenue: { $sum: '$courses.tutorShare' }
+                }
+            }
+        ]);
+
+        const paymentMethods = {
+            razorpay: { count: 0, revenue: 0 },
+            wallet: { count: 0, revenue: 0 }
+        };
+
+        paymentMethodAgg.forEach(item => {
+            if (paymentMethods[item._id] !== undefined) {
+                paymentMethods[item._id] = {
+                    count: item.count,
+                    revenue: item.revenue
+                };
+            }
+        });
+
         const round = (n) => Math.round( n * 100 ) / 100;
 
         const summary = {
@@ -468,6 +503,7 @@ const tutorService = {
             platformFee: round(totalGross - totalEarnings),
             totalEnrollments,
             totalCourses: Object.keys(courseMap).length,
+            paymentMethods
         };
 
         const courseBreakdown = Object.values(courseMap).map(c => ({
@@ -506,7 +542,6 @@ const tutorService = {
         return { summary, courseBreakdown, transactions, dateFrom, dateTo };
 
     },
-
 
 };
 

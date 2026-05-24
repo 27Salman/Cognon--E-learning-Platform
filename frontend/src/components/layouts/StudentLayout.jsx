@@ -71,8 +71,10 @@ export default function StudentLayout() {
             <div className="flex flex-1">
                 <StudentSidebar studentInfo={studentInfo} />
 
-                <main className="flex-1 overflow-y-auto">
-                    <Outlet context={{ studentInfo, onUpdateProfile: handleUpdateProfile }} />
+                <main className="flex-1 overflow-y-auto min-h-0">
+                    <div className="min-h-full">
+                        <Outlet context={{ studentInfo, onUpdateProfile: handleUpdateProfile }} />
+                    </div>
                 </main>
             </div>
 

@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchEnrolledCourses } from '../../store/slices/studentSlice';
-import { BookOpen, CheckCircle, AlertTriangle } from 'lucide-react';
+import { BookOpen, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function CourseCard({ course, onClick }) {
     const progress = course.progress || 0;
@@ -67,6 +67,9 @@ export default function MyCourses() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { enrolledCourses, loading } = useSelector(state => state.student);
+    const [inProgressPage, setInProgressPage] = useState(0);
+    const [completedPage, setCompletedPage] = useState(0);
+    const coursesPerPage = 4;
 
     useEffect(() => {
         dispatch(fetchEnrolledCourses());
@@ -74,6 +77,17 @@ export default function MyCourses() {
 
     const inProgress = enrolledCourses.filter(c => (c.progress || 0) < 100);
     const completed = enrolledCourses.filter(c => (c.progress || 0) >= 100);
+
+    const inProgressTotalPages = Math.ceil(inProgress.length / coursesPerPage);
+    const completedTotalPages = Math.ceil(completed.length / coursesPerPage);
+
+    const inProgressStart = inProgressPage * coursesPerPage;
+    const inProgressEnd = inProgressStart + coursesPerPage;
+    const displayedInProgress = inProgress.slice(inProgressStart, inProgressEnd);
+
+    const completedStart = completedPage * coursesPerPage;
+    const completedEnd = completedStart + coursesPerPage;
+    const displayedCompleted = completed.slice(completedStart, completedEnd);
 
     if (loading) {
         return (
@@ -104,9 +118,40 @@ export default function MyCourses() {
         <div className="p-8">
             {inProgress.length > 0 && (
                 <section className="mb-12">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Enrolled Courses</h2>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-gray-800">Enrolled Courses</h2>
+                        {inProgressTotalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setInProgressPage(p => Math.max(0, p - 1))}
+                                    disabled={inProgressPage === 0}
+                                    className={`p-1.5 rounded-lg border ${
+                                        inProgressPage === 0
+                                            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                                            : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="text-sm text-gray-600">
+                                    {inProgressPage + 1} / {inProgressTotalPages}
+                                </span>
+                                <button
+                                    onClick={() => setInProgressPage(p => Math.min(inProgressTotalPages - 1, p + 1))}
+                                    disabled={inProgressPage === inProgressTotalPages - 1}
+                                    className={`p-1.5 rounded-lg border ${
+                                        inProgressPage === inProgressTotalPages - 1
+                                            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                                            : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {inProgress.map(course => (
+                        {displayedInProgress.map(course => (
                             <CourseCard
                                 key={course._id}
                                 course={course}
@@ -119,9 +164,40 @@ export default function MyCourses() {
 
             {completed.length > 0 && (
                 <section>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Completed Courses</h2>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-gray-800">Completed Courses</h2>
+                        {completedTotalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCompletedPage(p => Math.max(0, p - 1))}
+                                    disabled={completedPage === 0}
+                                    className={`p-1.5 rounded-lg border ${
+                                        completedPage === 0
+                                            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                                            : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="text-sm text-gray-600">
+                                    {completedPage + 1} / {completedTotalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCompletedPage(p => Math.min(completedTotalPages - 1, p + 1))}
+                                    disabled={completedPage === completedTotalPages - 1}
+                                    className={`p-1.5 rounded-lg border ${
+                                        completedPage === completedTotalPages - 1
+                                            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                                            : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {completed.map(course => (
+                        {displayedCompleted.map(course => (
                             <CourseCard
                                 key={course._id}
                                 course={course}

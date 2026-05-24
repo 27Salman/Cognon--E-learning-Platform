@@ -42,6 +42,7 @@ export default function StudentProfile() {
 
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [formErrors, setFormErrors] = useState({});
+    const [stats, setStats] = useState({ enrolled: 0, completed: 0, pending: 0, certificates: 0 });
 
     const [formData, setFormData] = useState({
         name: studentInfo?.name || '',
@@ -73,6 +74,43 @@ export default function StudentProfile() {
                 });
             }).catch(() => {});
         }
+    }, []);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await studentAPI.getMyCourses();
+                const courses = res.data || [];
+                
+                let enrolledCount = courses.length;
+                let completedCount = 0;
+                let pendingLessons = 0;
+
+                courses.forEach(course => {
+                    const enrollment = course.enrollment || {};
+                    const totalLessons = course.totalLessons || 0;
+                    const completedLessons = enrollment.completedLessons?.length || 0;
+                    
+                    if (completedLessons >= totalLessons && totalLessons > 0) {
+                        completedCount++;
+                    }
+                    
+                    pendingLessons += Math.max(0, totalLessons - completedLessons);
+                });
+
+                setStats({
+                    enrolled: enrolledCount,
+                    completed: completedCount,
+                    pending: pendingLessons,
+                    certificates: completedCount
+                });
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+                setStats({ enrolled: 0, completed: 0, pending: 0, certificates: 0 });
+            }
+        };
+
+        fetchStats();
     }, []);
 
     const handleInputChange = (e) => {
@@ -166,7 +204,7 @@ export default function StudentProfile() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-500 mb-1">Enrolled</p>
-                            <p className="text-3xl font-bold text-gray-900">3</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.enrolled}</p>
                         </div>
                         <div className="w-14 h-14 bg-purple-100 rounded-lg flex items-center justify-center">
                             <BookOpen className="w-7 h-7 text-purple-600" />
@@ -178,7 +216,7 @@ export default function StudentProfile() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-500 mb-1">Completed</p>
-                            <p className="text-3xl font-bold text-gray-900">0</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.completed}</p>
                         </div>
                         <div className="w-14 h-14 bg-green-100 rounded-lg flex items-center justify-center">
                             <CheckCircle className="w-7 h-7 text-green-600" />
@@ -190,7 +228,7 @@ export default function StudentProfile() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-500 mb-1">Pending</p>
-                            <p className="text-3xl font-bold text-gray-900">3</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
                         </div>
                         <div className="w-14 h-14 bg-yellow-100 rounded-lg flex items-center justify-center">
                             <Clock className="w-7 h-7 text-yellow-600" />
@@ -202,7 +240,7 @@ export default function StudentProfile() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-500 mb-1">Certificates</p>
-                            <p className="text-3xl font-bold text-gray-900">0</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.certificates}</p>
                         </div>
                         <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center">
                             <Award className="w-7 h-7 text-blue-600" />

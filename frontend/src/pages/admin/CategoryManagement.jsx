@@ -21,7 +21,9 @@ export default function CategoryManagement() {
     setLoading(true);
     try {
       const res = await adminAPI.getCategories({ search, page, limit: 10 });
-      setCategories(res.data.categories || []);
+      const fetchedCategories = res.data.categories || [];
+      const sortedCategories = fetchedCategories.sort((a, b) => a.name.localeCompare(b.name));
+      setCategories(sortedCategories);
       setPagination(res.data.pagination || {});
     } catch (err) {
       console.error('Fetch categories error:', err);

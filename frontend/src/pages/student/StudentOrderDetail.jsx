@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { studentAPI } from '../../api/studentAPI';
-import { ArrowLeft, BookOpen, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle, XCircle, Clock, Download, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSelector } from 'react-redux';
 
@@ -9,15 +9,17 @@ const STATUS_ICON = {
     completed: <CheckCircle className="w-5 h-5 text-green-500" />,
     pending: <Clock className="w-5 h-5 text-yellow-500" />,
     failed: <XCircle className="w-5 h-5 text-red-500" />,
+    refunded: <CheckCircle className="w-5 h-5 text-gray-500" />,
 };
 
 const STATUS_COLORS = {
     completed: 'bg-green-100 text-green-700',
     pending: 'bg-yellow-100 text-yellow-700',
     failed: 'bg-red-100 text-red-700',
+    refunded: 'bg-gray-100 text-gray-600',
 };
 
-function RetryPaymentButton({ order, user }) {
+function RetryPaymentButton({ order, user, onOrderUpdated }) {
     const [retrying, setRetrying] = useState(false);
     const navigate = useNavigate();
 
@@ -68,7 +70,13 @@ function RetryPaymentButton({ order, user }) {
             const rzp = new window.Razorpay(options);
             rzp.open();
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to initiate retry');
+            const msg = err.response?.data?.message || 'Failed to initiate retry';
+            toast.error(msg);
+            // If the order was marked as failed due to duplicate purchase, reload it
+            // so the retry button disappears
+            if (msg.includes('already purchased') || msg.includes('already cancelled')) {
+                onOrderUpdated?.();
+            }
             setRetrying(false);
         }
     };
@@ -90,6 +98,9 @@ export default function StudentOrderDetail() {
     const navigate = useNavigate();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
+    const [cancelEligibility, setCancelEligibility] = useState({ eligible: false, reason: '' });
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -106,6 +117,42 @@ export default function StudentOrderDetail() {
         fetchOrder();
     }, [id]);
 
+    const refetchOrder = async () => {
+        try {
+            const res = await studentAPI.getMyOrderById(id);
+            setOrder(res.data);
+        } catch {
+            // silently fail on refetch
+        }
+    };
+
+    useEffect(()=>{
+        if(order){
+            const orderDate = new Date(order.orderDate);
+            const daysSince = (Date.now() - orderDate) / (1000 * 60 * 60 * 24);
+            const withinWindow = daysSince <= 3;
+
+            let progressExceeded = false;
+            const enrolledCourses = user?.studentProfile?.enrolledCourses || [];
+            
+            for (const courseItem of order.courses) {
+                const enrollment = enrolledCourses.find(
+                    e => e.courseId.toString() === courseItem.course.toString()
+                );
+                if (enrollment) {
+                }
+            }
+
+            if (!withinWindow) {
+                setCancelEligibility({ eligible: false, reason: 'Refund window has expired (3 days from purchase)' });
+            } else if (order.paymentStatus !== 'completed') {
+                setCancelEligibility({ eligible: false, reason: 'Order is not eligible for cancellation' });
+            } else {
+                setCancelEligibility({ eligible: true, reason: '' });
+            }
+        }
+    },[order, user]);
+
     if (loading) {
         return (
             <div className="p-6 flex items-center justify-center min-h-64">
@@ -115,6 +162,25 @@ export default function StudentOrderDetail() {
     }
 
     if (!order) return null;
+
+    const handleCancelOrder = async () => {
+        if(cancelling) return;
+        setCancelling(true);
+
+        try {
+            
+            const res = await studentAPI.cancelOrder(order._id);
+            toast.success(res.data.message || 'Order cancelled successfully');
+            setShowCancelModal(false);
+            setOrder(prev => ({ ...prev, paymentStatus: 'refunded' }));
+            setTimeout(()=> navigate('/student/wallet'), 1500);
+
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to cancel order');
+        } finally {
+            setCancelling(false);
+        }
+    }
 
     return (
         <div className="p-6">
@@ -141,12 +207,26 @@ export default function StudentOrderDetail() {
                                 <p className="font-mono font-bold text-purple-700">{order.orderId}</p>
                             </div>
                             <div>
-                                <p className="text-gray-500 text-sm mb-1">Order Date</p>
+                                <p className="text-gray-500 text-sm mb-1">Order Created</p>
                                 <p className="font-medium text-gray-800">{new Date(order.orderDate).toLocaleString()}</p>
                             </div>
+                            {order.paymentCompletedAt && (
+                                <div>
+                                    <p className="text-gray-500 text-sm mb-1">Payment Completed</p>
+                                    <p className="font-medium text-green-700">{new Date(order.paymentCompletedAt).toLocaleString()}</p>
+                                </div>
+                            )}
                             <div>
                                 <p className="text-gray-500 text-sm mb-1">Payment Method</p>
-                                <p className="font-medium text-gray-800 capitalize">{order.paymentMethod}</p>
+                                {order.paymentMethod === 'wallet' ? (
+                                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                                        Wallet
+                                    </span>
+                                ) : (
+                                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                        Razorpay
+                                    </span>
+                                )}
                             </div>
                             {order.couponCode && (
                                 <div>
@@ -189,20 +269,20 @@ export default function StudentOrderDetail() {
                                     </div>
                                     <div className="text-right flex-shrink-0">
                                         {item.originalPrice !== item.discountedPrice && (
-                                            <p className="text-sm text-gray-400 line-through">₹{item.originalPrice}</p>
+                                            <p className="text-sm text-gray-400 line-through">₹{Number(item.originalPrice).toFixed(2)}</p>
                                         )}
-                                        <p className="font-bold text-gray-800">₹{item.discountedPrice}</p>
+                                        <p className="font-bold text-gray-800">₹{Number(item.discountedPrice).toFixed(2)}</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* No Refund Notice */}
+                    {/* No Refund Notice
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-base text-amber-700">
                         <p className="font-medium mb-2">Purchase Policy</p>
                         <p className="text-sm">All course purchases are final. No refunds or cancellations are available once a course has been purchased and access has been granted.</p>
-                    </div>
+                    </div> */}
                 </div>
 
                 {/* Right Column - Status, Price Breakdown & Actions */}
@@ -221,24 +301,47 @@ export default function StudentOrderDetail() {
                         <div className="space-y-3 text-base">
                             <div className="flex justify-between text-gray-600">
                                 <span>Subtotal</span>
-                                <span>₹{order.subtotal}</span>
+                                <span>₹{Number(order.subtotal).toFixed(2)}</span>
                             </div>
                             {order.discount > 0 && (
                                 <div className="flex justify-between text-green-600">
                                     <span>Discount {order.couponCode && `(${order.couponCode})`}</span>
-                                    <span>- ₹{order.discount}</span>
+                                    <span>- ₹{Number(order.discount).toFixed(2)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between font-bold text-gray-800 text-lg pt-3 border-t border-gray-100">
                                 <span>Total Paid</span>
-                                <span>₹{order.finalAmount}</span>
+                                <span>₹{Number(order.finalAmount).toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Action Buttons */}
+                    {order.paymentStatus === 'refunded' ? (
+                        <button
+                            disabled
+                            className="bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed opacity-75"
+                        >
+                            Refunded
+                        </button>
+                    ) : cancelEligibility.eligible ? (
+                        <button
+                            onClick={() => setShowCancelModal(true)}
+                            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                        >
+                            Cancel & Refund
+                        </button>
+                    ) : cancelEligibility.reason ? (
+                        <div className="text-sm text-gray-500" title={cancelEligibility.reason}>
+                            <span className="inline-flex items-center gap-1">
+                                <Lock className="w-4 h-4" />
+                                Cancellation not available
+                            </span>
+                        </div>
+                    ) : null}
+
                     {(order.paymentStatus === 'failed' || order.paymentStatus === 'pending') && (
-                        <RetryPaymentButton order={order} user={user} />
+                        <RetryPaymentButton order={order} user={user} onOrderUpdated={refetchOrder} />
                     )}
 
                     {order.paymentStatus === 'completed' && (
@@ -282,6 +385,32 @@ export default function StudentOrderDetail() {
                     )}
                 </div>
             </div>
+            {showCancelModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Cancel Order & Request Refund</h3>
+                        <p className="text-gray-600 mb-6">
+                            Cancelling will remove your access to all courses in this order. The amount ₹{order.finalAmount.toFixed(2)} will be credited to your wallet. Are you sure?
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setShowCancelModal(false)}
+                                disabled={cancelling}
+                                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                No, Keep Order
+                            </button>
+                            <button
+                                onClick={handleCancelOrder}
+                                disabled={cancelling}
+                                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50"
+                            >
+                                {cancelling ? 'Processing...' : 'Yes, Cancel & Refund'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

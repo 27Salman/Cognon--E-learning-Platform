@@ -108,6 +108,8 @@ export default function TutorWallet() {
     const totalPages = wallet?.pagination?.totalPages || 1;
     const pendingWithdrawals = wallet?.pendingWithdrawals || [];
     const pendingAmount = pendingWithdrawals.reduce((sum, r) => sum + r.amount, 0);
+    // 3-day hold amount from backend (tutor earnings not yet released to balance)
+    const holdAmount = wallet?.pendingAmount || 0;
 
     return (
         <div className="p-6">
@@ -142,32 +144,48 @@ export default function TutorWallet() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* Current Balance */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {/* Available Balance */}
                 <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-5 text-white">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 text-purple-200 text-sm">
                             <Wallet className="w-4 h-4" />
-                            Current Balance
+                            Available Balance
                         </div>
                         <button onClick={() => setShowBalance(v => !v)} className="text-purple-200 hover:text-white">
                             {showBalance ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         </button>
                     </div>
                     <p className="text-3xl font-bold">
-                        {loading ? '…' : showBalance ? fmt(wallet?.balance) : '₹ ••••••'}
+                        {loading ? '…' : showBalance ? fmt((wallet?.balance || 0) - pendingAmount) : '₹ ••••••'}
+                    </p>
+                    <p className="text-xs text-purple-200 mt-1">
+                        {pendingAmount > 0 ? `₹${pendingAmount.toFixed(2)} pending approval` : 'Ready to withdraw'}
                     </p>
                 </div>
 
-                {/* Total Earnings */}
+                {/* Confirmed Earnings (totalEarnings minus hold) */}
                 <div className="bg-white border border-gray-200 rounded-xl p-5">
                     <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
                         <TrendingUp className="w-4 h-4 text-green-500" />
-                        Total Earnings
+                        Confirmed Earnings
                     </div>
                     <p className="text-3xl font-bold text-gray-800">
-                        {loading ? '…' : fmt(wallet?.totalEarnings)}
+                        {loading ? '…' : fmt((wallet?.totalEarnings || 0) - holdAmount)}
                     </p>
+                    <p className="text-xs text-gray-400 mt-1">Released to wallet</p>
+                </div>
+
+                {/* On Hold — 3-day hold */}
+                <div className="bg-white border border-yellow-200 rounded-xl p-5">
+                    <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
+                        <TrendingUp className="w-4 h-4 text-yellow-500" />
+                        On Hold (3-day)
+                    </div>
+                    <p className="text-3xl font-bold text-yellow-600">
+                        {loading ? '…' : fmt(holdAmount)}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">Releases after 3 days</p>
                 </div>
 
                 {/* Total Withdrawals */}
@@ -179,6 +197,7 @@ export default function TutorWallet() {
                     <p className="text-3xl font-bold text-gray-800">
                         {loading ? '…' : fmt(wallet?.totalWithdrawals)}
                     </p>
+                    <p className="text-xs text-gray-400 mt-1">Approved & paid out</p>
                 </div>
             </div>
 
@@ -270,6 +289,7 @@ export default function TutorWallet() {
                                         <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
                                             txn.status === 'completed' ? 'bg-green-100 text-green-700' :
                                             txn.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                            txn.status === 'cancelled' ? 'bg-gray-100 text-gray-500' :
                                             'bg-red-100 text-red-700'
                                         }`}>
                                             {txn.status}

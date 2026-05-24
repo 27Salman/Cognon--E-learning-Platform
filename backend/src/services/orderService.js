@@ -1,4 +1,8 @@
 const Order = require('../models/Order');
+const Course = require('../models/Course');
+const User = require('../models/User');
+const Lesson = require('../models/Lesson');
+const walletService = require('./walletService');
 
 const orderService = {
     async getStudentOrders(userId, { search, status, page = 1, limit = 5 } = {}) {
@@ -151,6 +155,60 @@ const orderService = {
         }
 
         return order;
+    },
+
+    async cancelCourse(userId, orderId) {
+        const order = await Order.findOne({ _id: orderId, user: userId });
+        if (!order) throw new Error('Order not found');
+
+        if (order.paymentStatus === 'refunded') {
+            return { message: 'Order already cancelled and refunded', refundAmount: order.finalAmount };
+        }
+
+        if (order.paymentStatus !== 'completed') {
+            throw new Error('Order is not eligible for cancellation');
+        }
+
+        const daysSincePurchase = (Date.now() - new Date(order.orderDate)) / (1000 * 60 * 60 * 24);
+        if (daysSincePurchase > 3) throw new Error('Refund window has expired (3 days from purchase)');
+
+        const student = await User.findById(userId).select('studentProfile.enrolledCourses');
+        for (const courseItem of order.courses) {
+            const totalLessons = await Lesson.countDocuments({ course: courseItem.course });
+            if (totalLessons === 0) continue;
+
+            const enrollment = student.studentProfile.enrolledCourses.find(
+                e => e.courseId.toString() === courseItem.course.toString()
+            );
+            const completedCount = enrollment?.completedLessons?.length || 0;
+            const progressRatio = completedCount / totalLessons;
+
+            if (progressRatio > 0.3) {
+                throw new Error(
+                    `Refund not eligible: you have completed more than 30% of "${courseItem.courseTitle}"`
+                );
+            }
+        }
+
+        for (const courseItem of order.courses) {
+            await walletService.reverseEarning(courseItem.tutor, order._id, courseItem.tutorShare);
+        }
+
+        await walletService.refundToStudent(userId, order.finalAmount, order.orderId);
+
+        order.paymentStatus = 'refunded';
+        await order.save();
+
+        const courseIds = order.courses.map(c => c.course);
+        await Course.updateMany(
+            { _id: { $in: courseIds } },
+            { $pull: { studentsEnrolled: userId } }
+        );
+        await User.findByIdAndUpdate(userId, {
+            $pull: { 'studentProfile.enrolledCourses': { courseId: { $in: courseIds } } }
+        });
+
+        return { message: 'Course cancelled and refund credited to your wallet', refundAmount: order.finalAmount };
     },
 
 };

@@ -67,8 +67,10 @@ export default function TutorLayout() {
             <div className="flex flex-1">
                 <TutorSidebar tutorInfo={tutorInfo} />
 
-                <main className="flex-1 overflow-y-auto">
-                    <Outlet context={{ tutorInfo, onUpdateProfile: handleUpdateProfile }} />
+                <main className="flex-1 overflow-y-auto min-h-0">
+                    <div className="min-h-full">
+                        <Outlet context={{ tutorInfo, onUpdateProfile: handleUpdateProfile }} />
+                    </div>
                 </main>
             </div>
 

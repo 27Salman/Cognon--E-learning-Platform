@@ -206,6 +206,7 @@ const checkoutService = {
         order.paymentStatus = 'completed';
         order.razorpayPaymentId = razorpayPaymentId;
         order.razorpaySignature = razorpaySignature;
+        order.paymentCompletedAt = new Date();
         await order.save();
 
         // Enroll 
@@ -275,6 +276,20 @@ const checkoutService = {
             throw new Error('Order cannot be retried');
         }
 
+        const courseIds = order.courses.map(c => c.course);
+        const alreadyPurchased = await Order.findOne({
+            user: userId,
+            _id: { $ne: order._id },
+            paymentStatus: 'completed',
+            'courses.course': { $in: courseIds }
+        });
+
+        if (alreadyPurchased) {
+            order.paymentStatus = 'failed';
+            await order.save();
+            throw new Error('You have already purchased one or more courses in this order. This order has been cancelled.');
+        }
+
         const razorpayOrder = await razorpay.orders.create({
             amount: Math.round(order.finalAmount * 100),
             currency: 'INR',
@@ -296,6 +311,120 @@ const checkoutService = {
 
     },
 
+
+    async payWithWallet(userId, couponCode) {
+        const priceData = await checkoutService.calculatePrice(userId, couponCode);
+
+        if (priceData.finalAmount === 0) throw new Error('Order amount cannot be zero');
+
+        const studentWallet = await walletService.getOrCreateWallet(userId, 'student');
+        if (studentWallet.balance < priceData.finalAmount) {
+            throw new Error('Insufficient wallet balance');
+        }
+
+        const round2 = (n) => Math.round(n * 100) / 100;
+        let allocatedTotal = 0;
+        const orderCourses = priceData.items.map((item, idx) => {
+            const isLast = idx === priceData.items.length - 1;
+            const courseWeight = priceData.subtotal > 0
+                ? item.finalPrice / priceData.subtotal
+                : 1 / priceData.items.length;
+            const courseActualAmount = isLast
+                ? round2(priceData.finalAmount - allocatedTotal)
+                : round2(priceData.finalAmount * courseWeight);
+            allocatedTotal = round2(allocatedTotal + courseActualAmount);
+            const tutorShare = round2(courseActualAmount * PLATFORM_COMMISSION.TUTOR_SHARE);
+            const platformShare = round2(courseActualAmount - tutorShare);
+            return {
+                course: item.course._id,
+                tutor: item.course.tutor._id,
+                courseTitle: item.course.title,
+                courseCategory: item.course.category || '',
+                originalPrice: item.originalPrice,
+                discountedPrice: item.finalPrice,
+                tutorShare,
+                platformShare,
+            };
+        });
+
+        const order = new Order({
+            user: userId,
+            courses: orderCourses,
+            subtotal: priceData.subtotal,
+            discount: priceData.couponDiscount,
+            couponCode: couponCode || null,
+            finalAmount: priceData.finalAmount,
+            paymentMethod: 'wallet',
+            paymentStatus: 'completed',
+            orderDate: new Date(),
+            paymentCompletedAt: new Date(),
+        });
+
+        if (couponCode) {
+            const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+            if (coupon) order.couponApplied = coupon._id;
+        }
+
+        await order.save();
+
+        studentWallet.balance = round2(studentWallet.balance - priceData.finalAmount);
+        studentWallet.transactions.push({
+            type: 'debit',
+            amount: priceData.finalAmount,
+            description: `Course purchase — order ${order.orderId}`,
+            orderId: order.orderId,
+            status: 'completed'
+        });
+        await studentWallet.save();
+
+        await walletService.creditFromOrder(order);
+
+        const courseIds = order.courses.map(c => c.course);
+        await Course.updateMany({ _id: { $in: courseIds } }, { $addToSet: { studentsEnrolled: userId } });
+
+        const student = await User.findById(userId).select('studentProfile.enrolledCourses');
+        const alreadyEnrolledIds = (student?.studentProfile?.enrolledCourses || [])
+            .map(e => e.courseId.toString());
+
+        for (const item of order.courses) {
+            if (!alreadyEnrolledIds.includes(item.course.toString())) {
+                await User.findByIdAndUpdate(userId, {
+                    $push: {
+                        'studentProfile.enrolledCourses': {
+                            courseId: item.course,
+                            enrolledAt: new Date(),
+                            progress: 0,
+                            completedLessons: []
+                        }
+                    }
+                });
+            }
+            await Course.findByIdAndUpdate(item.course, { $inc: { revenue: item.discountedPrice } });
+        }
+
+        // Update coupon usage
+        if (couponCode) {
+            const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+            if (coupon) {
+                coupon.usageCount += 1;
+                const userUsage = coupon.usedBy.find(u => u.user.toString() === userId.toString());
+                if (userUsage) {
+                    userUsage.usedCount += 1;
+                    userUsage.lastUsedAt = new Date();
+                } else {
+                    coupon.usedBy.push({ user: userId, usedCount: 1, lastUsedAt: new Date() });
+                }
+                await coupon.save();
+            }
+        }
+
+        await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
+
+        return await Order.findById(order._id)
+            .populate('user', 'name email phone')
+            .populate('courses.course', 'title thumbnail')
+            .populate('courses.tutor', 'name email');
+    },
 
     async handleWebhook(body, signature) {
         if (!process.env.RAZORPAY_WEBHOOK_SECRET) {

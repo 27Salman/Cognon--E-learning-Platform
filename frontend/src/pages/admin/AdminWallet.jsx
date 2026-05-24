@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-// ── Reject Modal ──────────────────────────────────────────────────────────────
+//Reject Modal 
 function RejectModal({ request, onClose, onSuccess }) {
     const [note, setNote] = useState('');
     const [loading, setLoading] = useState(false);
@@ -64,7 +64,7 @@ function RejectModal({ request, onClose, onSuccess }) {
     );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+//Main Component 
 export default function AdminWallet() {
     const [wallet, setWallet] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -152,7 +152,7 @@ export default function AdminWallet() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-5 text-white">
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2 text-purple-200 text-sm">
@@ -165,18 +165,34 @@ export default function AdminWallet() {
                         <p className="text-3xl font-bold">
                             {loading ? '…' : showBalance ? fmt(wallet?.balance) : '₹ ••••••'}
                         </p>
+                        <p className="text-xs text-purple-200 mt-1">Platform commission balance</p>
                     </div>
                     <div className="border border-gray-200 rounded-xl p-5">
                         <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-                            <TrendingUp className="w-4 h-4 text-green-500" /> Total Earnings
+                            <TrendingUp className="w-4 h-4 text-green-500" /> Confirmed Earnings
                         </div>
-                        <p className="text-3xl font-bold text-gray-800">{loading ? '…' : fmt(wallet?.totalEarnings)}</p>
+                        <p className="text-3xl font-bold text-gray-800">
+                            {loading ? '…' : fmt((wallet?.totalEarnings || 0) - (wallet?.tutorHoldAmount || 0))}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">Released commissions</p>
+                    </div>
+                    <div className="border border-yellow-200 rounded-xl p-5">
+                        <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
+                            <TrendingUp className="w-4 h-4 text-yellow-500" /> Tutor Hold (3-day)
+                        </div>
+                        <p className="text-3xl font-bold text-yellow-600">
+                            {loading ? '…' : fmt(wallet?.tutorHoldAmount || 0)}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">Tutor earnings in hold window</p>
                     </div>
                     <div className="border border-gray-200 rounded-xl p-5">
                         <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-                            <TrendingDown className="w-4 h-4 text-red-500" /> Total Withdrawals
+                            <TrendingDown className="w-4 h-4 text-red-500" /> Total Paid Out
                         </div>
-                        <p className="text-3xl font-bold text-gray-800">{loading ? '…' : fmt(wallet?.totalWithdrawals)}</p>
+                        <p className="text-3xl font-bold text-gray-800">
+                            {loading ? '…' : fmt(wallet?.totalWithdrawals)}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">Approved withdrawals</p>
                     </div>
                 </div>
             </div>

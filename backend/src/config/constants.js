@@ -117,6 +117,9 @@ const PLATFORM_COMMISSION = {
 };
 
 
+const TUTOR_HOLD_DAYS = 3;
+
+
 module.exports = {
     USER_ROLES,
     TUTOR_APPROVAL_STATUS,
@@ -133,4 +136,5 @@ module.exports = {
     COUPON_APPLICABLE_TO,
     OFFER_TYPE,
     PLATFORM_COMMISSION,
+    TUTOR_HOLD_DAYS,
 };
