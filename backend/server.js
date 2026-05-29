@@ -30,6 +30,10 @@ const PORT = process.env.PORT || 5000;
 const app = express();
 connectDB();
 
+// Start background jobs (daily hold release for inactive wallets)
+const { startHoldReleaseJob } = require('./src/jobs/holdReleaseJob');
+startHoldReleaseJob();
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));

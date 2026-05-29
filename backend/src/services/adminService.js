@@ -535,7 +535,6 @@ const adminService = {
 
         const round = (n) => Math.round(n * 100) / 100;
 
-        // Calculate payment method breakdown
         const paymentMethods = {
             razorpay: { count: 0, revenue: 0 },
             wallet: { count: 0, revenue: 0 }

@@ -70,8 +70,16 @@ const couponService = {
             applicableToModel: applicableTo === 'category' ? 'Category' : applicableTo === 'course' ? 'Course' : undefined,
             usageLimit: usageLimit || null,
             perUserLimit: perUserLimit || 1,
-            validFrom: new Date(validFrom),
-            validUntil: new Date(validUntil),
+            validFrom: (() => {
+                const d = new Date(validFrom);
+                d.setHours(0, 0, 0, 0);
+                return d;
+            })(),
+            validUntil: (() => {
+                const d = new Date(validUntil);
+                d.setHours(23, 59, 59, 999);
+                return d;
+            })(),
             createdBy: adminId
         });
 
@@ -157,8 +165,16 @@ const couponService = {
         if (updateData.applicableIds) coupon.applicableIds = updateData.applicableIds;
         if (updateData.usageLimit !== undefined) coupon.usageLimit = updateData.usageLimit;
         if (updateData.perUserLimit !== undefined) coupon.perUserLimit = updateData.perUserLimit;
-        if (updateData.validFrom) coupon.validFrom = new Date(updateData.validFrom);
-        if (updateData.validUntil) coupon.validUntil = new Date(updateData.validUntil);
+        if (updateData.validFrom) {
+            const d = new Date(updateData.validFrom);
+            d.setHours(0, 0, 0, 0);
+            coupon.validFrom = d;
+        }
+        if (updateData.validUntil) {
+            const d = new Date(updateData.validUntil);
+            d.setHours(23, 59, 59, 999);
+            coupon.validUntil = d;
+        }
 
         const discountVal = coupon.discountValue;
         const minPurchase = coupon.minPurchaseAmount || 0;

@@ -194,6 +194,8 @@ const orderService = {
             await walletService.reverseEarning(courseItem.tutor, order._id, courseItem.tutorShare);
         }
 
+        await walletService.reverseAdminEscrow(order._id, order.finalAmount);
+
         await walletService.refundToStudent(userId, order.finalAmount, order.orderId);
 
         order.paymentStatus = 'refunded';

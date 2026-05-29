@@ -22,6 +22,10 @@ const walletTransactionSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order'
     },
+    platformShare: {
+        type: Number,
+        default: null
+    },
     status: {
         type: String,
         enum: ['completed', 'pending', 'failed', 'refunded', 'cancelled'],
