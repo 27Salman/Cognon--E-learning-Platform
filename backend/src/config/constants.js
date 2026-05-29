@@ -23,13 +23,6 @@ const COURSE_STATUS = {
     PENDING_REVIEW: 'pending_review'
 };
 
-const COURSE_DIFFICULTY = {
-    BEGINNER: 'beginner',
-    INTERMEDIATE: 'intermediate',
-    ADVANCED: 'advanced',
-    EXPERT: 'expert'
-};
-
 const ENROLLMENT_STATUS = {
     ENROLLED: 'enrolled',       
     IN_PROGRESS: 'in_progress', 
@@ -39,7 +32,7 @@ const ENROLLMENT_STATUS = {
 
 const PAGINATION = {
     DEFAULT_PAGE: 1,
-    DEFAULT_LIMIT: 10,
+    DEFAULT_LIMIT: 5,
     MAX_LIMIT: 100
 };
 
@@ -86,15 +79,62 @@ const REGEX = {
     URL: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
 };
 
+const PAYMENT_STATUS = {
+    PENDING: 'pending',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+    REFUNDED: 'refunded'
+};
+
+const PAYMENT_METHOD = {
+    RAZORPAY: 'razorpay',
+    CARD: 'card',
+    UPI: 'upi',
+    NETBANKING: 'netbanking',
+    WALLET: 'wallet'
+};
+
+const DISCOUNT_TYPE = {
+    PERCENTAGE: 'percentage',
+    FIXED: 'fixed'
+};
+
+const COUPON_APPLICABLE_TO = {
+    ALL: 'all',
+    CATEGORY: 'category',
+    COURSE: 'course'
+};
+
+const OFFER_TYPE = {
+    COURSE: 'course',
+    CATEGORY: 'category',
+    PLATFORM: 'platform'
+};
+
+const PLATFORM_COMMISSION = {
+    RATE: 0.10, 
+    TUTOR_SHARE: 0.90 
+};
+
+
+const TUTOR_HOLD_DAYS = 3;
+
+
 module.exports = {
     USER_ROLES,
     TUTOR_APPROVAL_STATUS,
     USER_STATUS,
     COURSE_STATUS,
-    COURSE_DIFFICULTY,
     ENROLLMENT_STATUS,
     PAGINATION,
     HTTP_STATUS,
     MESSAGES,
-    REGEX
+    REGEX,
+    PAYMENT_STATUS,
+    PAYMENT_METHOD,
+    DISCOUNT_TYPE,
+    COUPON_APPLICABLE_TO,
+    OFFER_TYPE,
+    PLATFORM_COMMISSION,
+    TUTOR_HOLD_DAYS,
 };

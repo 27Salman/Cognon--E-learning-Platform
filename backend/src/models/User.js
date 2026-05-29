@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
         password: {
             type: String,
             required: [true, 'Password is required'],
-            minlength: [6, 'Password must be at least 6 characters'],
+            minlength: [8, 'Password must be at least 8 characters'],
             select: false
         },
         phone: {
@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema(
             default: null,
             validate: {
                 validator: function(v) {
-                    if (!v) return true; // allow null/empty
+                    if (!v) return true; 
                     return /^[6-9]\d{9}$/.test(v);
                 },
                 message: 'Please provide a valid phone number (10 digits starting with 6-9)'
@@ -144,6 +144,15 @@ const userSchema = new mongoose.Schema(
             }
         },
 
+        totalCourses: {
+            type: Number,
+            default: 0
+        },
+        totalStudents: {
+            type: Number,
+            default: 0
+        },
+
         lastLogin: {
             type: Date
         }
@@ -173,13 +182,18 @@ userSchema.methods.comparePassword = async function(candidatePassword){
 userSchema.methods.getProfileImageURL = function() {
     if (!this.profileImage) return null;
     if (this.profileImage.startsWith('http')) return this.profileImage;
-    return `${process.env.API_URL || 'http://localhost:5000'}/uploads/${this.profileImage}`;
+    const subfolder = this.profileImage.startsWith('user-') ? 'profiles/' : '';
+    return `${process.env.API_URL || 'http://localhost:5000'}/uploads/${subfolder}${this.profileImage}`;
 };
 
 userSchema.methods.toJSON = function() {
     const user = this.toObject();
     delete user.password;
     delete user.__v;
+    delete user.verificationToken;
+    delete user.verificationTokenExpires;
+    delete user.passwordResetToken;
+    delete user.passwordResetExpires;
     
     if (user.profileImage) {
         user.profileImageURL = this.getProfileImageURL();

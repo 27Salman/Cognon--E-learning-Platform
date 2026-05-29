@@ -16,18 +16,23 @@ require('./src/controllers/googleAuthController');
 const { authRoutes } = require('./src/routes/authRoutes');
 const { adminRoutes } = require('./src/routes/adminRoutes');
 const { tutorRoutes } = require('./src/routes/tutorRoutes');
-const { userRoutes } = require('./src/routes/userRoutes');
+const { userRoutes, publicCatalogRoutes } = require('./src/routes/userRoutes');
 const { courseRoutes } = require('./src/routes/courseRoutes');
 const { lessonRoutes } = require('./src/routes/lessonRoutes');
 const { chatRoutes } = require('./src/routes/chatRoutes');
 const { progressRoutes } = require('./src/routes/progressRoutes');
-
-
+const { categoryRoutes } = require('./src/routes/categoryRoutes');
+const { couponRoutes } = require('./src/routes/couponRoutes');
+const checkoutController = require('./src/controllers/checkoutController');
 
 const PORT = process.env.PORT || 5000;
 
 const app = express();
 connectDB();
+
+// Start background jobs (daily hold release for inactive wallets)
+const { startHoldReleaseJob } = require('./src/jobs/holdReleaseJob');
+startHoldReleaseJob();
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
@@ -40,6 +45,9 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+app.post('/api/webhook/razorpay', express.raw({ type: 'application/json' }), checkoutController.handleWebhook);
+
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -49,7 +57,6 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Serve uploads but block direct PDF access (PDFs served via protected route)
 app.use('/uploads', (req, res, next) => {
     if (req.path.startsWith('/pdfs/')) {
         return res.status(403).json({ success: false, message: 'Access denied' });
@@ -57,16 +64,24 @@ app.use('/uploads', (req, res, next) => {
     next();
 }, express.static(path.join(__dirname, 'src/uploads')));
 
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tutor', tutorRoutes);
 app.use('/api/student', userRoutes);
 
+app.use('/api/catalog', publicCatalogRoutes);
 
 app.use('/api/courses', courseRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/courses', progressRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/coupons', couponRoutes);
 
 
 app.get('/api/health', (req, res) => {

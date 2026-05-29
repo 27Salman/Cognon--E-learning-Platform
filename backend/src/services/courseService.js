@@ -1,17 +1,24 @@
 const Course = require('../models/Course');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
+const Category = require('../models/Category');
 const { COURSE_STATUS } = require('../config/constants');
 
 const courseService = {
 
     async createCourse(tutorId, courseData, file){
-        const { title, description, price, category } = courseData;
+        const { title, description, price, offerPercentage, category } = courseData;
+
+        const categoryDoc = await Category.findOne({ name: category, isActive: true });
+        if (!categoryDoc) {
+            throw new Error('The selected category is not available. Please choose an active category.');
+        }
 
         const course = new Course({
             title, 
             description,
             price: price || 0,
+            offerPercentage: Number(offerPercentage) || 0,
             category,
             tutor: tutorId,
             thumbnail: file ? file.filename : null
@@ -31,11 +38,12 @@ const courseService = {
         const course = await Course.findOne({ _id: courseId, tutor: tutorId });
         if(!course) throw new Error('Course not found or unauthorized');
 
-        const { title, description, price, category, status } = updateData;
+        const { title, description, price, offerPercentage, category, status } = updateData;
 
         if(title) course.title = title;
         if(description) course.description = description;
         if(price !== undefined) course.price = price;
+        if(offerPercentage !== undefined) course.offerPercentage = Number(offerPercentage) || 0;
         if(category) course.category = category;
         if(status && Object.values(COURSE_STATUS).includes(status)){
             course.status = status;
@@ -50,16 +58,15 @@ const courseService = {
         const course = await Course.findOne({ _id: courseId, tutor: tutorId });
         if(!course) throw new Error('Course not found or unauthorized');
 
+        if (course.studentsEnrolled && course.studentsEnrolled.length > 0) {
+            throw new Error(`Cannot delete this course — ${course.studentsEnrolled.length} student(s) are enrolled. Set it to draft or archived instead.`);
+        }
+
         await Lesson.deleteMany({ course: courseId });
 
         await User.findByIdAndUpdate(
             tutorId,
             { $pull: { 'tutorProfile.coursesCreated': courseId } }
-        );
-
-        await User.updateMany(
-            { 'studentProfile.enrolledCourses.courseId': courseId },
-            { $pull: { 'studentProfile.enrolledCourses': { courseId: courseId } } }
         );
 
         await Course.findByIdAndDelete(courseId);
@@ -119,23 +126,21 @@ const courseService = {
 
     async getCourseById(courseId, userId = null, userRole = null) {
         const course = await Course.findById(courseId)
-            .populate('tutor', 'name email profileImage tutorProfile')
-            .populate('studentsEnrolled', 'name email');
+            .populate('tutor', 'name email profileImage tutorProfile totalCourses totalStudents');
 
         if (!course) throw new Error('Course not found');
 
+        const isEnrolled = userId ? course.studentsEnrolled.some(id => id.toString() === userId) : false;
+        const isOwner = userId ? course.tutor._id.toString() === userId : false;
+
         if (course.status !== COURSE_STATUS.PUBLISHED) {
-            if (!userId || course.tutor._id.toString() !== userId) {
+            if (!isOwner && !isEnrolled) {
                 throw new Error('Course not available');
             }
         }
 
-        const isEnrolled = userId ? course.studentsEnrolled.some(s => s._id.toString() === userId) : false;
-        const isOwner = userId ? course.tutor._id.toString() === userId : false;
-
         const lessons = await Lesson.find({ course: courseId }).sort({ order: 1 });
 
-        // Strip sensitive content for unenrolled users
         const sanitizedLessons = lessons.map(l => {
             const lesson = l.toJSON();
             if (!isEnrolled && !isOwner) {
@@ -146,14 +151,16 @@ const courseService = {
             return lesson;
         });
         
+        const courseObj = course.toJSON();
+        delete courseObj.studentsEnrolled;
         return {
-            ...course.toJSON(),
+            ...courseObj,
             lessons: sanitizedLessons,
             isEnrolled
         };
     },
 
-    //Student enrollment
+    //Student 
     async enrollStudent(courseId, studentId){
         const course = await Course.findById(courseId);
         if(!course) throw new Error('Course not found');
@@ -200,6 +207,7 @@ const courseService = {
         if (!student) throw new Error('Student not found');
 
         const enrolledCourses = student.studentProfile.enrolledCourses
+            .filter(enrollment => enrollment.courseId != null) // skip deleted courses
             .slice(skip, skip + limit)
             .map(enrollment => ({
                 ...enrollment.courseId.toJSON(),
@@ -207,7 +215,7 @@ const courseService = {
                 progress: enrollment.progress
             }));
 
-        const total = student.studentProfile.enrolledCourses.length;
+        const total = student.studentProfile.enrolledCourses.filter(e => e.courseId != null).length;
 
         return {
             courses: enrolledCourses,

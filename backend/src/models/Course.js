@@ -54,6 +54,31 @@ const courseSchema = new mongoose.Schema(
         totalDuration: {
             type: Number,
             default: 0
+        },
+        language: {
+            type: String,
+            default: 'English'
+        },
+        rating: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 5
+        },
+        reviewCount: {
+            type: Number,
+            default: 0
+        },
+        revenue: {
+            type: Number,
+            default: 0,
+            min: 0
+        },
+        offerPercentage: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 100
         }
     },
     {

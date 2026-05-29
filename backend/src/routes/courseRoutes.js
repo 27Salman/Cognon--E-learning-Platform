@@ -23,6 +23,5 @@ router.post('/', protect, tutorOnly, uploadCourse.single('thumbnail'), createCou
 router.put('/:id', protect, tutorOnly, uploadCourse.single('thumbnail'), updateCourse);
 router.delete('/:id', protect, tutorOnly, deleteCourse);
 
-router.post('/:id/enroll', protect, restrictTo('student'), enrollStudent);
 
 module.exports = { courseRoutes: router };

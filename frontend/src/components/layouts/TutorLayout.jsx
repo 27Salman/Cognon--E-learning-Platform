@@ -30,7 +30,8 @@ export default function TutorLayout() {
                     name: data.name,
                     email: data.email,
                     phone: data.phone,
-                    profileImage: data.profileImageURL || data.profileImage || null,
+                    profileImage: data.profileImage || null,
+                    profileImageURL: data.profileImageURL || null,
                     tutorProfile: data.tutorProfile || {},
                     role: data.role,
                     status: data.status,
@@ -55,7 +56,6 @@ export default function TutorLayout() {
 
     const handleUpdateProfile = (updatedData) => {
         const { password, ...toStore } = updatedData;
-        toStore.profileImage = toStore.profileImageURL || toStore.profileImage || null;
         setTutorInfo(toStore);
         localStorage.setItem('tutorInfo', JSON.stringify(toStore));
     };
@@ -67,8 +67,10 @@ export default function TutorLayout() {
             <div className="flex flex-1">
                 <TutorSidebar tutorInfo={tutorInfo} />
 
-                <main className="flex-1 overflow-y-auto">
-                    <Outlet context={{ tutorInfo, onUpdateProfile: handleUpdateProfile }} />
+                <main className="flex-1 overflow-y-auto min-h-0">
+                    <div className="min-h-full">
+                        <Outlet context={{ tutorInfo, onUpdateProfile: handleUpdateProfile }} />
+                    </div>
                 </main>
             </div>
 

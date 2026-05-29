@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { API_URL } from '../utils/constants';
 import { getToken, clearAuthData } from '../utils/helpers';
 
@@ -20,9 +21,27 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    if (response.config?.responseType === 'blob') {
+      return response;
+    }
+    return response.data;
+  },
   (error) => {
     const isLogoutRequest = error.config?.url?.includes('/auth/logout');
+
+    if (error.response?.config?.responseType === 'blob' && error.response?.data instanceof Blob) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const json = JSON.parse(reader.result);
+          console.error('Blob request error:', json?.message || 'Unknown error');
+        } catch {
+          console.error('Blob request failed with non-JSON error');
+        }
+      };
+      reader.readAsText(error.response.data);
+    }
 
     if (error.response?.status === 401 && !isLoggingOut && !isLogoutRequest) {
       isLoggingOut = true;

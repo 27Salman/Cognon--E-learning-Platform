@@ -15,7 +15,7 @@ const APPROVAL_STYLES = {
 
 export default function TutorManagement() {
     const [tutors, setTutors] = useState([]);
-    const [summary, setSummary] = useState({ total: 0, active: 0, blocked: 0 });
+    const [summary, setSummary] = useState({ total: 0, active: 0, blocked: 0, approved: 0, pending: 0 });
     const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalFiltered: 0 });
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
@@ -53,6 +53,7 @@ export default function TutorManagement() {
     const handleFilterChange = (value) => { setFilter(value); setPage(1); };
 
     const handleApproval = async (tutorId, action) => {
+        const prevApprovalStatus = tutors.find(t => t._id === tutorId)?.tutorProfile?.approvalStatus || 'pending';
         setActionLoading(`approval-${tutorId}`);
         try {
             const res = action === 'approve'
@@ -62,6 +63,19 @@ export default function TutorManagement() {
             const updated = res.data;
             setTutors(prev => prev.map(t => t._id === tutorId ? updated : t));
             setSelectedTutor(updated);
+
+            // Update summary counts based on the previous and new approval status
+            setSummary(prev => {
+                const next = { ...prev };
+                if (prevApprovalStatus === 'pending') next.pending = Math.max(0, prev.pending - 1);
+                if (action === 'approve') {
+                    next.approved = prev.approved + 1;
+                } else if (action === 'reject' && prevApprovalStatus === 'approved') {
+                    next.approved = Math.max(0, prev.approved - 1);
+                }
+                return next;
+            });
+
             toast.success(action === 'approve' ? 'Tutor approved' : 'Tutor rejected');
         } catch (error) {
             toast.error(error.response?.data?.message || `Failed to ${action} tutor`);
@@ -122,15 +136,17 @@ export default function TutorManagement() {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">Tutor Management</h1>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
                 {[
-                    { label: 'Total Tutors', value: summary.total, color: 'text-gray-800' },
-                    { label: 'Active Tutors', value: summary.active, color: 'text-green-600' },
-                    { label: 'Blocked Tutors', value: summary.blocked, color: 'text-red-500' },
+                    { label: 'Total Tutors',    value: summary.total,    color: 'text-gray-800' },
+                    { label: 'Active',          value: summary.active,   color: 'text-green-600' },
+                    { label: 'Blocked',         value: summary.blocked,  color: 'text-red-500' },
+                    { label: 'Approved',        value: summary.approved, color: 'text-blue-600' },
+                    { label: 'Pending Approval',value: summary.pending,  color: 'text-yellow-600' },
                 ].map(({ label, value, color }) => (
-                    <div key={label} className="bg-white rounded-xl p-4 sm:p-5 border border-gray-200 shadow-sm">
-                        <p className="text-xs sm:text-sm text-gray-500">{label}</p>
-                        <p className={`text-2xl sm:text-3xl font-bold mt-1 ${color}`}>{value}</p>
+                    <div key={label} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                        <p className="text-xs text-gray-500 leading-tight">{label}</p>
+                        <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
                     </div>
                 ))}
             </div>

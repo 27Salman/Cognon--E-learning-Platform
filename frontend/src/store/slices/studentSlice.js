@@ -102,14 +102,17 @@ const studentSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
-            .addCase(fetchCourseDetails.pending, (state) => { state.loading = true; })
+            .addCase(fetchCourseDetails.pending, (state) => { 
+                state.loading = true; 
+                state.courseError = null;
+            })
             .addCase(fetchCourseDetails.fulfilled, (state, action) => {
                 state.loading = false;
                 state.currentCourse = action.payload;
             })
             .addCase(fetchCourseDetails.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
+                state.courseError = action.error?.message || 'Course not found';
             })
             .addCase(enrollInCourse.fulfilled, (state) => {
                 if (state.currentCourse) state.currentCourse.isEnrolled = true;

@@ -2,29 +2,29 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Upload, Trash2 } from 'lucide-react';
 import { courseAPI } from '../../api/courseAPI';
+import { tutorAPI } from '../../api/tutorAPI';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import ImageCropModal from '../../components/common/ImageCropModal';
 import toast from 'react-hot-toast';
-
-const CATEGORIES = ['Web Development', 'Data Science', 'Graphic Design', 'Business', 'Marketing', 'IT & Software', 'Languages', 'Programming'];
 
 export default function EditCourse() {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [form, setForm] = useState({ title: '', category: '', price: '', description: '', status: 'draft' });
+    const [form, setForm] = useState({ title: '', category: '', price: '', offerPercentage: '', description: '', status: 'draft' });
     const [thumbnail, setThumbnail] = useState(null);
     const [preview, setPreview] = useState(null);
     const [lessons, setLessons] = useState([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [categories, setCategories] = useState([]);
 
     const [lessonForm, setLessonForm] = useState({ title: '', duration: '', videoUrl: '', description: '' });
     const [lessonThumbnail, setLessonThumbnail] = useState(null);
     const [lessonThumbnailPreview, setLessonThumbnailPreview] = useState(null);
     const [lessonPdf, setLessonPdf] = useState(null);
     const [addingLesson, setAddingLesson] = useState(false);
-    const [editingLesson, setEditingLesson] = useState(null); // lesson being edited
+    const [editingLesson, setEditingLesson] = useState(null);
     const [confirmCourse, setConfirmCourse] = useState(false);
     const [confirmLesson, setConfirmLesson] = useState({ open: false, id: null, title: '' });
     const [deletingLesson, setDeletingLesson] = useState(false);
@@ -41,6 +41,9 @@ export default function EditCourse() {
 
     useEffect(() => {
         loadCourse();
+        tutorAPI.getCategories()
+            .then(res => setCategories(res.data.categories || []))
+            .catch(() => setCategories([]));
     }, [id]);
 
     const loadCourse = async () => {
@@ -52,6 +55,7 @@ export default function EditCourse() {
                 title: course.title || '',
                 category: course.category || '',
                 price: course.price || '',
+                offerPercentage: course.offerPercentage || '',
                 description: course.description || '',
                 status: course.status || 'draft'
             });
@@ -185,13 +189,24 @@ export default function EditCourse() {
                         <select name="category" value={form.category} onChange={handleChange}
                             className="w-full border border-purple-200 bg-purple-50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
                             <option value="">Select category</option>
-                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                            {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
                         </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Regular Price</label>
                         <input name="price" type="number" value={form.price} onChange={handleChange}
                             className="w-full border border-purple-200 bg-purple-50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Offer Percentage (%)</label>
+                        <input name="offerPercentage" type="number" min="0" max="100" value={form.offerPercentage} onChange={handleChange}
+                            placeholder="0"
+                            className="w-full border border-purple-200 bg-purple-50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                        {form.offerPercentage > 0 && form.price > 0 && (
+                            <p className="text-xs text-green-600 mt-1">
+                                Discounted price: ₹{Math.round(form.price * (1 - form.offerPercentage / 100))}
+                            </p>
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>

@@ -30,7 +30,7 @@ export default function TutorChat() {
             const res = await chatAPI.getUserChats();
             setChats(res.data?.data || []);
         } catch {
-            toast.error('Failed to load chats');
+            toast.error('Failed to load chats', { id: 'chats-error' });
         }
     };
 
@@ -40,7 +40,7 @@ export default function TutorChat() {
             const res = await chatAPI.getChatMessages(chatId);
             setMessages(res.data?.data?.messages || []);
         } catch {
-            toast.error('Failed to load messages');
+            toast.error('Failed to load messages', { id: 'messages-error' });
         } finally {
             setLoading(false);
         }

@@ -2,9 +2,20 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
-import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard } from 'lucide-react';
+import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard, Wallet } from 'lucide-react';
 
-const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:'));
+const API_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : 'http://localhost:5000';
+
+const getFullImageUrl = (src) => {
+  if (!src) return null;
+  if (src.startsWith('http') || src.startsWith('data:')) return src;
+  const subfolder = src.startsWith('user-') ? 'profiles/' : '';
+  return `${API_BASE}/uploads/${subfolder}${src}`;
+};
+
+const isValidImageSrc = (src) => !!src;
 
 const getAvatarColors = (name) => {
     const palettes = [
@@ -26,6 +37,7 @@ const menuItems = [
     { name: 'Profile',      path: '/student/profile',      icon: User },
     { name: 'My Courses',   path: '/student/my-courses',   icon: ShoppingBag },
     { name: 'My Orders',    path: '/student/orders',       icon: ShoppingCart },
+    { name: 'Wallet',       path: '/student/wallet',       icon: Wallet},
     { name: 'Wishlist',     path: '/student/wishlist',     icon: Heart },
     { name: 'Certificates', path: '/student/certificates', icon: Award },
 ];
@@ -35,7 +47,12 @@ export default function StudentSidebar({ studentInfo }) {
     const location = useLocation();
     const dispatch = useDispatch();
 
-    const isActive = (path) => location.pathname === path;
+    const isActive = (path) => {
+        if (location.pathname === path) return true;
+        if (location.pathname.startsWith(path + '/')) return true;
+        if (path === '/student/my-courses' && location.pathname.includes('/student/courses/') && location.pathname.endsWith('/lessons')) return true;
+        return false;
+    };
 
     const handleLogout = async () => {
         localStorage.removeItem('studentInfo');
@@ -49,9 +66,9 @@ export default function StudentSidebar({ studentInfo }) {
 
             {/* Avatar + Name */}
             <div className="px-4 pt-6 pb-5 border-b border-gray-100 flex flex-col items-center">
-                {isValidImageSrc(studentInfo?.profileImage) ? (
+                {isValidImageSrc(studentInfo?.profileImageURL || studentInfo?.profileImage) ? (
                     <img
-                        src={studentInfo.profileImage}
+                        src={getFullImageUrl(studentInfo.profileImageURL || studentInfo.profileImage)}
                         alt="Student"
                         className="w-16 h-16 rounded-full object-cover border-2 border-purple-200 shadow-sm"
                     />

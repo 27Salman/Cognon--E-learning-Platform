@@ -11,8 +11,11 @@ const {
     requestPasswordChange,
     verifyPasswordChange,
     getDashboard,
+    getRevenueDashboard,
+    getCourseRevenueDetails,
+    downloadSalesReportPDF,
+    downloadSalesReportExcel,
 } = require('../controllers/tutorController');
-
 
 router.use(protect);
 router.use(restrictTo('tutor'));
@@ -27,5 +30,14 @@ router.post('/change-password/request', requestPasswordChange);
 router.post('/change-password/verify', verifyPasswordChange);
 
 router.get('/dashboard', getDashboard);
+router.get('/revenue/download/pdf',   downloadSalesReportPDF);
+router.get('/revenue/download/excel', downloadSalesReportExcel);
+router.get('/revenue', getRevenueDashboard);
+router.get('/revenue/:courseId', getCourseRevenueDetails);
+
+// Wallet
+const walletController = require('../controllers/walletController');
+router.get('/wallet', walletController.getMyWallet);
+router.post('/wallet/withdraw', walletController.requestWithdrawal);
 
 module.exports = { tutorRoutes: router };

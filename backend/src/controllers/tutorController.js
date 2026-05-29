@@ -1,6 +1,7 @@
 const asyncHandler = require('../middleware/asyncHandler');
 const tutorService = require('../services/tutorService');
 const { HTTP_STATUS } = require('../config/constants');
+const salesReportService = require('../services/salesReportService')
 
 exports.getProfile = asyncHandler(async (req, res) => {
     const data = await tutorService.getProfile(req.user.id);
@@ -43,3 +44,34 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     const data = await tutorService.getTutorDashboard(req.user.id);
     res.status(HTTP_STATUS.OK).json({ success: true, data });
 });
+
+exports.getRevenueDashboard = asyncHandler(async (req, res) => {
+    const data = await tutorService.getRevenueDashboard(req.user.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data });
+});
+
+exports.getCourseRevenueDetails = asyncHandler(async (req, res) => {
+    const { search, page, limit } = req.query;
+    const data = await tutorService.getCourseRevenueDetails(
+        req.user.id,
+        req.params.courseId,
+        { search, page, limit }
+    );
+    res.status(HTTP_STATUS.OK).json({ success: true, data });
+});
+
+exports.downloadSalesReportPDF = asyncHandler( async (req, res) =>{
+    const { dateFrom, dateTo } = req.query;
+    const tutor = await tutorService.getProfile(req.user.id);
+    const reportData = await tutorService.getTutorSalesReport(req.user.id, { dateFrom, dateTo });
+    salesReportService.generateTutorPDF(reportData, tutor.name, res);
+});
+
+exports.downloadSalesReportExcel = asyncHandler( async (req, res) =>{
+    const { dateFrom, dateTo } = req.query;
+    const tutor = await tutorService.getProfile(req.user.id);
+    const reportData = await tutorService.getTutorSalesReport(req.user.id, { dateFrom, dateTo });
+    salesReportService.generateTutorExcel(reportData, tutor.name, res);
+})
+
+

@@ -64,9 +64,7 @@ export default function TutorCourses() {
 
     const handleToggleStatus = async (courseId, newStatus) => {
         try {
-            const formData = new FormData();
-            formData.append('status', newStatus);
-            await courseAPI.updateCourse(courseId, formData);
+            await courseAPI.toggleStatus(courseId, newStatus);
             dispatch(fetchMyCourses({ page: currentPage, limit: LIMIT }));
             toast.success(newStatus === 'published' ? 'Course listed' : 'Course unlisted');
         } catch (err) {

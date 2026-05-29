@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setAuthFromStorage } from './store/slices/authSlice';
@@ -39,17 +39,40 @@ import MyCourses from './pages/student/MyCourses';
 import CourseLessons from './pages/student/CourseLessons';
 import LessonViewer from './pages/student/LessonViewer';
 import CategoryPage from './pages/student/CategoryPage';
-
+import CategoryManagement from './pages/admin/CategoryManagement';
+import CourseManagement from './pages/admin/CourseManagement';
+import OrderList from './pages/admin/OrderList';
+import OrderDetail from './pages/admin/OrderDetail';
+import Wishlist from './pages/student/Wishlist';
+import Cart from './pages/student/Cart';
+import Checkout from './pages/student/Checkout';
+import OrderSuccess from './pages/student/OrderSuccess';
+import StudentOrderList from './pages/student/StudentOrderList';
+import StudentOrderDetail from './pages/student/StudentOrderDetail';
+import TutorRevenue from './pages/tutor/TutorRevenue';
+import AdminCoupons from './pages/admin/AdminCoupons';
+import TutorWallet from './pages/tutor/TutorWallet';
+import AdminWallet from './pages/admin/AdminWallet';
+import StudentWallet from './pages/student/StudentWallet';
+import Loader from './components/Loader';
 
 
 function App() {
   const dispatch = useDispatch();
+  const [showLoader, setShowLoader] = useState(true);
 
   useEffect(() => {
     dispatch(setAuthFromStorage());
   }, [dispatch]);
 
+  const handleLoaderComplete = () => {
+    setShowLoader(false);
+  };
+
   return (
+    <>
+      <Loader onComplete={handleLoaderComplete} />
+      {!showLoader && (
     <Routes>
       {/* Public Routes */}
       <Route path={ROUTES.HOME} element={<Home />} />
@@ -91,6 +114,10 @@ function App() {
         <Route path="profile" element={<StudentProfile />} />
         <Route path="my-courses" element={<MyCourses />} />
         <Route path="courses/:courseId/lessons" element={<CourseLessons />} />
+        <Route path="wishlist" element={<Wishlist />} />
+        <Route path="wallet" element={<StudentWallet />} />
+        <Route path="orders" element={<StudentOrderList />} />
+        <Route path="orders/:id" element={<StudentOrderDetail />} />
       </Route>
 
       {/* Student Course Catalog - standalone full page */}
@@ -135,6 +162,37 @@ function App() {
         }
       />
 
+      <Route
+        path="/student/cart"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+              <Cart />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/checkout"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+              <Checkout />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/order-success"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+                <OrderSuccess />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+
       {/* Protected Tutor Routes */}
       <Route
         path="/tutor"
@@ -153,6 +211,8 @@ function App() {
         <Route path="courses/new" element={<CreateCourse />} />
         <Route path="courses/:id" element={<TutorCourseDetail />} />
         <Route path="courses/:id/edit" element={<EditCourse />} />
+        <Route path="revenue" element={<TutorRevenue />} />
+        <Route path="wallet" element={<TutorWallet />} />
         <Route path="chat" element={<TutorChat />} />
 
       </Route>
@@ -173,12 +233,21 @@ function App() {
         <Route path="profile" element={<AdminProfile />} />
         <Route path="tutors" element={<TutorManagement />} />
         <Route path="students" element={<StudentManagement />} />
+        <Route path="categories" element={<CategoryManagement />} />
+        <Route path="courses" element={<CourseManagement />} />
+        <Route path="orders" element={<OrderList />} />
+        <Route path="orders/:id" element={<OrderDetail />} />
+        <Route path="coupons" element={<AdminCoupons />} />
+        <Route path="wallet" element={<AdminWallet />} />
+
       </Route>
 
-      {/* Fallback */}
-      <Route path="/unauthorized" element={<Unauthorized />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+          {/* Fallback */}
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      )}
+    </>
   );
 }
 

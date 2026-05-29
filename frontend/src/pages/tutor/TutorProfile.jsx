@@ -7,6 +7,16 @@ import { tutorAPI } from '../../api/tutorAPI';
 import { validateImageFile } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
+const API_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : 'http://localhost:5000';
+
+const getFullImageUrl = (src) => {
+  if (!src) return null;
+  if (src.startsWith('http') || src.startsWith('data:')) return src;
+  return `${API_BASE}${src}`;
+};
+
 export default function TutorProfile() {
     const { tutorInfo, onUpdateProfile } = useOutletContext();
     const [isEditing, setIsEditing] = useState(false);
@@ -22,7 +32,7 @@ export default function TutorProfile() {
         phone: tutorInfo?.phone || '',
         subject: tutorInfo?.tutorProfile?.subject || tutorInfo?.subject || '',
         bio: tutorInfo?.tutorProfile?.bio || tutorInfo?.bio || '',
-        profileImage: tutorInfo?.profileImage || null
+        profileImage: tutorInfo?.profileImageURL || tutorInfo?.profileImage || null
     });
 
     useEffect(() => {
@@ -33,7 +43,7 @@ export default function TutorProfile() {
                 phone: tutorInfo?.phone || '',
                 subject: tutorInfo?.tutorProfile?.subject || tutorInfo?.subject || '',
                 bio: tutorInfo?.tutorProfile?.bio || tutorInfo?.bio || '',
-                profileImage: tutorInfo?.profileImage || null
+                profileImage: tutorInfo?.profileImageURL || tutorInfo?.profileImage || null
             });
         }
     }, [tutorInfo]);
@@ -117,15 +127,15 @@ export default function TutorProfile() {
             phone: tutorInfo?.phone || '',
             subject: tutorInfo?.tutorProfile?.subject || tutorInfo?.subject || '',
             bio: tutorInfo?.tutorProfile?.bio || tutorInfo?.bio || '',
-            profileImage: tutorInfo?.profileImage || null
+            profileImage: tutorInfo?.profileImageURL || tutorInfo?.profileImage || null
         });
         setIsEditing(false);
     };
     return (
-        <div className="p-8 max-w-5xl">
+        <div className="p-6 max-w-5xl">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
                 
                 {!isEditing && (
                     <button
@@ -139,14 +149,14 @@ export default function TutorProfile() {
             </div>
 
             {/* Profile Content */}
-            <div className="bg-white rounded-lg shadow-sm p-8">
+            <div className="bg-white rounded-lg shadow-sm p-6">
                 
                 {/* Profile Picture Section */}
                 <div className="flex items-start gap-8 mb-8">
                     <div className="relative">
                         {formData.profileImage ? (
                             <img
-                                src={formData.profileImage}
+                                src={getFullImageUrl(formData.profileImage)}
                                 alt="Profile"
                                 className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
                             />
@@ -181,7 +191,7 @@ export default function TutorProfile() {
                 </div>
 
                 {/* Form Fields */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                     
                     {/* Name Field */}
                     <div>

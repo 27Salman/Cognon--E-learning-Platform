@@ -4,9 +4,9 @@ const signupValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Name is required')
-    .isLength({ min: 3, max: 50 }).withMessage('Name must be 3-50 characters')
-    .matches(/^[a-zA-Z0-9]([a-zA-Z0-9_-]{1,48}[a-zA-Z0-9])?$/)
-    .withMessage('Username can only contain letters, numbers, underscore and hyphen'),
+    .isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters')
+    .matches(/^[a-zA-Z]+([ '\-\.][a-zA-Z]+)*$/)
+    .withMessage('Name can only contain letters, spaces, hyphens, apostrophes and dots'),
   
   body('email')
     .trim()
@@ -22,7 +22,7 @@ const signupValidation = [
   body('password')
     .notEmpty().withMessage('Password is required')
     .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
     .withMessage('Password must contain uppercase, lowercase, number and special character (@$!%*?&)'),
   
   body('role')
@@ -51,7 +51,7 @@ const resetPasswordValidation = [
   body('password')
     .notEmpty().withMessage('Password is required')
     .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
     .withMessage('Password must contain uppercase, lowercase, number and special character')
 ];
 
