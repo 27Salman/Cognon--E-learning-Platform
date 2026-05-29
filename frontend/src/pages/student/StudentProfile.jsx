@@ -79,29 +79,30 @@ export default function StudentProfile() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await studentAPI.getMyCourses();
-                const courses = res.data || [];
-                
-                let enrolledCount = courses.length;
+                const res = await studentAPI.fetchEnrolledCourses(1, 100);
+                const data = res.data || {};
+                const courses = data.courses || [];
+                const enrolledCount = data.pagination?.totalCourses ?? courses.length;
+
+      
                 let completedCount = 0;
-                let pendingLessons = 0;
+                let inProgressCount = 0;
 
                 courses.forEach(course => {
-                    const enrollment = course.enrollment || {};
-                    const totalLessons = course.totalLessons || 0;
-                    const completedLessons = enrollment.completedLessons?.length || 0;
-                    
-                    if (completedLessons >= totalLessons && totalLessons > 0) {
+                    const progress = course.progress || 0;
+                    if (progress >= 100) {
                         completedCount++;
+                    } else if (progress > 0) {
+                        inProgressCount++;
                     }
-                    
-                    pendingLessons += Math.max(0, totalLessons - completedLessons);
                 });
+
+                const pendingCount = enrolledCount - completedCount;
 
                 setStats({
                     enrolled: enrolledCount,
                     completed: completedCount,
-                    pending: pendingLessons,
+                    pending: pendingCount,
                     certificates: completedCount
                 });
             } catch (error) {

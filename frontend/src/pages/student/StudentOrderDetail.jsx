@@ -122,7 +122,6 @@ export default function StudentOrderDetail() {
             const res = await studentAPI.getMyOrderById(id);
             setOrder(res.data);
         } catch {
-            // silently fail on refetch
         }
     };
 
@@ -170,7 +169,7 @@ export default function StudentOrderDetail() {
         try {
             
             const res = await studentAPI.cancelOrder(order._id);
-            toast.success(res.data.message || 'Order cancelled successfully');
+            toast.success(res.message || 'Order cancelled successfully');
             setShowCancelModal(false);
             setOrder(prev => ({ ...prev, paymentStatus: 'refunded' }));
             setTimeout(()=> navigate('/student/wallet'), 1500);

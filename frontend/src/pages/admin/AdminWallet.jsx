@@ -165,32 +165,32 @@ export default function AdminWallet() {
                         <p className="text-3xl font-bold">
                             {loading ? '…' : showBalance ? fmt(wallet?.balance) : '₹ ••••••'}
                         </p>
-                        <p className="text-xs text-purple-200 mt-1">Platform commission balance</p>
+                        <p className="text-xs text-purple-200 mt-1">Released commission earnings</p>
                     </div>
                     <div className="border border-gray-200 rounded-xl p-5">
                         <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-                            <TrendingUp className="w-4 h-4 text-green-500" /> Confirmed Earnings
+                            <TrendingUp className="w-4 h-4 text-green-500" /> Total Processed
                         </div>
                         <p className="text-3xl font-bold text-gray-800">
-                            {loading ? '…' : fmt((wallet?.totalEarnings || 0) - (wallet?.tutorHoldAmount || 0))}
+                            {loading ? '…' : fmt(wallet?.totalEarnings)}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">Released commissions</p>
+                        <p className="text-xs text-gray-400 mt-1">All orders through platform</p>
                     </div>
                     <div className="border border-yellow-200 rounded-xl p-5">
                         <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-                            <TrendingUp className="w-4 h-4 text-yellow-500" /> Tutor Hold (3-day)
+                            <TrendingUp className="w-4 h-4 text-yellow-500" /> Pending Commission
                         </div>
                         <p className="text-3xl font-bold text-yellow-600">
-                            {loading ? '…' : fmt(wallet?.tutorHoldAmount || 0)}
+                            {loading ? '…' : fmt(wallet?.pendingEscrow || 0)}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">Tutor earnings in hold window</p>
+                        <p className="text-xs text-gray-400 mt-1">Releasing after 3-day hold</p>
                     </div>
                     <div className="border border-gray-200 rounded-xl p-5">
                         <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
                             <TrendingDown className="w-4 h-4 text-red-500" /> Total Paid Out
                         </div>
                         <p className="text-3xl font-bold text-gray-800">
-                            {loading ? '…' : fmt(wallet?.totalWithdrawals)}
+                            {loading ? '…' : fmt(wallet?.totalPaidOut)}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">Approved withdrawals</p>
                     </div>
@@ -251,7 +251,12 @@ export default function AdminWallet() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0">
-                                <p className="text-base font-bold text-gray-800">{fmt(req.amount)}</p>
+                                <div className="text-right">
+                                    <p className="text-base font-bold text-gray-800">{fmt(req.amount)}</p>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        Wallet: <span className="font-medium text-gray-600">{fmt(req.tutorBalance ?? 0)}</span>
+                                    </p>
+                                </div>
                                 {req.status === 'pending' ? (
                                     <div className="flex gap-2">
                                         <button
