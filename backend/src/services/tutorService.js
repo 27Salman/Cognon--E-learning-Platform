@@ -442,7 +442,7 @@ const tutorService = {
 
                 if (!courseMap[key]) {
                     courseMap[key] = {
-                        courseTitle:    key,
+                        courseTitle:    item.courseTitle || key,
                         courseCategory: item.courseCategory || '-',
                         enrollments:    0,
                         grossRevenue:   0,
@@ -462,7 +462,16 @@ const tutorService = {
         // Payment method 
         const paymentMethodAgg = await Order.aggregate([
             {
-                $match: query
+                $match: {
+                    'courses.tutor': new mongoose.Types.ObjectId(tutorId),
+                    paymentStatus: { $nin: ['refunded', 'failed', 'pending'] },
+                    ...(dateFrom || dateTo ? {
+                        orderDate: {
+                            ...(dateFrom ? { $gte: new Date(dateFrom) } : {}),
+                            ...(dateTo ? { $lte: (() => { const e = new Date(dateTo); e.setHours(23,59,59,999); return e; })() } : {})
+                        }
+                    } : {})
+                }
             },
             {
                 $unwind: '$courses'

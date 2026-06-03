@@ -227,10 +227,16 @@ const walletService = {
         const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 10));
         const paginated = txns.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
+        const paidOutAgg = await WithdrawalRequest.aggregate([
+            { $match: { status: 'approved' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const totalPaidOut = round(paidOutAgg[0]?.total || 0);
+
         return {
             balance: freshWallet.balance,
             totalEarnings: freshWallet.totalEarnings,
-            totalWithdrawals: freshWallet.totalWithdrawals,
+            totalPaidOut,
             ownerType: freshWallet.ownerType,
             pendingAmount: 0,
             pendingEscrow,   
@@ -335,8 +341,21 @@ const walletService = {
             WithdrawalRequest.countDocuments(query)
         ]);
 
+        const requestsWithBalance = await Promise.all(
+            requests.map(async (req) => {
+                const reqObj = req.toObject();
+                if (req.tutor?._id) {
+                    const tutorWallet = await Wallet.findOne({ owner: req.tutor._id }).select('balance');
+                    reqObj.tutorBalance = tutorWallet ? round(tutorWallet.balance) : 0;
+                } else {
+                    reqObj.tutorBalance = 0;
+                }
+                return reqObj;
+            })
+        );
+
         return {
-            requests,
+            requests: requestsWithBalance,
             pagination: {
                 currentPage: pageNum,
                 totalPages: Math.ceil(total / limitNum),

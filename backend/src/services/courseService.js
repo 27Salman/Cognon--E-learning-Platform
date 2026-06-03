@@ -2,6 +2,8 @@ const Course = require('../models/Course');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
 const Category = require('../models/Category');
+const Cart = require('../models/Cart');
+const Wishlist = require('../models/Wishlist');
 const { COURSE_STATUS } = require('../config/constants');
 
 const courseService = {
@@ -63,6 +65,9 @@ const courseService = {
         }
 
         await Lesson.deleteMany({ course: courseId });
+
+        await Cart.updateMany({}, { $pull: { items: { course: courseId } } });
+        await Wishlist.updateMany({}, { $pull: { courses: courseId } });
 
         await User.findByIdAndUpdate(
             tutorId,

@@ -289,7 +289,7 @@ const adminService = {
         const [students, totalFiltered, allStudents] = await Promise.all([
             User.find(query)
                 .select('-password')
-                .sort({ name: 1})
+                .sort({ createdAt: -1})
                 .skip(skip)
                 .limit(limitNum),
             User.countDocuments(query),

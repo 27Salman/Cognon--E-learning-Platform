@@ -7,116 +7,196 @@ const salesReportService = {
 
     generateSalesPDF(reportData, res) {
         const { summary, chartData, orders, dateFrom, dateTo } = reportData;
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
+        const pathMod = require('path');
+        const FONT_REGULAR = pathMod.join(__dirname, '../../assets/fonts/Roboto-Regular.ttf');
+        const FONT_BOLD    = pathMod.join(__dirname, '../../assets/fonts/Roboto-Bold.ttf');
+        const INR = (n) => '\u20B9' + Number(n || 0).toLocaleString('en-IN', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
+
+        const doc = new PDFDocument({ margin: 0, size: 'A4' });
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=sales-report-${Date.now()}.pdf`);
         doc.pipe(res);
 
-        const purple = '#7c3aed';
-        const dark   = '#111827';
-        const gray   = '#6b7280';
-        const border = '#e5e7eb';
-        const light  = '#f5f3ff';
+        // ── Palette ───────────────────────────────────────────────────
+        const PURPLE       = '#6d28d9';
+        const PURPLE_MID   = '#7c3aed';
+        const PURPLE_LIGHT = '#ede9fe';
+        const WHITE        = '#ffffff';
+        const DARK         = '#111827';
+        const GRAY         = '#6b7280';
+        const LIGHT_GRAY   = '#f9fafb';
+        const BORDER       = '#e5e7eb';
 
-        doc.rect(0, 0, 595, 80).fill(purple);
-        doc.fontSize(24).font('Helvetica-Bold').fillColor('#ffffff').text('Cognon - Sales Report', 50, 25);
+        const PW = 595.28;
+        const ML = 40;
+        const MR = 40;
+        const CW = PW - ML - MR;  // 515.28
+
+        // ── Header band ───────────────────────────────────────────────
+        doc.rect(0, 0, PW, 80).fill(PURPLE);
+        doc.font(FONT_BOLD).fontSize(22).fillColor(WHITE)
+            .text('Cognon \u2014 Sales Report', ML, 20);
 
         const dateRange = dateFrom && dateTo
             ? `${new Date(dateFrom).toLocaleDateString('en-IN')} to ${new Date(dateTo).toLocaleDateString('en-IN')}`
             : 'All Time';
-        doc.fontSize(10).font('Helvetica').fillColor('#e9d5ff').text(`Period: ${dateRange}`, 50, 55);
-        doc.fontSize(9).fillColor(gray).text(`Generated: ${new Date().toLocaleString('en-IN')}`, 50, 90);
+        doc.font(FONT_REGULAR).fontSize(9).fillColor('#c4b5fd')
+            .text(`Period: ${dateRange}`, ML, 52);
 
-        // Summary
-        const boxes = [
-            { label: 'Total Revenue',    value: fmt(summary.totalRevenue) },
-            { label: 'Tutor Payouts',    value: fmt(summary.totalTutorRevenue) },
-            { label: 'Platform Revenue', value: fmt(summary.totalPlatformRevenue) },
-            { label: 'Total Orders',     value: String(summary.totalOrders) },
-            { label: 'Razorpay Orders',  value: String(summary.paymentMethods?.razorpay?.count || 0) },
-            { label: 'Wallet Orders',    value: String(summary.paymentMethods?.wallet?.count || 0) },
+        doc.rect(0, 80, PW, 3).fill('#4c1d95');
+
+        doc.font(FONT_REGULAR).fontSize(8).fillColor(GRAY)
+            .text(`Generated: ${new Date().toLocaleString('en-IN')}`, ML, 92);
+
+        // ── Summary cards — 3 per row, 2 rows ─────────────────────────
+        const cardW   = (CW - 20) / 3;  // ~165px, 10px gap
+        const cardH   = 58;
+        const cardGap = 10;
+        const cards = [
+            { label: 'Total Revenue',    value: INR(summary.totalRevenue),         highlight: true },
+            { label: 'Tutor Payouts',    value: INR(summary.totalTutorRevenue),     highlight: false },
+            { label: 'Platform Revenue', value: INR(summary.totalPlatformRevenue),  highlight: false },
+            { label: 'Total Orders',     value: String(summary.totalOrders),        highlight: false },
+            { label: 'Razorpay Orders',  value: String(summary.paymentMethods?.razorpay?.count || 0), highlight: false },
+            { label: 'Wallet Orders',    value: String(summary.paymentMethods?.wallet?.count || 0),   highlight: false },
         ];
-        const boxW = 115, boxH = 55, boxY = 110, gap = 10;
-        boxes.forEach((b, i) => {
-            const bx = 50 + i * (boxW + gap);
-            doc.rect(bx, boxY, boxW, boxH).fill(light);
-            doc.fontSize(8).font('Helvetica').fillColor(gray).text(b.label, bx + 8, boxY + 8, { width: boxW - 16 });
-            doc.fontSize(12).font('Helvetica-Bold').fillColor(dark).text(b.value, bx + 8, boxY + 24, { width: boxW - 16 });
+
+        const cardStartY = 108;
+        cards.forEach((card, i) => {
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+            const cx = ML + col * (cardW + cardGap);
+            const cy = cardStartY + row * (cardH + 8);
+
+            doc.rect(cx, cy, cardW, cardH).fill(card.highlight ? PURPLE_MID : LIGHT_GRAY);
+            doc.font(FONT_REGULAR).fontSize(8)
+               .fillColor(card.highlight ? '#c4b5fd' : GRAY)
+               .text(card.label, cx + 10, cy + 10, { width: cardW - 20 });
+            doc.font(FONT_BOLD).fontSize(14)
+               .fillColor(card.highlight ? WHITE : DARK)
+               .text(card.value, cx + 10, cy + 26, { width: cardW - 20 });
         });
 
-        // Period  
-        let y = 185;
-        doc.fontSize(12).font('Helvetica-Bold').fillColor(dark).text('Period Breakdown', 50, y);
-        y += 18;
+        // ── Period Breakdown table ─────────────────────────────────────
+        // Period(90) | Orders(45) | Revenue(105) | Platform(105) | Tutor Payout(105)
+        // Widths = 450, gaps (4×16) = 64 → total = 514 ≈ CW ✓
+        let y = cardStartY + 2 * (cardH + 8) + 20;
 
-        const cols  = [50, 155, 255, 360, 460];
-        const heads = ['Period', 'Orders', 'Revenue', 'Platform', 'Tutor Payout'];
-        doc.rect(50, y, 495, 16).fill('#ede9fe');
-        doc.fontSize(8).font('Helvetica-Bold').fillColor(dark);
-        heads.forEach((h, i) => doc.text(h, cols[i], y + 4, { width: 95 }));
-        y += 18;
+        doc.font(FONT_BOLD).fontSize(11).fillColor(DARK).text('Period Breakdown', ML, y);
+        y += 16;
 
-        doc.fontSize(8).font('Helvetica').fillColor(dark);
+        const P_COLS = (() => {
+            const widths = [90, 45, 105, 105, 105];
+            const gaps   = [0,  16,  16,  16,  16];
+            const xs = [];
+            let cur = ML;
+            widths.forEach((w, i) => { xs.push({ x: cur, w }); cur += w + gaps[i]; });
+            return xs;
+        })();
+        const P_HEADS = ['Period', 'Orders', 'Revenue', 'Platform', 'Tutor Payout'];
+
+        doc.rect(ML, y, CW, 22).fill(PURPLE_LIGHT);
+        doc.font(FONT_BOLD).fontSize(8).fillColor(PURPLE_MID);
+        P_HEADS.forEach((h, i) => {
+            const align = i === 0 ? 'left' : 'right';
+            doc.text(h, P_COLS[i].x + (i === 0 ? 6 : 0), y + 7,
+                { width: P_COLS[i].w, align });
+        });
+        y += 24;
+
+        doc.font(FONT_REGULAR).fontSize(8).fillColor(DARK);
         chartData.forEach((row, idx) => {
             if (y > 730) { doc.addPage(); y = 50; }
-            if (idx % 2 === 0) doc.rect(50, y - 2, 495, 14).fill('#fafafa');
-            doc.fillColor(dark);
-            doc.text(row.period,                cols[0], y, { width: 95 });
-            doc.text(String(row.orders),        cols[1], y, { width: 95 });
-            doc.text(fmt(row.revenue),          cols[2], y, { width: 95 });
-            doc.text(fmt(row.platformRevenue),  cols[3], y, { width: 95 });
-            doc.text(fmt(row.tutorRevenue),     cols[4], y, { width: 95 });
-            y += 14;
+            if (idx % 2 === 1) doc.rect(ML, y - 2, CW, 16).fill('#faf8ff');
+            doc.fillColor(DARK);
+            const pVals = [
+                row.period,
+                String(row.orders),
+                INR(row.revenue),
+                INR(row.platformRevenue),
+                INR(row.tutorRevenue),
+            ];
+            pVals.forEach((v, i) => {
+                const align = i === 0 ? 'left' : 'right';
+                doc.text(v, P_COLS[i].x + (i === 0 ? 6 : 0), y,
+                    { width: P_COLS[i].w, align, lineBreak: false });
+            });
+            y += 16;
+            doc.moveTo(ML, y - 1).lineTo(ML + CW, y - 1)
+                .strokeColor(BORDER).lineWidth(0.3).stroke();
         });
 
-
-        y += 12;
+        // ── Order Details table ────────────────────────────────────────
+        // Order ID(100) | Student(65) | Course(115) | Amount(60) | Tutor(60) | Date(55) | Coupon(50)
+        // Widths = 505, gaps (6×2) = 12 → total = 517 ≈ CW ✓
+        y += 16;
         if (y > 680) { doc.addPage(); y = 50; }
-        doc.fontSize(12).font('Helvetica-Bold').fillColor(dark).text('Order Details', 50, y);
-        y += 18;
 
-        const oCols  = [50,  145, 215, 340, 395, 455, 510];
-        const oWidths= [90,   65, 120,  50,  55,  50,  80];
-        const oHeads = ['Order ID', 'Student', 'Course', 'Amount', 'Tutor', 'Date', 'Coupon'];
+        doc.font(FONT_BOLD).fontSize(11).fillColor(DARK).text('Order Details', ML, y);
+        y += 16;
 
-        doc.rect(50, y, 545, 16).fill('#ede9fe');
-        doc.fontSize(8).font('Helvetica-Bold').fillColor(dark);
-        oHeads.forEach((h, i) => doc.text(h, oCols[i], y + 4, { width: oWidths[i] }));
-        y += 18;
+        const O_COLS = (() => {
+            // Order ID(95) | Student(62) | Course(112) | Amount(58) | Tutor(58) | Date(52) | Coupon(48)
+            // Widths = 485, gaps (6×5) = 30 → total = 515 = CW ✓
+            const widths = [95, 62, 112, 58, 58, 52, 48];
+            const gaps   = [0,   5,   5,   5,  5,  5,  5];
+            const xs = [];
+            let cur = ML;
+            widths.forEach((w, i) => { xs.push({ x: cur, w }); cur += w + gaps[i]; });
+            return xs;
+        })();
+        const O_HEADS = ['Order ID', 'Student', 'Course', 'Amount', 'Tutor', 'Date', 'Coupon'];
 
-        const ROW_H = 15;
+        doc.rect(ML, y, CW, 22).fill(PURPLE_LIGHT);
+        doc.font(FONT_BOLD).fontSize(7.5).fillColor(PURPLE_MID);
+        O_HEADS.forEach((h, i) => {
+            const align = i <= 2 ? 'left' : 'right';
+            doc.text(h, O_COLS[i].x + (i <= 2 ? 4 : 0), y + 7,
+                { width: O_COLS[i].w, align });
+        });
+        y += 24;
+
+        const trunc = (s, n) => s && s.length > n ? s.slice(0, n - 1) + '\u2026' : (s || '-');
         let rowIdx = 0;
-        doc.fontSize(7.5).font('Helvetica').fillColor(dark);
-
-        const trunc = (str, maxChars) =>
-            str.length > maxChars ? str.substring(0, maxChars - 1) + '…' : str;
+        doc.font(FONT_REGULAR).fontSize(7.5).fillColor(DARK);
 
         for (const order of orders) {
             for (const courseItem of order.courses) {
                 if (y > 760) { doc.addPage(); y = 50; }
-                if (rowIdx % 2 === 0) doc.rect(50, y - 2, 545, ROW_H).fill('#fafafa');
-                doc.fillColor(dark);
+                if (rowIdx % 2 === 1) doc.rect(ML, y - 2, CW, 15).fill('#faf8ff');
+                doc.fillColor(DARK);
 
-                const tutorName   = courseItem.tutor?.name || '-';
-                const courseTitle = courseItem.courseTitle || '-';
-                const date        = new Date(order.orderDate).toLocaleDateString('en-IN');
-                const courseAmt   = fmt(courseItem.discountedPrice || 0);
-
-                doc.text(trunc(order.orderId, 17),           oCols[0], y, { width: oWidths[0], lineBreak: false });
-                doc.text(trunc(order.user?.name || '-', 12), oCols[1], y, { width: oWidths[1], lineBreak: false });
-                doc.text(trunc(courseTitle, 22),             oCols[2], y, { width: oWidths[2], lineBreak: false });
-                doc.text(courseAmt,                          oCols[3], y, { width: oWidths[3], lineBreak: false });
-                doc.text(trunc(tutorName, 10),               oCols[4], y, { width: oWidths[4], lineBreak: false });
-                doc.text(date,                               oCols[5], y, { width: oWidths[5], lineBreak: false });
-                doc.text(trunc(order.couponCode || '-', 10), oCols[6], y, { width: oWidths[6], lineBreak: false });
-                y += ROW_H;
+                const vals = [
+                    trunc(order.orderId, 18),
+                    trunc(order.user?.name || '-', 11),
+                    trunc(courseItem.courseTitle || '-', 20),
+                    INR(courseItem.discountedPrice || 0),
+                    trunc(courseItem.tutor?.name || '-', 10),
+                    new Date(order.orderDate).toLocaleDateString('en-IN'),
+                    trunc(order.couponCode || '-', 9),
+                ];
+                vals.forEach((v, i) => {
+                    const align = i <= 2 ? 'left' : 'right';
+                    doc.text(v, O_COLS[i].x + (i <= 2 ? 4 : 0), y,
+                        { width: O_COLS[i].w, align, lineBreak: false });
+                });
+                y += 15;
                 rowIdx++;
+
+                doc.moveTo(ML, y - 1).lineTo(ML + CW, y - 1)
+                    .strokeColor(BORDER).lineWidth(0.3).stroke();
             }
         }
 
-        doc.fontSize(8).font('Helvetica').fillColor(gray)
-            .text('Cognon Learning Platform - Confidential', 50, 800, { align: 'center', width: 495 });
+        // ── Footer ────────────────────────────────────────────────────
+        const PH = 841.89;
+        doc.rect(0, PH - 40, PW, 40).fill(PURPLE);
+        doc.font(FONT_BOLD).fontSize(8).fillColor(WHITE)
+            .text('Cognon Learning Platform \u2022 Confidential', 0, PH - 24,
+                { align: 'center', width: PW });
 
         doc.end();
     },
@@ -216,112 +296,208 @@ const salesReportService = {
 
     generateTutorPDF(reportData, tutorName, res){
         const { summary, courseBreakdown, transactions, dateFrom, dateTo } = reportData;
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
+        const path = require('path');
+        const FONT_REGULAR = path.join(__dirname, '../../assets/fonts/Roboto-Regular.ttf');
+        const FONT_BOLD    = path.join(__dirname, '../../assets/fonts/Roboto-Bold.ttf');
+        const INR = (n) => '\u20B9' + Number(n || 0).toLocaleString('en-IN', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
+
+        const doc = new PDFDocument({ margin: 0, size: 'A4' });
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=earnings-report-${Date.now()}.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename=tutor-sales-${Date.now()}.pdf`);
         doc.pipe(res);
 
-        const purple = '#7c3aed';
-        const dark   = '#111827';
-        const gray   = '#6b7280';
-        const light  = '#f5f3ff';
+        // ── Palette ───────────────────────────────────────────────────
+        const PURPLE      = '#6d28d9';
+        const PURPLE_MID  = '#7c3aed';
+        const PURPLE_LIGHT = '#ede9fe';
+        const WHITE       = '#ffffff';
+        const DARK        = '#111827';
+        const GRAY        = '#6b7280';
+        const LIGHT_GRAY  = '#f9fafb';
+        const BORDER      = '#e5e7eb';
+        const GREEN       = '#059669';
 
-        // Header
-        doc.rect(0, 0, 595, 80).fill(purple);
-        doc.fontSize(22).font('Helvetica-Bold').fillColor('#ffffff')
-            .text('Cognon - Earnings Report', 50, 22);
-        doc.fontSize(10).font('Helvetica').fillColor('#e9d5ff')
-            .text(`Tutor: ${tutorName}`, 50, 50);
+        const PW = 595.28;
+        const ML = 40;
+        const MR = 40;
+        const CW = PW - ML - MR;  // 515.28
+
+        // ── Header band ───────────────────────────────────────────────
+        doc.rect(0, 0, PW, 90).fill(PURPLE);
+        doc.font(FONT_BOLD).fontSize(22).fillColor(WHITE)
+            .text('Cognon \u2014 Earnings Report', ML, 20);
 
         const dateRange = dateFrom && dateTo
             ? `${new Date(dateFrom).toLocaleDateString('en-IN')} to ${new Date(dateTo).toLocaleDateString('en-IN')}`
             : 'All Time';
-        doc.fontSize(9).fillColor('#e9d5ff').text(`Period: ${dateRange}`, 300, 50);
-        doc.fontSize(9).fillColor(gray).text(`Generated: ${new Date().toLocaleString('en-IN')}`, 50, 90);
 
-        // Summary 
-        const boxes = [
-            { label: 'Your Earnings',    value: fmt(summary.totalEarnings) },
-            { label: 'Gross Revenue',    value: fmt(summary.totalGross) },
-            { label: 'Platform Fee',     value: fmt(summary.platformFee) },
-            { label: 'Total Sales',      value: String(summary.totalEnrollments) },
-            { label: 'Razorpay Orders',  value: String(summary.paymentMethods?.razorpay?.count || 0) },
-            { label: 'Wallet Orders',    value: String(summary.paymentMethods?.wallet?.count || 0) },
+        doc.font(FONT_REGULAR).fontSize(9).fillColor('#c4b5fd')
+            .text(`Tutor: ${tutorName}`, ML, 52)
+            .text(`Period: ${dateRange}`, ML + 200, 52);
+
+        doc.rect(0, 90, PW, 3).fill('#4c1d95');
+
+        // Generated timestamp
+        doc.font(FONT_REGULAR).fontSize(8).fillColor(GRAY)
+            .text(`Generated: ${new Date().toLocaleString('en-IN')}`, ML, 102);
+
+        // ── Summary cards — 3 per row, 2 rows ─────────────────────────
+        const cardW = (CW - 20) / 3;  // ~165px each, 10px gap
+        const cardH = 58;
+        const cardGap = 10;
+        const cards = [
+            { label: 'Your Earnings',   value: INR(summary.totalEarnings),    highlight: true },
+            { label: 'Gross Revenue',   value: INR(summary.totalGross),        highlight: false },
+            { label: 'Platform Fee',    value: INR(summary.platformFee),       highlight: false },
+            { label: 'Total Sales',     value: String(summary.totalEnrollments), highlight: false },
+            { label: 'Razorpay Orders', value: String(summary.paymentMethods?.razorpay?.count || 0), highlight: false },
+            { label: 'Wallet Orders',   value: String(summary.paymentMethods?.wallet?.count || 0),   highlight: false },
         ];
-        const bw = 115, bh = 55, bY = 110, gap = 10;
-        boxes.forEach((b, i) => {
-            const bx = 50 + i * (bw + gap);
-            doc.rect(bx, bY, bw, bh).fill(light);
-            doc.fontSize(8).font('Helvetica').fillColor(gray).text(b.label, bx + 8, bY + 8, { width: bw - 16 });
-            doc.fontSize(12).font('Helvetica-Bold').fillColor(dark).text(b.value, bx + 8, bY + 24, { width: bw - 16 });
+
+        let cardY = 118;
+        cards.forEach((card, i) => {
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+            const cx = ML + col * (cardW + cardGap);
+            const cy = cardY + row * (cardH + 8);
+
+            doc.rect(cx, cy, cardW, cardH).fill(card.highlight ? PURPLE_MID : LIGHT_GRAY);
+            doc.font(FONT_REGULAR).fontSize(8)
+               .fillColor(card.highlight ? '#c4b5fd' : GRAY)
+               .text(card.label, cx + 10, cy + 10, { width: cardW - 20 });
+            doc.font(FONT_BOLD).fontSize(14)
+               .fillColor(card.highlight ? WHITE : DARK)
+               .text(card.value, cx + 10, cy + 26, { width: cardW - 20 });
         });
 
-        // Course 
-        let y = 185;
-        doc.fontSize(12).font('Helvetica-Bold').fillColor(dark).text('Earnings by Course', 50, y);
-        y += 18;
+        // ── Earnings by Course table ───────────────────────────────────
+        // Columns: Course(165) | Sales(40) | Avg Price(75) | Gross(75) | Earnings(75) | Category(65)
+        // Total = 165+40+75+75+75+65 = 495 + 5 gaps of 4 = 515 ✓
+        let y = cardY + 2 * (cardH + 8) + 20;
 
-        const cCols   = [50, 200, 255, 320, 390, 460];
-        const cWidths = [145, 50, 60, 65, 65, 70];
-        const cHeads  = ['Course', 'Sales', 'Avg Price', 'Gross', 'Your Earnings', 'Category'];
+        doc.font(FONT_BOLD).fontSize(11).fillColor(DARK).text('Earnings by Course', ML, y);
+        y += 16;
 
-        doc.rect(50, y, 495, 16).fill('#ede9fe');
-        doc.fontSize(7.5).font('Helvetica-Bold').fillColor(dark);
-        cHeads.forEach((h, i) => doc.text(h, cCols[i], y + 4, { width: cWidths[i] }));
-        y += 18;
+        // Column definitions — x positions computed from widths
+        // Course(160) | Sales(38) | Avg Price(72) | Gross(72) | Earnings(72) | Category(61)
+        // Widths sum = 475, gaps (5×8) = 40 → total = 515 = CW ✓
+        const C_COLS = (() => {
+            const widths = [160, 38, 72, 72, 72, 61];
+            const gaps   = [0,    8,  8,  8,  8,  8];
+            const xs = [];
+            let cur = ML;
+            widths.forEach((w, i) => { xs.push({ x: cur, w }); cur += w + gaps[i]; });
+            return xs;
+        })();
+        const C_HEADS = ['Course', 'Sales', 'Avg Price', 'Gross', 'Your Earnings', 'Category'];
 
-        doc.fontSize(7.5).font('Helvetica').fillColor(dark);
+        // Header row
+        doc.rect(ML, y, CW, 22).fill(PURPLE_LIGHT);
+        doc.font(FONT_BOLD).fontSize(7.5).fillColor(PURPLE_MID);
+        C_HEADS.forEach((h, i) => {
+            const align = i === 0 ? 'left' : 'right';
+            doc.text(h, C_COLS[i].x + (i === 0 ? 6 : 0), y + 7,
+                { width: C_COLS[i].w, align });
+        });
+        y += 24;
+
+        doc.font(FONT_REGULAR).fontSize(8).fillColor(DARK);
         courseBreakdown.forEach((c, idx) => {
             if (y > 730) { doc.addPage(); y = 50; }
-            if (idx % 2 === 0) doc.rect(50, y - 2, 495, 14).fill('#fafafa');
-            doc.fillColor(dark);
-            doc.text(c.courseTitle,          cCols[0], y, { width: cWidths[0] });
-            doc.text(String(c.enrollments),  cCols[1], y, { width: cWidths[1] });
-            doc.text(fmt(c.avgSalePrice),    cCols[2], y, { width: cWidths[2] });
-            doc.text(fmt(c.grossRevenue),    cCols[3], y, { width: cWidths[3] });
-            doc.text(fmt(c.earnings),        cCols[4], y, { width: cWidths[4] });
-            doc.text(c.courseCategory,       cCols[5], y, { width: cWidths[5] });
-            y += 14;
+            if (idx % 2 === 1) doc.rect(ML, y - 2, CW, 16).fill('#faf8ff');
+            doc.fillColor(DARK);
+
+            const trunc = (s, n) => s && s.length > n ? s.slice(0, n - 1) + '\u2026' : (s || '-');
+            const vals = [
+                trunc(c.courseTitle, 28),
+                String(c.enrollments),
+                INR(c.avgSalePrice),
+                INR(c.grossRevenue),
+                INR(c.earnings),
+                c.courseCategory || '-',
+            ];
+            vals.forEach((v, i) => {
+                const align = i === 0 ? 'left' : 'right';
+                doc.text(v, C_COLS[i].x + (i === 0 ? 6 : 0), y,
+                    { width: C_COLS[i].w, align, lineBreak: false });
+            });
+            y += 16;
+
+            // Row separator
+            doc.moveTo(ML, y - 1).lineTo(ML + CW, y - 1)
+                .strokeColor(BORDER).lineWidth(0.3).stroke();
         });
 
-        // Transaction 
-        y += 12;
+        // ── Transaction Details table ──────────────────────────────────
+        // Columns: Date(60) | Course(150) | Student(80) | Sale Price(75) | Earnings(75) | Coupon(60)
+        // Total = 60+150+80+75+75+60 = 500 + 5 gaps of 3 = 515 ✓
+        y += 16;
         if (y > 680) { doc.addPage(); y = 50; }
-        doc.fontSize(12).font('Helvetica-Bold').fillColor(dark).text('Transaction Details', 50, y);
-        y += 18;
 
-        const tCols   = [50, 110, 230, 310, 370, 430, 480];
-        const tWidths = [55, 115, 75, 55, 55, 45, 65];
-        const tHeads  = ['Date', 'Course', 'Student', 'Sale Price', 'Earnings', 'Coupon'];
+        doc.font(FONT_BOLD).fontSize(11).fillColor(DARK).text('Transaction Details', ML, y);
+        y += 16;
 
-        doc.rect(50, y, 495, 16).fill('#ede9fe');
-        doc.fontSize(7.5).font('Helvetica-Bold').fillColor(dark);
-        ['Date','Course','Student','Sale Price','Earnings','Coupon'].forEach((h, i) =>
-            doc.text(h, tCols[i], y + 4, { width: tWidths[i] })
-        );
-        y += 18;
+        const T_COLS = (() => {
+            // Date(55) | Course(145) | Student(75) | Sale Price(70) | Earnings(70) | Coupon(55)
+            // Widths sum = 470, gaps (5×9) = 45 → total = 515 = CW ✓
+            const widths = [55, 145, 75, 70, 70, 55];
+            const gaps   = [0,   9,   9,  9,  9,  9];
+            const xs = [];
+            let cur = ML;
+            widths.forEach((w, i) => { xs.push({ x: cur, w }); cur += w + gaps[i]; });
+            return xs;
+        })();
+        const T_HEADS = ['Date', 'Course', 'Student', 'Sale Price', 'Earnings', 'Coupon'];
+
+        // Header row
+        doc.rect(ML, y, CW, 22).fill(PURPLE_LIGHT);
+        doc.font(FONT_BOLD).fontSize(7.5).fillColor(PURPLE_MID);
+        T_HEADS.forEach((h, i) => {
+            const align = i <= 2 ? 'left' : 'right';
+            doc.text(h, T_COLS[i].x + (i <= 2 ? 4 : 0), y + 7,
+                { width: T_COLS[i].w, align });
+        });
+        y += 24;
 
         let rowIdx = 0;
-        doc.fontSize(7).font('Helvetica').fillColor(dark);
+        doc.font(FONT_REGULAR).fontSize(7.5).fillColor(DARK);
         transactions.forEach(t => {
             if (y > 760) { doc.addPage(); y = 50; }
-            if (rowIdx % 2 === 0) doc.rect(50, y - 2, 495, 13).fill('#fafafa');
-            doc.fillColor(dark);
-            doc.text(new Date(t.date).toLocaleDateString('en-IN'), tCols[0], y, { width: tWidths[0] });
-            doc.text(t.courseTitle,  tCols[1], y, { width: tWidths[1] });
-            doc.text(t.student,      tCols[2], y, { width: tWidths[2] });
-            doc.text(fmt(t.salePrice), tCols[3], y, { width: tWidths[3] });
-            doc.text(fmt(t.earnings),  tCols[4], y, { width: tWidths[4] });
-            doc.text(t.coupon,         tCols[5], y, { width: tWidths[5] });
-            y += 13;
+            if (rowIdx % 2 === 1) doc.rect(ML, y - 2, CW, 15).fill('#faf8ff');
+            doc.fillColor(DARK);
+
+            const trunc = (s, n) => s && s.length > n ? s.slice(0, n - 1) + '\u2026' : (s || '-');
+            const vals = [
+                new Date(t.date).toLocaleDateString('en-IN'),
+                trunc(t.courseTitle, 24),
+                trunc(t.student, 14),
+                INR(t.salePrice),
+                INR(t.earnings),
+                t.coupon || '-',
+            ];
+            vals.forEach((v, i) => {
+                const align = i <= 2 ? 'left' : 'right';
+                doc.text(v, T_COLS[i].x + (i <= 2 ? 4 : 0), y,
+                    { width: T_COLS[i].w, align, lineBreak: false });
+            });
+            y += 15;
             rowIdx++;
+
+            doc.moveTo(ML, y - 1).lineTo(ML + CW, y - 1)
+                .strokeColor(BORDER).lineWidth(0.3).stroke();
         });
 
-        doc.fontSize(8).font('Helvetica').fillColor(gray)
-            .text('Cognon Learning Platform - Confidential', 50, 800, { align: 'center', width: 495 });
-        doc.end();
+        // ── Footer ────────────────────────────────────────────────────
+        const PH = 841.89;
+        doc.rect(0, PH - 40, PW, 40).fill(PURPLE);
+        doc.font(FONT_BOLD).fontSize(8).fillColor(WHITE)
+            .text('Cognon Learning Platform \u2022 Confidential', 0, PH - 24,
+                { align: 'center', width: PW });
 
+        doc.end();
     },
 
     async generateTutorExcel(reportData, tutorName, res){
