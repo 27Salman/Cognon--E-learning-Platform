@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Camera, Lock, Pencil, BookOpen, CheckCircle, User, Clock, Award } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
-import StudentChangePasswordModal from '../../components/student/StudentChangePasswordModal';
+import ChangePasswordModal from '../../components/common/ChangePasswordModal';
 import { studentAPI } from '../../api/studentAPI';
+import { ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 import { validatePhone, validateImageFile } from '../../utils/helpers';
 
@@ -400,8 +401,11 @@ export default function StudentProfile() {
         </div>
 
         {showPasswordModal && (
-            <StudentChangePasswordModal
-                studentInfo={{ ...studentInfo, email: formData.email }}
+            <ChangePasswordModal
+                userInfo={{ ...studentInfo, email: formData.email }}
+                onRequestOTP={() => studentAPI.requestPasswordChange()}
+                onVerify={(pwd, otp) => studentAPI.verifyPasswordChange(pwd, otp)}
+                onSuccessRedirect={ROUTES.LOGIN}
                 onClose={() => setShowPasswordModal(false)}
             />
         )}

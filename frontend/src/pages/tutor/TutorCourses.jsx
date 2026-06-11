@@ -6,6 +6,7 @@ import { fetchMyCourses, deleteCourse } from '../../store/slices/courseSlice';
 import { courseAPI } from '../../api/courseAPI';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
+import { ROUTES } from '../../utils/constants';
 
 function StatusToggle({ course, onToggle }) {
     const isListed = course.status === 'published';
@@ -101,7 +102,7 @@ export default function TutorCourses() {
                     My Courses ({pagination.totalCourses})
                 </h1>
                 <button
-                    onClick={() => navigate('/tutor/courses/new')}
+                    onClick={() => navigate(ROUTES.TUTOR_CREATE_COURSE)}
                     className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" />

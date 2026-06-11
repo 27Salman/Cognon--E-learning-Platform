@@ -35,7 +35,7 @@ const Signup = () => {
 
   const handleRoleChange = (role) => {
     setActiveRole(role);
-    const path = role === ROLES.TUTOR ? '/tutor/register' : '/signup';
+    const path = role === ROLES.TUTOR ? ROUTES.TUTOR_SIGNUP : ROUTES.SIGNUP;
     navigate(path, { replace: true });
   };
 
@@ -133,7 +133,7 @@ const Signup = () => {
 
       if (signupUser.fulfilled.match(resultAction)) {
         toast.success('Registration successful! Please verify your email.');
-        navigate('/verify-otp', { 
+        navigate(ROUTES.VERIFY_OTP, { 
           replace: true,
           state: { 
             email: formData.email.trim(),

@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Camera, Lock, Pencil } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import ChangeEmailModal from '../../components/tutor/ChangeEmailModal';
-import ChangePasswordModal from '../../components/tutor/ChangePasswordModal';
+import ChangePasswordModal from '../../components/common/ChangePasswordModal';
+import { ROUTES } from '../../utils/constants';
 import { tutorAPI } from '../../api/tutorAPI';
 import { validateImageFile } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -340,7 +341,10 @@ export default function TutorProfile() {
             {/* Change Password Modal */}
             {showPasswordModal && (
                 <ChangePasswordModal
-                    tutorInfo={{ ...tutorInfo, email: formData.email }}
+                    userInfo={{ ...tutorInfo, email: formData.email }}
+                    onRequestOTP={() => tutorAPI.requestPasswordChange()}
+                    onVerify={(pwd, otp) => tutorAPI.verifyPasswordChange(pwd, otp)}
+                    onSuccessRedirect={ROUTES.LOGIN}
                     onClose={() => setShowPasswordModal(false)}
                 />
             )}

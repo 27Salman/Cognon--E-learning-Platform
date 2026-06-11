@@ -5,6 +5,7 @@ import Button from '../../components/common/Button';
 import { validateEmail } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 import { FiArrowLeft } from 'react-icons/fi';
+import { ROUTES } from '../../utils/constants';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ const ForgotPassword = () => {
 
       if (response.ok) {
         toast.success('Password reset OTP sent to your email!');
-        navigate('/reset-password', { state: { email: trimmed, timestamp: Date.now() }, replace: true });
+        navigate(ROUTES.RESET_PASSWORD, { state: { email: trimmed, timestamp: Date.now() }, replace: true });
       } else {
         toast.error(data.message || 'Failed to send reset OTP');
       }

@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import StudentSidebar from '../student/StudentSidebar'
 import StudentNavbar from '../student/StudentNavbar';
-import StudentSidebar from '../student/StudentSidebar';
 import Footer from '../common/Footer';
 import { studentAPI } from '../../api/studentAPI';
+import { ROUTES } from '../../utils/constants';
 
 export default function StudentLayout() {
     const { user } = useSelector((state) => state.auth);
+    const location = useLocation();
+
+    const hideSidebar = location.pathname === ROUTES.STUDENT_DASHBOARD; 
 
     const [studentInfo, setStudentInfo] = useState(() => {
         try {
@@ -66,16 +70,18 @@ export default function StudentLayout() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <StudentNavbar studentInfo={studentInfo} />
+            <StudentNavbar />
 
-            <div className="flex flex-1">
-                <StudentSidebar studentInfo={studentInfo} />
+            <div className='flex flex-1'>
+
+                { !hideSidebar && <StudentSidebar studentInfo={studentInfo} />}
 
                 <main className="flex-1 overflow-y-auto min-h-0">
                     <div className="min-h-full">
                         <Outlet context={{ studentInfo, onUpdateProfile: handleUpdateProfile }} />
                     </div>
                 </main>
+
             </div>
 
             <Footer />

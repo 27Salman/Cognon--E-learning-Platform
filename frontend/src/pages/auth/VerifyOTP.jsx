@@ -6,6 +6,7 @@ import axios from '../../api/axios';
 import Button from '../../components/common/Button';
 import toast from 'react-hot-toast';
 import { verifyOTP } from '../../api/authAPI';
+import { ROUTES, ROLES } from '../../utils/constants';
 
 const VerifyOTP = () => {
     const navigate = useNavigate();
@@ -37,7 +38,7 @@ const VerifyOTP = () => {
     };
 
     useEffect(() => {
-        if (!email) { navigate('/signup', { replace: true }); return; }
+        if (!email) { navigate(ROUTES.SIGNUP, { replace: true }); return; }
         startTimers();
         return () => { clearInterval(resendIntervalRef.current); clearInterval(expiryIntervalRef.current); };
     }, [email, navigate]);
@@ -77,7 +78,7 @@ const VerifyOTP = () => {
                     dispatch(setCredentials({ token: response.token, user: response.user }));
                 }
                 toast.success('Email verified successfully!');
-                const dashboard = role === 'tutor' ? '/tutor/dashboard' : '/student/dashboard';
+                const dashboard = role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD : ROUTES.STUDENT_DASHBOARD;
                 navigate(dashboard, { replace: true });
             }
         } catch (error) {

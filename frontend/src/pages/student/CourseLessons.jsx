@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCourseDetails, fetchCourseProgress } from '../../store/slices/studentSlice';
 import { BookOpen, ChevronLeft, CheckCircle, Clock, PlayCircle } from 'lucide-react';
+import { ROUTES } from '../../utils/constants';
 
 export default function CourseLessons() {
     const { courseId } = useParams();
@@ -44,7 +45,7 @@ export default function CourseLessons() {
             {/* Header */}
             <div className="flex items-center gap-3 mb-2">
                 <button
-                    onClick={() => navigate('/student/my-courses')}
+                    onClick={() => navigate(ROUTES.STUDENT_MY_COURSES)}
                     className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
                 >
                     <ChevronLeft className="w-4 h-4" />

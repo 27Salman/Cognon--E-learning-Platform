@@ -105,7 +105,7 @@ export default function MyCourses() {
                 <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 mb-4 text-lg">You haven't enrolled in any courses yet</p>
                 <button
-                    onClick={() => navigate('/student/courses')}
+                    onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
                     className="px-6 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
                 >
                     Browse Courses

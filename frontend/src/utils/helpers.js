@@ -112,5 +112,5 @@ export const validateImageFile = (file) => {
   if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
     return `Image must be smaller than ${MAX_IMAGE_SIZE_MB}MB`;
   }
-  return null; // null means valid
+  return null; 
 };

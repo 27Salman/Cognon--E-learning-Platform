@@ -4,6 +4,7 @@ import { studentAPI } from '../../api/studentAPI';
 import { ArrowLeft, BookOpen, CheckCircle, XCircle, Clock, Download, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSelector } from 'react-redux';
+import { ROUTES } from '../../utils/constants';
 
 const STATUS_ICON = {
     completed: <CheckCircle className="w-5 h-5 text-green-500" />,
@@ -49,7 +50,7 @@ function RetryPaymentButton({ order, user, onOrderUpdated }) {
                             couponCode: order.couponCode || null
                         });
                         toast.success('Payment successful!');
-                        navigate('/student/order-success', {
+                        navigate(ROUTES.STUDENT_ORDER_SUCCESS, {
                             state: { order: verifyRes.data }
                         });
                     } catch {
@@ -72,8 +73,6 @@ function RetryPaymentButton({ order, user, onOrderUpdated }) {
         } catch (err) {
             const msg = err.response?.data?.message || 'Failed to initiate retry';
             toast.error(msg);
-            // If the order was marked as failed due to duplicate purchase, reload it
-            // so the retry button disappears
             if (msg.includes('already purchased') || msg.includes('already cancelled')) {
                 onOrderUpdated?.();
             }
@@ -109,7 +108,7 @@ export default function StudentOrderDetail() {
                 setOrder(res.data);
             } catch {
                 toast.error('Order not found');
-                navigate('/student/orders');
+                navigate(ROUTES.STUDENT_ORDERS);
             } finally {
                 setLoading(false);
             }
@@ -131,15 +130,12 @@ export default function StudentOrderDetail() {
             const daysSince = (Date.now() - orderDate) / (1000 * 60 * 60 * 24);
             const withinWindow = daysSince <= 3;
 
-            let progressExceeded = false;
             const enrolledCourses = user?.studentProfile?.enrolledCourses || [];
             
             for (const courseItem of order.courses) {
-                const enrollment = enrolledCourses.find(
+                enrolledCourses.find(
                     e => e.courseId.toString() === courseItem.course.toString()
                 );
-                if (enrollment) {
-                }
             }
 
             if (!withinWindow) {
@@ -172,7 +168,7 @@ export default function StudentOrderDetail() {
             toast.success(res.message || 'Order cancelled successfully');
             setShowCancelModal(false);
             setOrder(prev => ({ ...prev, paymentStatus: 'refunded' }));
-            setTimeout(()=> navigate('/student/wallet'), 1500);
+            setTimeout(()=> navigate(ROUTES.STUDENT_WALLET), 1500);
 
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to cancel order');
@@ -184,7 +180,7 @@ export default function StudentOrderDetail() {
     return (
         <div className="p-6">
             <button
-                onClick={() => navigate('/student/orders')}
+                onClick={() => navigate(ROUTES.STUDENT_ORDERS)}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-8 text-base font-medium"
             >
                 <ArrowLeft className="w-5 h-5" /> Back to Orders
@@ -346,7 +342,7 @@ export default function StudentOrderDetail() {
                     {order.paymentStatus === 'completed' && (
                         <div className="flex flex-col gap-3">
                             <button
-                                onClick={() => navigate('/student/my-courses')}
+                            onClick={() => navigate(ROUTES.STUDENT_MY_COURSES)}
                                 className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700"
                             >
                                 Go to My Courses

@@ -24,7 +24,7 @@ const LISTING_FILTERS = [
   { value: 'archived', label: 'Unlisted' },
 ];
 
-// ─── Course Card ───────────────────────────────────────────────────────────────
+// Course Card 
 function CourseCard({ course, onView }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
@@ -76,7 +76,7 @@ function CourseCard({ course, onView }) {
   );
 }
 
-// ─── Pagination ────────────────────────────────────────────────────────────────
+// Pagination 
 function Pagination({ current, total, onChange }) {
   if (total <= 1) return null;
   const pages = Array.from({ length: total }, (_, i) => i + 1);
@@ -111,16 +111,14 @@ function Pagination({ current, total, onChange }) {
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 export default function AdminCourseManagement() {
-  const [view, setView] = useState('categories'); // 'categories' | 'search' | 'detail'
+  const [view, setView] = useState('categories'); 
 
-  // Category view state
-  const [categoryCourses, setCategoryCourses] = useState({}); // { categoryName: { courses, page, totalPages } }
+  const [categoryCourses, setCategoryCourses] = useState({}); 
   const [categories, setCategories] = useState([]);
   const [catLoading, setCatLoading] = useState(false);
 
-  // Search view state
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('');
   const [listingFilter, setListingFilter] = useState('all');
@@ -129,14 +127,12 @@ export default function AdminCourseManagement() {
   const [searchPagination, setSearchPagination] = useState({});
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // Detail view state
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [lessonPage, setLessonPage] = useState(1);
   const LESSONS_PER_PAGE = 6;
 
-  // ── Load categories on mount ───────────────────────────────────────
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -144,13 +140,12 @@ export default function AdminCourseManagement() {
         const cats = res.data.categories || [];
         setCategories(cats);
       } catch {
-        // ignore
       }
     };
     loadCategories();
   }, []);
 
-  // ── Load courses per category ─────────────────────────────────────
+  // Load courses per category 
   const loadCategoryPage = useCallback(async (categoryName, page = 1) => {
     setCatLoading(true);
     try {
@@ -164,7 +159,6 @@ export default function AdminCourseManagement() {
         }
       }));
     } catch {
-      // ignore
     } finally {
       setCatLoading(false);
     }
@@ -180,7 +174,7 @@ export default function AdminCourseManagement() {
     }
   }, [view, categories]);
 
-  // ── Search view fetch ──────────────────────────────────────────────
+  //  Search view fetch 
   const fetchSearchCourses = useCallback(async () => {
     setSearchLoading(true);
     try {
@@ -201,7 +195,6 @@ export default function AdminCourseManagement() {
     if (view === 'search') fetchSearchCourses();
   }, [view, search, sort, listingFilter, searchPage]);
 
-  // ── Open detail ──────────────────────────────────────────────────
   const openDetail = async (course) => {
     setDetailLoading(true);
     setView('detail');
@@ -217,7 +210,6 @@ export default function AdminCourseManagement() {
     }
   };
 
-  // ── List / Unlist ───────────────────────────────────────────────────────
   const handleToggleListing = async (courseId, currentStatus) => {
     const newStatus = currentStatus === 'published' ? 'archived' : 'published';
     try {
@@ -226,21 +218,17 @@ export default function AdminCourseManagement() {
       if (selectedCourse?._id === courseId) {
         setSelectedCourse(prev => ({ ...prev, status: newStatus }));
       }
-      // Refresh category courses
       categories.forEach(cat => loadCategoryPage(cat.name, categoryCourses[cat.name]?.page || 1));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update status');
     }
   };
 
-  // ── Paginated lessons ─────────────────────────────────────────────────────
   const lessons = selectedCourse?.lessons || [];
   const totalLessonPages = Math.ceil(lessons.length / LESSONS_PER_PAGE);
   const visibleLessons = lessons.slice((lessonPage - 1) * LESSONS_PER_PAGE, lessonPage * LESSONS_PER_PAGE);
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // VIEW: DETAIL
-  // ─────────────────────────────────────────────────────────────────────────────
   if (view === 'detail') {
     if (detailLoading) {
       return (
@@ -282,31 +270,57 @@ export default function AdminCourseManagement() {
               </div>
             </div>
 
-            {/* Course Structure */}
-            <h2 className="text-lg font-bold text-gray-800 mb-3">Course Structure</h2>
-            <div className="space-y-2 mb-6">
-              {lessons.length === 0 ? (
-                <p className="text-gray-400 text-sm">No lessons added yet.</p>
-              ) : lessons.map((lesson, i) => (
-                <div key={lesson._id || i} className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm ${
-                  i % 4 === 0 ? 'bg-purple-50' :
-                  i % 4 === 1 ? 'bg-orange-50' :
-                  i % 4 === 2 ? 'bg-green-50' : 'bg-blue-50'
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded flex items-center justify-center ${
-                      i % 4 === 0 ? 'bg-purple-200' :
-                      i % 4 === 1 ? 'bg-orange-200' :
-                      i % 4 === 2 ? 'bg-green-200' : 'bg-blue-200'
-                    }`}>
-                      <BookOpen className="w-3 h-3" />
-                    </div>
-                    <span className="font-medium text-gray-700">{lesson.title}</span>
-                  </div>
-                  <span className="text-gray-500 text-xs">{lesson.duration ? `${lesson.duration} mins` : '—'}</span>
-                </div>
-              ))}
-            </div>
+            {/* Course Structure — chapter-wise */}
+              <h2 className="text-lg font-bold text-gray-800 mb-3">Course Structure</h2>
+              <div className="space-y-3 mb-6">
+                {lessons.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No lessons added yet.</p>
+                ) : (() => {
+                  const chapMap = {};
+                  lessons.forEach(l => {
+                    const key = l.chapter?.order ?? 1;
+                    if (!chapMap[key]) chapMap[key] = { order: key, title: l.chapter?.title ?? 'Chapter 1', lessons: [] };
+                    chapMap[key].lessons.push(l);
+                  });
+                  return Object.values(chapMap)
+                    .sort((a, b) => a.order - b.order)
+                    .map(ch => ({ ...ch, lessons: ch.lessons.slice().sort((a, b) => a.order - b.order) }))
+                    .map(chapter => (
+                      <div key={chapter.order} className="border border-gray-200 rounded-xl overflow-hidden">
+                        {/* Chapter header */}
+                        <div className="flex items-center gap-3 px-4 py-3 bg-purple-50">
+                          <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-bold">{chapter.order}</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-800 text-sm">
+                              Chapter {chapter.order}: {chapter.title}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {chapter.lessons.length} lesson{chapter.lessons.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        {/* Lessons */}
+                        <div className="divide-y divide-gray-100">
+                          {chapter.lessons.map((lesson, idx) => (
+                            <div key={lesson._id || idx} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition text-sm">
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                  <BookOpen className="w-3 h-3 text-purple-600" />
+                                </div>
+                                <span className="font-medium text-gray-700">{idx + 1}. {lesson.title}</span>
+                              </div>
+                              <span className="text-gray-400 text-xs flex-shrink-0">
+                                {lesson.duration ? `${lesson.duration} mins` : '—'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                })()}
+              </div>
 
             {/* Action buttons */}
             <div className="flex gap-3">
@@ -504,9 +518,7 @@ export default function AdminCourseManagement() {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // VIEW: SEARCH
-  // ─────────────────────────────────────────────────────────────────────────────
   if (view === 'search') {
     return (
       <div className="p-6">
@@ -582,9 +594,8 @@ export default function AdminCourseManagement() {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+
   // VIEW: CATEGORIES (default)
-  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="p-6">
       {/* Top search bar */}

@@ -79,7 +79,7 @@ export default function StudentOrderList() {
                     <h2 className="text-2xl font-semibold text-gray-600 mb-3">No orders yet</h2>
                     <p className="text-gray-400 mb-8 text-lg">Your purchase history will appear here</p>
                     <button
-                        onClick={() => navigate('/student/courses')}
+                        onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
                         className="bg-purple-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-purple-700"
                     >
                         Browse Courses

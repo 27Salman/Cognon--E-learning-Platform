@@ -15,7 +15,6 @@ const Home = () => {
 
   const [courses, setCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
-  const [currentTutorSlide, setCurrentTutorSlide] = useState(0);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/catalog/courses?limit=8&sort=-createdAt`)
@@ -198,13 +197,13 @@ const Home = () => {
             </div>
             <div className="flex gap-4">
               <button
-                onClick={() => navigate('/tutor/register')}
+                onClick={() => navigate(ROUTES.TUTOR_SIGNUP)}
                 className="px-8 py-3 bg-white text-purple-600 rounded-md hover:bg-gray-100 transition font-medium text-sm whitespace-nowrap"
               >
                 Register as Tutor
               </button>
               <button
-                onClick={() => navigate('/tutor/login')}
+                onClick={() => navigate(ROUTES.LOGIN_TUTOR)}
                 className="px-8 py-3 border-2 border-white text-white rounded-md hover:bg-purple-700 transition font-medium text-sm whitespace-nowrap"
               >
                 Tutor Login
@@ -351,7 +350,7 @@ const Home = () => {
                       <span className="text-sm text-gray-600">{tutor.students} students</span>
                     </div>
                     <button 
-                      onClick={() => navigate('/tutor/register')}
+                      onClick={() => navigate(ROUTES.TUTOR_SIGNUP)}
                       className="w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium"
                     >
                       View Profile
@@ -581,7 +580,7 @@ const Home = () => {
               <h4 className="font-semibold mb-4 text-sm">For Tutors</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><Link to="/tutor/register" className="hover:text-white transition">Become a Tutor</Link></li>
-                <li><Link to="/tutor/login" className="hover:text-white transition">Tutor Login</Link></li>
+                <li><Link to={ROUTES.LOGIN_TUTOR} className="hover:text-white transition">Tutor Login</Link></li>
                 <li><a href="#" className="hover:text-white transition">Resources</a></li>
                 <li><a href="#" className="hover:text-white transition">Support</a></li>
               </ul>

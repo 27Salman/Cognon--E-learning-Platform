@@ -2,6 +2,7 @@ import { Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Logo from "../common/Logo";
+import { ROUTES } from "../../utils/constants";
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
@@ -26,7 +27,7 @@ export default function TutorNavbar({ tutorInfo }) {
             <div className="flex items-center justify-between px-6 py-4">
 
                 {/* Left - Logo */}
-                <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/tutor/dashboard')}>
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate(ROUTES.TUTOR_DASHBOARD)}>
                     <Logo size={40} />
                     <div>
                         <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
@@ -41,7 +42,7 @@ export default function TutorNavbar({ tutorInfo }) {
                     </button>
 
                     <button
-                        onClick={() => navigate("/tutor/profile")}
+                        onClick={() => navigate(ROUTES.TUTOR_PROFILE)}
                         className="cursor-pointer focus:outline-none"
                     >
                         {showImage ? (

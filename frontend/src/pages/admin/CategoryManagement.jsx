@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../../api/adminAPI';
-import { Search, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SearchInput from '../../components/common/SearchInput';
+import Pagination from '../../components/common/Pagination';
+import StatusBadge from '../../components/common/StatusBadge';
 
 const initialForm = { name: '', description: '' };
 
@@ -109,14 +112,12 @@ export default function CategoryManagement() {
       </div>
 
       {/* Search */}
-      <div className="relative mb-5 max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search categories..."
+      <div className="mb-5">
+        <SearchInput
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          onChange={e => { setSearch(e.target.value); setPage(1); }}
+          onClear={() => { setSearch(''); setPage(1); }}
+          placeholder="Search categories..."
         />
       </div>
 
@@ -141,11 +142,7 @@ export default function CategoryManagement() {
                 <td className="px-5 py-3 font-medium text-gray-800">{cat.name}</td>
                 <td className="px-5 py-3 text-gray-500 max-w-xs truncate">{cat.description || '—'}</td>
                 <td className="px-5 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    cat.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                    {cat.isActive ? 'Active' : 'Inactive'}
-                  </span>
+                  <StatusBadge status={cat.isActive ? 'active' : 'inactive'} />
                 </td>
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-2">
@@ -167,21 +164,14 @@ export default function CategoryManagement() {
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-5">
-          {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              className={`w-8 h-8 rounded-full text-sm font-medium ${
-                p === page ? 'bg-purple-600 text-white' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      )}
+      <Pagination
+        currentPage={pagination.currentPage ?? page}
+        totalPages={pagination.totalPages}
+        totalFiltered={pagination.totalFiltered ?? 0}
+        limit={pagination.limit ?? 10}
+        onPageChange={setPage}
+        itemLabel="categories"
+      />
 
       {/* Modal */}
       {showModal && (

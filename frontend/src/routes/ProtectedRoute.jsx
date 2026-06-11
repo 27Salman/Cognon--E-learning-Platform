@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCurrentUser } from '../store/slices/authSlice';
 import Loader from '../components/common/Loader';
-
+import { ROUTES } from '../utils/constants';
 
 const ProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
@@ -18,8 +18,8 @@ const ProtectedRoute = ({ children }) => {
 
   if (!isAuthenticated) {
     const loginPath = location.pathname.startsWith('/admin')
-      ? '/admin/login'
-      : '/login';
+      ? ROUTES.LOGIN_ADMIN
+      : ROUTES.LOGIN;
     return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
 

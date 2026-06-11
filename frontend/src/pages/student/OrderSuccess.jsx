@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle, BookOpen, ArrowRight, ShoppingBag, Download } from 'lucide-react';
 import StudentNavbar from '../../components/student/StudentNavbar';
 import { useSelector } from 'react-redux';
+import { ROUTES } from '../../utils/constants';
 
 export default function OrderSuccess() {
     const navigate = useNavigate();
@@ -10,13 +11,13 @@ export default function OrderSuccess() {
     const order = location.state?.order;
 
     if (!order) {
-        navigate('/student/dashboard');
+        navigate(ROUTES.STUDENT_DASHBOARD);
         return null;
     }
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <StudentNavbar studentInfo={user} />
+            <StudentNavbar />
             <div className="max-w-lg mx-auto px-4 py-16 text-center">
                 {/* Success Icon — matches Figma */}
                 <div className="flex justify-center mb-6">
@@ -96,7 +97,7 @@ export default function OrderSuccess() {
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                     <button
-                        onClick={() => navigate('/student/my-courses')}
+                        onClick={() => navigate(ROUTES.STUDENT_MY_COURSES)}
                         className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 flex items-center justify-center gap-2"
                     >
                         <ShoppingBag className="w-4 h-4" />
@@ -112,7 +113,7 @@ export default function OrderSuccess() {
                 </div>
 
                 <button
-                    onClick={() => navigate('/student/courses')}
+                    onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
                     className="mt-4 text-sm text-purple-600 hover:underline"
                 >
                     Continue Shopping

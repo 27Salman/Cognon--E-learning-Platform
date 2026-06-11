@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { adminAPI } from '../../api/adminAPI';
 import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { ROUTES } from '../../utils/constants';
 
 const STATUS_COLORS = {
   completed: 'text-green-600',
@@ -49,7 +50,7 @@ export default function AdminOrderDetail() {
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500">Order not found</p>
-        <button onClick={() => navigate('/admin/orders')} className="mt-4 text-purple-600 hover:underline text-sm">
+        <button onClick={() => navigate(ROUTES.ADMIN_ORDERS)} className="mt-4 text-purple-600 hover:underline text-sm">
           Back to Orders
         </button>
       </div>
@@ -63,7 +64,7 @@ export default function AdminOrderDetail() {
     <div className="p-5 max-w-3xl">
       {/* Back Button */}
       <button
-        onClick={() => navigate('/admin/orders')}
+        onClick={() => navigate(ROUTES.ADMIN_ORDERS)}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 text-sm font-medium"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Orders

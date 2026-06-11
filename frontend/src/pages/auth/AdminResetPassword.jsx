@@ -5,6 +5,7 @@ import Input from '../../components/common/Input';
 import toast from 'react-hot-toast';
 import { FiArrowLeft } from 'react-icons/fi';
 import { validatePassword } from '../../utils/helpers';
+import { ROUTES } from '../../utils/constants';
 
 const AdminResetPassword = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const AdminResetPassword = () => {
   };
 
   useEffect(() => {
-    if (!email) { navigate('/admin/forgot-password'); return; }
+    if (!email) { navigate(ROUTES.ADMIN_FORGOT_PASSWORD); return; }
     startTimers();
     return () => { clearInterval(resendRef.current); clearInterval(expiryRef.current); };
   }, [email, navigate]);
@@ -105,7 +106,7 @@ const AdminResetPassword = () => {
       const data = await res.json();
       if (res.ok) {
         toast.success('Password reset successful! Redirecting to login...');
-        setTimeout(() => navigate('/admin/login', { replace: true }), 2000);
+        setTimeout(() => navigate(ROUTES.LOGIN_ADMIN, { replace: true }), 2000);
       } else {
         toast.error(data.message || 'Failed to reset password');
       }
@@ -228,7 +229,7 @@ const AdminResetPassword = () => {
         )}
 
         <div className="mt-6 text-center">
-          <Link to="/admin/login" className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium">
+          <Link to={ROUTES.LOGIN_ADMIN} className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium">
             <FiArrowLeft className="mr-2" />
             Back to admin login
           </Link>

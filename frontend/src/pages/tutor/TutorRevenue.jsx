@@ -92,14 +92,21 @@ function RevenueList({ onCourseClick }) {
             <h1 className="text-2xl font-bold text-gray-800 mb-6">Revenue</h1>
 
             {/* Overall summary cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 {[
                     {
-                        label: 'Total Earnings',
-                        value: `₹${(data?.summary?.totalEarnings || 0).toLocaleString('en-IN')}`,
-                        sub: 'Your share after platform cut',
+                        label: 'Available Earnings',
+                        value: `₹${(data?.summary?.availableEarnings || 0).toLocaleString('en-IN')}`,
+                        sub: 'Cleared — ready to withdraw',
                         icon: DollarSign,
                         color: 'bg-green-50 text-green-600',
+                    },
+                    {
+                        label: 'Pending (On Hold)',
+                        value: `₹${(data?.summary?.pendingEarnings || 0).toLocaleString('en-IN')}`,
+                        sub: 'Will release after hold period',
+                        icon: TrendingUp,
+                        color: 'bg-yellow-50 text-yellow-600',
                     },
                     {
                         label: 'Total Revenue',
