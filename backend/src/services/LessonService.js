@@ -1,9 +1,23 @@
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 
+function groupByChapter(lessons) {
+    const map = {};
+    for (const lesson of lessons) {
+        const key = lesson.chapter?.order ?? 1;
+        if (!map[key]) {
+            map[key] = { order: key, title: lesson.chapter?.title ?? 'Chapter 1', lessons: [] };
+        }
+        map[key].lessons.push(lesson);
+    }
+    return Object.values(map)
+        .sort((a, b) => a.order - b.order)
+        .map(ch => ({ ...ch, lessons: ch.lessons.sort((a, b) => a.order - b.order) }));
+}
+
 const lessonService = {
     async createLesson(courseId, tutorId, lessonData, files = {}) {
-        const { title, description, videoUrl, duration, order } = lessonData;
+        const { title, description, videoUrl, duration, order, chapterTitle, chapterOrder } = lessonData;
 
         const course = await Course.findOne({ _id: courseId, tutor: tutorId });
         if (!course) throw new Error('Course not found or unauthorized');
@@ -20,6 +34,10 @@ const lessonService = {
             duration: duration || 0,
             order,
             course: courseId,
+            chapter: {
+                title: chapterTitle || 'Chapter 1',
+                order: parseInt(chapterOrder) || 1
+            },
             thumbnail: files.thumbnail ? files.thumbnail[0].filename : null,
             pdfNotes: files.pdfNotes ? files.pdfNotes[0].filename : null,
         });
@@ -37,7 +55,7 @@ const lessonService = {
             throw new Error('Unauthorized to update this lesson');
         }
 
-        const { title, description, videoUrl, duration, order } = updateData;
+        const { title, description, videoUrl, duration, order, chapterTitle, chapterOrder } = updateData;
 
         if (order && order !== lesson.order) {
             const existingLesson = await Lesson.findOne({ 
@@ -55,6 +73,12 @@ const lessonService = {
         if (videoUrl !== undefined) lesson.videoUrl = videoUrl;
         if (duration !== undefined) lesson.duration = duration;
         if (order) lesson.order = order;
+        if (chapterTitle !== undefined || chapterOrder !== undefined) {
+            lesson.chapter = {
+                title: chapterTitle ?? lesson.chapter?.title ?? 'Chapter 1',
+                order: parseInt(chapterOrder) || lesson.chapter?.order || 1
+            };
+        }
         if (files.thumbnail) lesson.thumbnail = files.thumbnail[0].filename;
         if (files.pdfNotes) lesson.pdfNotes = files.pdfNotes[0].filename;
 
@@ -94,11 +118,10 @@ const lessonService = {
         }
 
         const lessons = await Lesson.find({ course: courseId })
-            .sort({ order: 1 })
+            .sort({ 'chapter.order': 1, order: 1 })
             .populate('course', 'title status');
 
-        // Strip sensitive content for unenrolled users
-        return lessons.map(l => {
+        const mappedLessons = lessons.map(l => {
             const lesson = l.toJSON();
             if (!isOwner && !isEnrolled) {
                 delete lesson.videoUrl;
@@ -107,6 +130,11 @@ const lessonService = {
             }
             return lesson;
         });
+
+        return {
+            lessons: mappedLessons,
+            chapters: groupByChapter(mappedLessons)
+        };
     },
 
     async getLessonById(lessonId, userId = null, userRole = null) {

@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
+const Wallet = require('../models/Wallet');
 const { COURSE_STATUS } = require('../config/constants');
 const { deleteOldProfileImage } = require('./fileService');
 const { createOTP, verifyOTP } = require('./otpService');
@@ -269,6 +270,24 @@ const tutorService = {
             totalCourses: courses.length,
             activeCourses: courses.filter(c => c.status === COURSE_STATUS.PUBLISHED).length
         };
+
+        const wallet = await Wallet.findOne({ owner: tutorId });
+        const now = new Date();
+        let pendingEarnings = 0;
+        let availableEarnings = 0;
+        if (wallet) {
+            for (const txn of wallet.transactions) {
+                if (txn.type !== 'credit') continue;
+                if (txn.status === 'cancelled' || txn.status === 'refunded') continue;
+                if (txn.status === 'pending' && txn.releaseAt && txn.releaseAt > now) {
+                    pendingEarnings += txn.amount;
+                } else if (txn.status === 'completed') {
+                    availableEarnings += txn.amount;
+                }
+            }
+        }
+        summary.pendingEarnings = Math.round(pendingEarnings);
+        summary.availableEarnings = Math.round(availableEarnings);
 
         return {
             summary,

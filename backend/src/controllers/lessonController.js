@@ -20,8 +20,8 @@ exports.deleteLesson = asyncHandler(async (req, res) => {
 exports.getLessonsByCourse = asyncHandler(async (req, res) => {
     const userId = req.user ? req.user.id : null;
     const userRole = req.user ? req.user.role : null;
-    const data = await lessonService.getLessonsByCourse(req.params.courseId, userId, userRole);
-    res.status(HTTP_STATUS.OK).json({ success: true, data });
+    const result = await lessonService.getLessonsByCourse(req.params.courseId, userId, userRole);
+    res.status(HTTP_STATUS.OK).json({ success: true, ...result });
 });
 
 exports.getLessonById = asyncHandler(async (req, res) => {

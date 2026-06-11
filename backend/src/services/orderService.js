@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
 const walletService = require('./walletService');
+const CourseRestrict = require('../models/CourseRestrict');
 
 const orderService = {
     async getStudentOrders(userId, { search, status, page = 1, limit = 5 } = {}) {
@@ -157,7 +158,11 @@ const orderService = {
         return order;
     },
 
-    async cancelCourse(userId, orderId) {
+    async cancelCourse(userId, orderId, courseId) {
+
+        const restriction = await CourseRestrict.findOne({ userId, courseId });
+        if (restriction?.blocked) throw new Error(`You are not eligible to buy the course`);
+
         const order = await Order.findOne({ _id: orderId, user: userId });
         if (!order) throw new Error('Order not found');
 
@@ -209,6 +214,22 @@ const orderService = {
         await User.findByIdAndUpdate(userId, {
             $pull: { 'studentProfile.enrolledCourses': { courseId: { $in: courseIds } } }
         });
+
+        let latestRestriction = await CourseRestrict.findOne({ userId, courseId });
+        if (!latestRestriction) {
+            latestRestriction = await CourseRestrict.create({
+                userId,
+                courseId,
+                refundCount: 1
+            });
+        } else {
+            latestRestriction.refundCount++;
+            if (latestRestriction.refundCount >= 3) {
+                latestRestriction.blocked = true;
+                latestRestriction.blockedAt = new Date();
+            }
+            await latestRestriction.save();
+        }
 
         return { message: 'Course cancelled and refund credited to your wallet', refundAmount: order.finalAmount };
     },

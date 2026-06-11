@@ -32,7 +32,8 @@ exports.getMyWallet = asyncHandler( async (req, res) => {
 });
 
 exports.cancelOrder = asyncHandler( async (req, res) =>{
-    const result = await orderService.cancelCourse(req.user.id, req.params.orderId);
+    const { courseId } = req.body;
+    const result = await orderService.cancelCourse(req.user.id, req.params.orderId, courseId);
     res.status(HTTP_STATUS.OK).json({ success: true, ...result});
 });
 
