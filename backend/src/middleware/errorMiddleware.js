@@ -3,8 +3,10 @@ const { HTTP_STATUS } = require("../config/constants");
 exports.errorHandler = (err, req, res, next) => {
     console.error('Error:', err);
 
-    let error = {...err};
-    error.message = err.message;
+    let error = {
+        message: err.message, 
+        statusCode: err.statusCode
+    };
     
     if(err.name === 'CastError'){
         error.message = 'Resource not found';

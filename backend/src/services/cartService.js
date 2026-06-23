@@ -93,9 +93,18 @@ const cartService = {
 
         const validItems = [];
         let subtotal = 0;
+        const removedItems = [];
+
 
         for (const item of cart.items) {
             if (!item.course || item.course.status !== COURSE_STATUS.PUBLISHED) {
+
+                if(item.course && item.course.title){
+                    removedItems.push(item.course.title);
+                }else{
+                    removedItems.push('An unavailable Course');
+                }
+
                 continue;
             }
 
@@ -126,13 +135,18 @@ const cartService = {
 
             subtotal += finalPrice;
         }
+        if(removedItems.length > 0){
+            cart.items = cart.items.filter( item => item.course && item.course.status === COURSE_STATUS.PUBLISHED);
+            await cart.save();
+        }
 
         const round2 = (n) => Math.round(n * 100) / 100;
 
         return {
             items: validItems,
             subtotal: round2(subtotal),
-            totalItems: validItems.length
+            totalItems: validItems.length,
+            removedItems,
         };
     },
 

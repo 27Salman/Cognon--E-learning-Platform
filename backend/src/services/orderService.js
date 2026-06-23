@@ -158,10 +158,7 @@ const orderService = {
         return order;
     },
 
-    async cancelCourse(userId, orderId, courseId) {
-
-        const restriction = await CourseRestrict.findOne({ userId, courseId });
-        if (restriction?.blocked) throw new Error(`You are not eligible to buy the course`);
+    async cancelCourse(userId, orderId) {
 
         const order = await Order.findOne({ _id: orderId, user: userId });
         if (!order) throw new Error('Order not found');
@@ -178,6 +175,7 @@ const orderService = {
         if (daysSincePurchase > 3) throw new Error('Refund window has expired (3 days from purchase)');
 
         const student = await User.findById(userId).select('studentProfile.enrolledCourses');
+        
         for (const courseItem of order.courses) {
             const totalLessons = await Lesson.countDocuments({ course: courseItem.course });
             if (totalLessons === 0) continue;
@@ -215,20 +213,23 @@ const orderService = {
             $pull: { 'studentProfile.enrolledCourses': { courseId: { $in: courseIds } } }
         });
 
-        let latestRestriction = await CourseRestrict.findOne({ userId, courseId });
-        if (!latestRestriction) {
-            latestRestriction = await CourseRestrict.create({
-                userId,
-                courseId,
-                refundCount: 1
-            });
-        } else {
-            latestRestriction.refundCount++;
-            if (latestRestriction.refundCount >= 3) {
-                latestRestriction.blocked = true;
-                latestRestriction.blockedAt = new Date();
+        let latestRestriction = await CourseRestrict.findOne({ userId, courseId: { $in: courseIds } });
+        for (const cId of courseIds) {
+            let restriction = await CourseRestrict.findOne({ userId, courseId: cId });
+            if (!restriction) {
+                restriction = await CourseRestrict.create({
+                    userId,
+                    courseId: cId,
+                    refundCount: 1
+                });
+            } else {
+                restriction.refundCount++;
+                if (restriction.refundCount >= 3) {
+                    restriction.blocked = true;
+                    restriction.blockedAt = new Date();
+                }
+                await restriction.save();
             }
-            await latestRestriction.save();
         }
 
         return { message: 'Course cancelled and refund credited to your wallet', refundAmount: order.finalAmount };
