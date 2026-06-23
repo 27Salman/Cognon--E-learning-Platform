@@ -59,3 +59,240 @@ input[type="password"]::-webkit-credentials-auto-fill-button,
 input[type="password"]::-webkit-strong-password-auto-fill-button {
   display: none !important;
 }
+
+/* ============================================
+   SCROLL REVEAL ANIMATIONS
+   ============================================ */
+
+/* Individual element reveals (observed directly) */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(50px);
+  will-change: transform, opacity;
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-reveal.revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* Direction variants */
+.scroll-reveal.from-left {
+  transform: translateX(-60px);
+}
+
+.scroll-reveal.from-right {
+  transform: translateX(60px);
+}
+
+.scroll-reveal.from-scale {
+  transform: scale(0.85);
+}
+
+.scroll-reveal.from-left.revealed,
+.scroll-reveal.from-right.revealed,
+.scroll-reveal.from-scale.revealed {
+  transform: none;
+}
+
+/* Parent-triggered children: when parent gets .revealed, children animate in with stagger */
+.reveal-children > .reveal-child {
+  opacity: 0;
+  transform: translateY(40px);
+  will-change: transform, opacity;
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-children.revealed > .reveal-child {
+  opacity: 1;
+  transform: none;
+}
+
+/* Stagger delays */
+.reveal-children.revealed > .reveal-child:nth-child(1) { transition-delay: 0ms; }
+.reveal-children.revealed > .reveal-child:nth-child(2) { transition-delay: 120ms; }
+.reveal-children.revealed > .reveal-child:nth-child(3) { transition-delay: 240ms; }
+.reveal-children.revealed > .reveal-child:nth-child(4) { transition-delay: 360ms; }
+.reveal-children.revealed > .reveal-child:nth-child(5) { transition-delay: 480ms; }
+.reveal-children.revealed > .reveal-child:nth-child(6) { transition-delay: 600ms; }
+
+/* Scale variant for children */
+.reveal-children-scale > .reveal-child {
+  opacity: 0;
+  transform: scale(0.8);
+  will-change: transform, opacity;
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-children-scale.revealed > .reveal-child {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal-children-scale.revealed > .reveal-child:nth-child(1) { transition-delay: 0ms; }
+.reveal-children-scale.revealed > .reveal-child:nth-child(2) { transition-delay: 120ms; }
+.reveal-children-scale.revealed > .reveal-child:nth-child(3) { transition-delay: 240ms; }
+.reveal-children-scale.revealed > .reveal-child:nth-child(4) { transition-delay: 360ms; }
+
+/* ============================================
+   HERO FLOATING BLOBS
+   ============================================ */
+
+@keyframes floatBlob1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes floatBlob2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-25px, 15px) scale(1.08); }
+  66% { transform: translate(15px, -25px) scale(0.92); }
+}
+
+.hero-blob-1 {
+  animation: floatBlob1 8s ease-in-out infinite;
+}
+
+.hero-blob-2 {
+  animation: floatBlob2 10s ease-in-out infinite;
+}
+
+/* ============================================
+   HERO ENTRY ANIMATION (above fold — no observer)
+   ============================================ */
+
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes heroFadeLeft {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.hero-animate-text {
+  animation: heroFadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.hero-animate-visual {
+  animation: heroFadeLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+}
+
+/* ============================================
+   SHIMMER / SKELETON
+   ============================================ */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #e5e7eb 0%,
+    #f3f4f6 40%,
+    #e5e7eb 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ============================================
+   GRADIENT TEXT
+   ============================================ */
+
+.gradient-text {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 50%, #6d28d9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   SCROLLBAR HIDE (for carousels)
+   ============================================ */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   PATTERN OVERLAY (for CTA sections)
+   ============================================ */
+
+.pattern-dots {
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.1) 1px,
+    transparent 1px
+  );
+  background-size: 20px 20px;
+}
+
+/* ============================================
+   GLASSMORPHISM HEADER
+   ============================================ */
+
+.glass-header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ============================================
+   CARD GRADIENT BORDER HOVER
+   ============================================ */
+
+.card-gradient-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-gradient-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa, #6d28d9);
+  transform: scaleX(0);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: left;
+}
+
+.card-gradient-border:hover::before {
+  transform: scaleX(1);
+}
+
+/* ============================================
+   HERO IMAGE CONTAINER
+   ============================================ */
+
+.hero-image-container {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(124, 58, 237, 0.15);
+}
+
+.hero-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

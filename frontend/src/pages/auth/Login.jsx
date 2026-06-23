@@ -20,12 +20,23 @@ const Login = () => {
   const [activeRole, setActiveRole] = useState(initialRole);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [formErrors, setFormErrors] = useState({});
-  const [attemptsByKey, setAttemptsByKey] = useState({});
+  const [attemptsByKey, setAttemptsByKey] = useState(()=>{
+    try{
+      const saved = localStorage.getItem('cognon_login_attempts');
+      return saved ? JSON.parse(saved) : {};
+    }catch (e){
+      return {}
+    }
+  });
 
   const attemptKey = `${formData.email.trim().toLowerCase()}:${activeRole}`;
   const failedAttempts = attemptsByKey[attemptKey] || 0;
   const isLocked = failedAttempts >= MAX_ATTEMPTS;
   const attemptsRemaining = MAX_ATTEMPTS - failedAttempts;
+
+  useEffect(()=>{
+    localStorage.setItem('cognon_login_attempts', JSON.stringify(attemptsByKey));
+  },[attemptsByKey]);
 
   useEffect(() => {
     if (isLocked && submitBtnRef.current) {

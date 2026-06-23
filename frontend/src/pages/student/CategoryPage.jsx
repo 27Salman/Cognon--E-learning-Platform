@@ -51,9 +51,18 @@ function CourseCard({ course }) {
                         </div>
                         <span className="text-xs text-gray-600">{course.tutor?.name}</span>
                     </div>
-                    <span className="text-purple-600 font-bold text-sm">
-                        {course.price === 0 ? "Free" : `₹${course.price}`}
-                    </span>
+                        <div className="flex items-center gap-1.5">
+                            {course.offer && course.offer.discountedPrice < course.price ? (
+                                <>
+                                    <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
+                                    <span className="text-purple-600 font-bold text-sm">₹{course.offer.discountedPrice}</span>
+                                </>
+                            ) : (
+                                <span className="text-purple-600 font-bold text-sm">
+                                    {course.price === 0 ? "Free" : `₹${course.price}`}
+                                </span>
+                            )}
+                        </div>
                 </div>
             </div>
         </div>
@@ -78,12 +87,14 @@ export default function CategoryPage() {
     const [categoryPages, setCategoryPages] = useState({});
 
     useEffect(() => {
-        dispatch(fetchPublishedCourses({}));
-
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/public`)
-            .then(r => r.json())
-            .then(data => setAdminCategories(data?.data?.categories || []))
-            .catch(() => {});
+        const delayDebounce = setTimeout(()=>{
+            dispatch(fetchPublishedCourses({
+                search: searchValue,
+                category: categoryFilter,
+                sort: sortBy === 'newest' ? '-createdAt' : sortBy
+            }));
+        },300);
+        return () => clearTimeout(delayDebounce);
     }, [dispatch]);
 
     useEffect(() => {
@@ -123,19 +134,7 @@ export default function CategoryPage() {
         ? adminCategories.map(c => c.name)
         : [...new Set(catalog.map(c => c.category).filter(Boolean))].sort();
 
-    const filteredCatalog = catalog.filter(c => {
-        const matchSearch = !searchValue.trim() ||
-            c.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-            (c.category || "").toLowerCase().includes(searchValue.toLowerCase());
-        const matchCategory = !categoryFilter || c.category === categoryFilter;
-        return matchSearch && matchCategory;
-    });
-
-    const sortedCatalog = [...filteredCatalog].sort((a, b) => {
-        if (sortBy === "price_asc")  return (a.price || 0) - (b.price || 0);
-        if (sortBy === "price_desc") return (b.price || 0) - (a.price || 0);
-        return new Date(b.createdAt) - new Date(a.createdAt);
-    });
+    const sortedCatalog = catalog;
 
     const grouped = sortedCatalog.reduce((acc, course) => {
         const cat = course.category || "Other";

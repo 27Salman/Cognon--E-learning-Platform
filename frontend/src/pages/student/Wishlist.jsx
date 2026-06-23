@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { studentAPI } from '../../api/studentAPI';
 import { Heart, ShoppingCart, Trash2, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { ROUTES } from '../../utils/constants';
 
 const LIMIT = 5;
 

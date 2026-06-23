@@ -1,14 +1,172 @@
-﻿import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPublishedCourses, fetchEnrolledCourses } from '../../store/slices/studentSlice';
-import { BookOpen } from 'lucide-react';
+import {
+  BookOpen, Clock, Award, Flame, ChevronRight, Play, CheckCircle2,
+  TrendingUp, Compass, BookMarked, User, GraduationCap, ShieldAlert,
+  ArrowRight, Calendar, Star, CheckCircle, BarChart3, Palette, Briefcase, Code,
+  MonitorPlay, Target, Rocket
+} from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
+
+function useScrollReveal(threshold = 0.1) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          node.classList.add('revealed');
+          observer.unobserve(node);
+        }
+      },
+      { threshold }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [threshold]);
+
+  return ref;
+}
+
+function StudentCategoryCard({ cat, navigate, catalog }) {
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCoords({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+  };
+
+  const getCategoryCardDetails = (catName) => {
+    const lower = catName.toLowerCase();
+    if (lower.includes('design') || lower.includes('creative')) {
+      return {
+        icon: Palette,
+        color: 'from-pink-500 to-purple-600',
+        textColor: 'text-pink-600',
+        iconColor: 'bg-pink-50 text-pink-600 border-pink-100'
+      };
+    } else if (lower.includes('business') || lower.includes('strategy')) {
+      return {
+        icon: Briefcase,
+        color: 'from-blue-500 to-indigo-600',
+        textColor: 'text-blue-600',
+        iconColor: 'bg-blue-50 text-blue-600 border-blue-100'
+      };
+    } else if (lower.includes('develop') || lower.includes('tech') || lower.includes('code')) {
+      return {
+        icon: Code,
+        color: 'from-emerald-500 to-teal-600',
+        textColor: 'text-emerald-600',
+        iconColor: 'bg-emerald-50 text-emerald-600 border-emerald-100'
+      };
+    } else {
+      return {
+        icon: BarChart3,
+        color: 'from-purple-500 to-violet-600',
+        textColor: 'text-purple-600',
+        iconColor: 'bg-purple-50 text-purple-650 border-purple-100'
+      };
+    }
+  };
+
+  const details = getCategoryCardDetails(cat);
+  const Icon = details.icon;
+
+  return (
+    <div
+      onClick={() => navigate(`/student/categories?category=${encodeURIComponent(cat)}`)}
+      onMouseMove={handleMouseMove}
+      className="reveal-child relative bg-white rounded-2xl p-6 cursor-pointer border border-gray-200/80 shadow-sm hover:shadow-md hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 overflow-hidden group flex flex-col justify-between min-h-[180px]"
+    >
+      {/* Dynamic spotlight tracking overlay */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{
+          background: `radial-gradient(250px circle at ${coords.x}px ${coords.y}px, rgba(124, 58, 237, 0.06), transparent 80%)`
+        }}
+      />
+
+      {/* Decorative accent gradient mesh on hover */}
+      <div className={`absolute -right-16 -top-16 w-32 h-32 rounded-full bg-gradient-to-br ${details.color} opacity-0 group-hover:opacity-40 blur-xl transition-all duration-500 group-hover:scale-150 pointer-events-none`} />
+
+      <div className="relative z-10 flex flex-col h-full justify-between">
+        {/* Top: Icon and Title */}
+        <div>
+          <div className="flex justify-between items-start mb-4">
+            <div className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm ${details.iconColor}`}>
+              <Icon className="w-6 h-6" />
+            </div>
+          </div>
+
+          <h3 className="font-bold text-lg text-gray-900 mb-1 group-hover:text-purple-600 transition-colors">
+            {cat}
+          </h3>
+        </div>
+
+        {/* Bottom: Course count & Explore link */}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+          <p className={`text-xs font-semibold ${details.textColor}`}>
+            {catalog.filter(c => c.category === cat).length} Courses
+          </p>
+          <div className="flex items-center gap-1 text-purple-600 font-semibold group-hover:translate-x-1 transition-transform duration-300 text-xs">
+            <span>Explore</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const fallbackCourses = [
+  {
+    _id: 'fallback-1',
+    title: 'Introduction to UI/UX Design & Figma Prototyping',
+    tutor: { name: 'Dr. Sarah Johnson' },
+    category: 'Design',
+    price: 499,
+    thumbnailURL: ''
+  },
+  {
+    _id: 'fallback-2',
+    title: 'Full Stack Web Development Boot Camp with React',
+    tutor: { name: 'Prof. Michael Chen' },
+    category: 'Development',
+    price: 999,
+    thumbnailURL: ''
+  },
+  {
+    _id: 'fallback-3',
+    title: 'Digital Marketing & Growth Hacking Mastery',
+    tutor: { name: 'Lisa Martinez' },
+    category: 'Marketing',
+    price: 299,
+    thumbnailURL: ''
+  },
+  {
+    _id: 'fallback-4',
+    title: 'Business Strategy & Venture Capital Foundations',
+    tutor: { name: 'James Anderson' },
+    category: 'Business',
+    price: 0,
+    thumbnailURL: ''
+  }
+];
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { catalog, enrolledCourses } = useSelector(state => state.student);
+  const { catalog = [], enrolledCourses = [] } = useSelector(state => state.student);
+  const { user } = useSelector(state => state.auth);
 
   useEffect(() => {
     dispatch(fetchPublishedCourses({}));
@@ -16,43 +174,81 @@ const StudentDashboard = () => {
   }, [dispatch]);
 
   const enrolledIds = new Set(enrolledCourses.map(c => c._id));
-  const unenrolled = catalog.filter(c => !enrolledIds.has(c._id)).slice(0, 4);
+  const unenrolled = (catalog.length > 0 ? catalog.filter(c => !enrolledIds.has(c._id)) : fallbackCourses).slice(0, 4);
 
-  const uniqueCategories = [...new Set(catalog.map(c => c.category).filter(Boolean))].slice(0, 4);
+  const dbCategories = [...new Set(catalog.map(c => c.category).filter(Boolean))];
+  const uniqueCategories = dbCategories.length > 0 ? dbCategories.slice(0, 4) : ['Development', 'Design', 'Business', 'Marketing'];
+
+  const API_BASE = import.meta.env.VITE_API_URL
+    ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+    : 'http://localhost:5000';
+
+  const HERO_IMAGE_URL = `${API_BASE}/uploads/figma/home.jpg`;
+  const ABOUT_IMAGE_1 = `${API_BASE}/uploads/figma/young-man-study-at-computer-online-learning-vector-44559316.webp`;
+  const ABOUT_IMAGE_2 = `${API_BASE}/uploads/figma/e-learning-interactions-illustration-concept_114360-23713.avif`;
+  const TUTOR_IMAGE = `${API_BASE}/uploads/figma/tutor.jpg`;
+  const EXTRA_IMAGE = `${API_BASE}/uploads/figma/admin 1.jpg`;
+
+  /* Scroll Reveal Refs */
+  const catTitleRef = useScrollReveal();
+  const catGridRef = useScrollReveal();
+  const coursesTitleRef = useScrollReveal();
+  const coursesGridRef = useScrollReveal();
+  const aboutRef = useScrollReveal();
+  const joinUsRef = useScrollReveal();
+  const extraInfoRef = useScrollReveal();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pb-16">
 
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-purple-50 via-blue-50 to-white py-20">
-        <div className="w-full px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+      {/* Hero Section (Replaces generic dashboard header with matching Home Page layout structure) */}
+      <section className="relative bg-gradient-to-br from-purple-50 via-blue-50 to-white py-20 overflow-hidden">
+        {/* Floating background blobs */}
+        <div className="hero-blob-1 absolute top-10 right-1/4 w-72 h-72 bg-purple-200 opacity-20 rounded-full blur-3xl pointer-events-none" />
+        <div className="hero-blob-2 absolute bottom-10 left-10 w-96 h-96 bg-indigo-200 opacity-15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20 relative z-10">
+          <div className="grid md:grid-cols-2 gap-10 lg:gap-14 items-center">
+            
+            {/* Left Col: Hero Copy */}
             <div>
-              <h2 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-100 rounded-full text-purple-700 text-xs font-semibold mb-5 tracking-wide uppercase">
+                <Rocket className="w-3.5 h-3.5 text-purple-600" />
+                Start Learning Today
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-5 leading-tight">
                 We bring the<br />
                 <span className="text-purple-600">knowledge.</span><br />
                 We build the<br />
                 <span className="text-purple-600">experience.</span>
               </h2>
-              <p className="text-gray-600 mb-8 leading-relaxed text-sm">
+              <p className="text-gray-550 mb-7 leading-relaxed text-sm lg:text-base max-w-lg">
                 Bring learning to life with personalized activities, videos, and assessments that motivate students at every step of their journey.
               </p>
             </div>
-            <div className="relative">
-              <div className="bg-white rounded-3xl shadow-2xl p-6">
-                <div className="aspect-video bg-gradient-to-br from-cyan-400 via-blue-400 to-purple-500 rounded-2xl flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-7xl">💻</span>
+
+            {/* Right Col: Hero Image with glass badge */}
+            <div className="hero-animate-visual">
+              <div className="hero-image-container rounded-2xl overflow-hidden shadow-2xl relative">
+                <img
+                  src={HERO_IMAGE_URL}
+                  alt="Students collaborating and learning together on Cognon platform"
+                  className="w-full h-auto aspect-[4/3] object-cover"
+                  loading="eager"
+                />
+                {/* Overlay badge */}
+                <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm rounded-xl p-3 flex items-center gap-3 shadow-lg">
+                  <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <GraduationCap className="w-5 h-5 text-white" />
                   </div>
-                  <div className="absolute top-4 left-4 bg-white/90 rounded-lg p-3 shadow-lg">
-                    <span className="text-2xl">📊</span>
-                  </div>
-                  <div className="absolute bottom-4 right-4 bg-white/90 rounded-lg p-3 shadow-lg">
-                    <span className="text-2xl">🎯</span>
+                  <div>
+                    <p className="text-xs font-bold text-gray-900">Join 50,000+ students worldwide</p>
+                    <p className="text-xs text-gray-500">Learn from 1,000+ expert instructors</p>
                   </div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
@@ -62,59 +258,71 @@ const StudentDashboard = () => {
         <div className="w-full px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Courses Enrolled */}
-            <div className="bg-blue-50 rounded-2xl p-8 flex items-center justify-between hover:shadow-lg transition">
+            <div className="bg-white border-l-4 border-l-blue-500 border border-gray-200/80 rounded-2xl p-6 flex items-center justify-between hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
               <div>
-                <h3 className="text-sm font-medium text-blue-600 mb-2">Courses Enrolled</h3>
-                <p className="text-4xl font-bold text-gray-900">{enrolledCourses.length}</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Courses Enrolled</p>
+                <h4 className="text-3xl font-extrabold text-gray-900">{enrolledCourses.length}</h4>
+                <p className="text-[11px] text-blue-600 font-medium mt-2">Active learning path</p>
               </div>
-              <div className="text-5xl">📚</div>
+              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 transition-transform duration-300 group-hover:scale-110">
+                <BookOpen className="w-6 h-6" />
+              </div>
             </div>
 
             {/* Completed */}
-            <div className="bg-green-50 rounded-2xl p-8 flex items-center justify-between hover:shadow-lg transition">
+            <div className="bg-white border-l-4 border-l-emerald-500 border border-gray-200/80 rounded-2xl p-6 flex items-center justify-between hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
               <div>
-                <h3 className="text-sm font-medium text-green-600 mb-2">Completed</h3>
-                <p className="text-4xl font-bold text-gray-900">{enrolledCourses.filter(c => (c.progress || 0) >= 100).length}</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Completed</p>
+                <h4 className="text-3xl font-extrabold text-gray-900">{enrolledCourses.filter(c => (c.progress || 0) >= 100).length}</h4>
+                <p className="text-[11px] text-emerald-600 font-medium mt-2">Programs finalized</p>
               </div>
-              <div className="text-5xl">✅</div>
+              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 transition-transform duration-300 group-hover:scale-110">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
             </div>
 
             {/* Certificates */}
-            <div className="bg-orange-50 rounded-2xl p-8 flex items-center justify-between hover:shadow-lg transition">
+            <div className="bg-white border-l-4 border-l-amber-500 border border-gray-200/80 rounded-2xl p-6 flex items-center justify-between hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
               <div>
-                <h3 className="text-sm font-medium text-orange-600 mb-2">Certificates</h3>
-                <p className="text-4xl font-bold text-gray-900">0</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Certificates</p>
+                <h4 className="text-3xl font-extrabold text-gray-900">0</h4>
+                <p className="text-[11px] text-amber-600 font-medium mt-2">Earned credentials</p>
               </div>
-              <div className="text-5xl">📜</div>
+              <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 transition-transform duration-300 group-hover:scale-110">
+                <Award className="w-6 h-6" />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
+      {/* Main Grid Spacing */}
       <div className="w-full px-6">
+        
         {/* Continue Learning Section */}
         <section className="py-16">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Continue Learning</h2>
             <button
               onClick={() => navigate(ROUTES.STUDENT_MY_COURSES)}
-              className="text-purple-600 hover:text-purple-700 font-medium text-sm"
+              className="text-purple-600 hover:text-purple-700 font-semibold text-sm transition"
             >
               View all courses
             </button>
           </div>
 
           {enrolledCourses.length === 0 ? (
-            <div className="bg-gray-50 rounded-2xl p-16 text-center">
-              <div className="text-8xl mb-6">📖</div>
+            <div className="bg-gray-50 border border-gray-200/60 rounded-2xl p-16 text-center shadow-sm">
+              <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-purple-100">
+                <BookOpen className="w-8 h-8 text-purple-500" />
+              </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">No Enrolled Courses</h3>
               <p className="text-gray-600 mb-8 text-sm">Start your learning journey by enrolling in a course</p>
               <button
                 onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
-                className="px-8 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition font-medium text-sm inline-flex items-center gap-2"
+                className="px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition font-semibold text-sm inline-flex items-center gap-2 shadow-sm shadow-purple-100"
               >
-                Browse Courses <span>→</span>
+                Browse Courses <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           ) : (
@@ -123,27 +331,31 @@ const StudentDashboard = () => {
                 <div
                   key={course._id}
                   onClick={() => navigate(`/student/courses/${course._id}/lessons`)}
-                  className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition border border-gray-100 cursor-pointer"
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition border border-gray-150 cursor-pointer flex flex-col justify-between"
                 >
-                  <div className="w-full h-36 bg-gray-100 overflow-hidden">
+                  <div className="w-full h-36 bg-gray-100 overflow-hidden relative">
                     {course.thumbnailURL ? (
                       <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                        <BookOpen className="w-10 h-10 text-purple-300" />
+                      <div className="w-full h-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center">
+                        <BookOpen className="w-10 h-10 text-white" />
                       </div>
                     )}
                   </div>
-                  <div className="p-4">
-                    <h3 className="font-bold text-sm mb-1 line-clamp-2">{course.title}</h3>
-                    <p className="text-xs text-gray-500 mb-3">By {course.tutor?.name}</p>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
-                      <div
-                        className={`h-1.5 rounded-full ${(course.progress || 0) >= 100 ? 'bg-green-500' : 'bg-purple-600'}`}
-                        style={{ width: `${course.progress || 0}%` }}
-                      />
+                  <div className="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-bold text-sm mb-1 line-clamp-2 text-gray-800 hover:text-purple-650 transition">{course.title}</h3>
+                      <p className="text-xs text-gray-500 mb-3">By {course.tutor?.name}</p>
                     </div>
-                    <p className="text-xs text-gray-400">{course.progress || 0}% complete</p>
+                    <div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
+                        <div
+                          className={`h-1.5 rounded-full transition-all duration-350 ${(course.progress || 0) >= 100 ? 'bg-emerald-500' : 'bg-purple-600'}`}
+                          style={{ width: `${course.progress || 0}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-450">{course.progress || 0}% complete</p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -151,225 +363,188 @@ const StudentDashboard = () => {
           )}
         </section>
 
-        {/* Top Categories */}
-        <section className="py-12">
-          <div className="flex justify-between items-center mb-8">
+        {/* Top Categories Section (Restores hover, spotlight, and decorative mesh effects from Home page) */}
+        <section className="py-12 bg-gray-50/50 rounded-3xl p-8 border border-gray-100">
+          <div ref={catTitleRef} className="scroll-reveal flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Top Categories</h2>
             <button
               onClick={() => navigate(ROUTES.STUDENT_CATEGORIES)}
-              className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2"
+              className="text-purple-600 hover:text-purple-700 font-semibold text-sm flex items-center gap-1"
             >
-              See All <span>→</span>
+              See All <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {uniqueCategories.map((cat, index) => (
-              <div
-                key={cat}
-                onClick={() => navigate(`/student/categories?category=${encodeURIComponent(cat)}`)}
-                className={`${['bg-blue-50','bg-purple-50','bg-green-50','bg-yellow-50'][index % 4]} rounded-2xl p-8 text-center hover:shadow-lg transition cursor-pointer`}
-              >
-                <div className="text-5xl mb-4">
-                  {['✏️','📊','💻','💼','📸','🎬','📱','🎯'][index % 8]}
-                </div>
-                <h3 className="font-bold text-lg mb-2">{cat}</h3>
-                <p className="text-gray-600 text-sm">
-                  {catalog.filter(c => c.category === cat).length} Courses
-                </p>
-              </div>
+          <div ref={catGridRef} className="reveal-children grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in">
+            {uniqueCategories.map((cat) => (
+              <StudentCategoryCard key={cat} cat={cat} navigate={navigate} catalog={catalog} />
             ))}
           </div>
         </section>
 
-        {/* Best Rated Courses */}
-        <section className="py-12">
-          <div className="flex justify-between items-center mb-8">
+        {/* Best Rated Courses (Includes scroll animations and interactive card hover transitions) */}
+        <section className="py-16">
+          <div ref={coursesTitleRef} className="scroll-reveal flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Best Rated Courses</h2>
             <button
               onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
-              className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2"
+              className="text-purple-600 hover:text-purple-700 font-semibold text-sm flex items-center gap-1"
             >
-              See All <span>→</span>
+              See All <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {unenrolled.length > 0 ? unenrolled.map(course => (
+          <div ref={coursesGridRef} className="reveal-children grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {unenrolled.map(course => (
               <div
                 key={course._id}
                 onClick={() => navigate(`/student/courses/${course._id}`)}
-                className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition border border-gray-100 cursor-pointer"
+                className="reveal-child bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-purple-300 border border-gray-150 cursor-pointer flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 group"
               >
-                <div className="w-full h-36 bg-gray-100 overflow-hidden">
+                <div className="w-full h-36 bg-gray-100 overflow-hidden relative">
                   {course.thumbnailURL ? (
-                    <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover" />
+                    <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500" />
                   ) : (
-                    <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                      <BookOpen className="w-10 h-10 text-purple-300" />
+                    <div className="w-full h-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center">
+                      <BookOpen className="w-10 h-10 text-white" />
                     </div>
                   )}
                 </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-sm mb-2 line-clamp-2">{course.title}</h3>
-                  <p className="text-xs text-gray-500 mb-3">By {course.tutor?.name}</p>
-                  <div className="flex items-center justify-between">
+                <div className="p-4 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-bold text-sm mb-2 line-clamp-2 text-gray-800 group-hover:text-purple-600 transition">{course.title}</h3>
+                    <p className="text-xs text-gray-500 mb-3">By {course.tutor?.name}</p>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-50">
                     <span className="text-lg font-bold text-purple-600">
                       {course.price === 0 ? 'Free' : `₹${course.price}`}
                     </span>
                     <button
                       onClick={e => { e.stopPropagation(); navigate(`/student/courses/${course._id}`); }}
-                      className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs font-medium"
+                      className="px-3 py-1.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition text-xs font-semibold"
                     >
                       Enroll Now
                     </button>
                   </div>
                 </div>
               </div>
-            )) : (
-              <div className="col-span-4 text-center py-10 text-gray-400">
-                <BookOpen className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">No courses available yet</p>
-              </div>
-            )}
+            ))}
           </div>
         </section>
       </div>
 
-      {/* About Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="w-full px-6">
+      {/* About Section (Clean Typography & Outlined Images) */}
+      <section ref={aboutRef} className="scroll-reveal py-20 bg-gray-50 mt-16 border-y border-gray-100">
+        <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
           <div className="text-center mb-16">
-            <p className="text-purple-600 font-semibold mb-2 text-sm uppercase tracking-wide">About Us</p>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Delivering high-quality<br />
-              <span className="text-purple-600">e-Learning</span> opportunities
+            <p className="text-purple-600 font-bold mb-2 text-xs uppercase tracking-widest">About Us</p>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight leading-snug">
+              Delivering High-Quality <span className="text-purple-600">e-Learning</span> Opportunities
             </h2>
           </div>
           
           <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
-            <div>
-              <p className="text-gray-600 leading-relaxed mb-6 text-sm">
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-gray-800">Our Mission</h3>
+              <p className="text-gray-600 leading-relaxed text-sm">
                 At Cognon, we believe that education should be accessible to everyone, everywhere. Our platform connects passionate tutors with eager learners, creating a vibrant community of knowledge sharing and growth.
               </p>
               <p className="text-gray-600 leading-relaxed text-sm">
                 With thousands of courses across various disciplines, we empower individuals to pursue their passions, advance their careers, and achieve their goals through flexible, high-quality online learning experiences.
               </p>
             </div>
-            <div className="bg-purple-200 rounded-3xl p-12 aspect-square flex items-center justify-center">
-              <span className="text-9xl">📚</span>
+            <div className="rounded-3xl overflow-hidden shadow-lg border border-gray-200/80 max-w-sm mx-auto aspect-square bg-white p-3">
+              <img
+                src={ABOUT_IMAGE_1}
+                alt="Student studying at computer"
+                className="w-full h-full object-cover rounded-2xl transition duration-500 hover:scale-105"
+              />
             </div>
           </div>
           
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="bg-purple-200 rounded-3xl p-12 aspect-square flex items-center justify-center">
-              <span className="text-9xl">🎓</span>
+            <div className="rounded-3xl overflow-hidden shadow-lg border border-gray-200/80 max-w-sm mx-auto aspect-square bg-white p-3 md:order-first order-last">
+              <img
+                src={ABOUT_IMAGE_2}
+                alt="Interactive e-learning illustration"
+                className="w-full h-full object-cover rounded-2xl transition duration-500 hover:scale-105"
+              />
             </div>
-            <div>
-              <p className="text-gray-600 leading-relaxed mb-6 text-sm">
-                Install practical, industry-ready web development skills into your career and gain access to modern tools, frameworks, and real-world projects.Learn how to build responsive websites and scalable applications using popular frameworks. We guide you through architecture, best practices, and deployment so you can focus on building clean, efficient, and production-ready web applications.              </p>
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-gray-800">Practical Skill Building</h3>
               <p className="text-gray-600 leading-relaxed text-sm">
-                Launch high-impact digital marketing strategies and get hands-on experience with SEO, social media, paid ads, and content marketing. Learn how to reach the right audience, drive meaningful traffic, and convert users into loyal customers. Start building campaigns based on real data and measurable outcomes. We connect you with tools, analytics, and proven frameworks.              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Join Us Section */}
-      <section className="py-16 bg-gray-900 text-white">
-        <div className="w-full px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl font-bold mb-6">Join Us</h2>
-              <p className="text-gray-400 mb-8 leading-relaxed text-sm">
-                Instructors from around the world teach millions of students on Byway. We provide the tools and skills to teach what you love.              </p>
-              <button className="px-8 py-3 bg-white text-gray-900 rounded-md hover:bg-gray-100 transition font-medium text-sm">
-                Start Your Instructor Journey
-                </button>
-            </div>
-            <div className="bg-gray-800 rounded-3xl p-12 aspect-square flex items-center justify-center">
-              <span className="text-9xl">🚀</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Another Info Section */}
-      <section className="py-16 bg-gray-800 text-white">
-        <div className="w-full px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="bg-gray-700 rounded-3xl p-12 aspect-square flex items-center justify-center">
-              <span className="text-9xl">🌟</span>
-            </div>
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 uppercase">
-                Transform your life through education              
-              </h2>
-              <p className="text-gray-400 mb-8 leading-relaxed text-sm">
-                Learners around the world are launching new careers, advancing in their fields, and enriching their lives.              
+                Install practical, industry-ready web development skills into your career and gain access to modern tools, frameworks, and real-world projects. Learn how to build responsive websites and scalable applications using popular frameworks. We guide you through architecture, best practices, and deployment so you can focus on building clean, efficient, and production-ready web applications.
               </p>
-              <button className="px-8 py-3 bg-white text-gray-900 rounded-md hover:bg-gray-100 transition font-medium text-sm">
-              Checkout Courses
+              <p className="text-gray-600 leading-relaxed text-sm">
+                Launch high-impact digital marketing strategies and get hands-on experience with SEO, social media, paid ads, and content marketing. Learn how to reach the right audience, drive meaningful traffic, and convert users into loyal customers. Start building campaigns based on real data and measurable outcomes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Join Us Section (Redesigned into a Premium Card) */}
+      <section ref={joinUsRef} className="scroll-reveal py-20 bg-white">
+        <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
+          <div className="bg-gradient-to-br from-purple-900 to-indigo-950 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="relative z-10 max-w-2xl">
+              <span className="text-purple-300 font-bold text-xs uppercase tracking-widest mb-3 block">Become an Instructor</span>
+              <h2 className="text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
+                Join our Global Community of Expert Tutors
+              </h2>
+              <p className="text-purple-100 mb-6 text-sm leading-relaxed">
+                Instructors from around the world teach millions of students on Byway. We provide the tools and skills to share what you love, build an audience, and earn a sustainable income.
+              </p>
+              <button
+                onClick={() => navigate(ROUTES.TUTOR_SIGNUP)}
+                className="px-6 py-3 bg-white text-purple-950 rounded-xl hover:bg-gray-50 transition font-bold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 animate-pulse-slow"
+              >
+                Start Your Instructor Journey
+              </button>
+            </div>
+
+            <div className="relative z-10 w-full max-w-xs aspect-square rounded-2xl overflow-hidden shadow-2xl border border-white/10 p-2 bg-white/5">
+              <img
+                src={TUTOR_IMAGE}
+                alt="Tutor teaching"
+                className="w-full h-full object-cover rounded-xl transition duration-500 hover:scale-105"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Extra Info Section */}
+      <section ref={extraInfoRef} className="scroll-reveal py-20 bg-gray-50 border-t border-gray-100">
+        <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="rounded-3xl overflow-hidden shadow-lg border border-gray-200/80 max-w-sm mx-auto aspect-square bg-white p-3">
+              <img
+                src={EXTRA_IMAGE}
+                alt="Transform your life through education"
+                className="w-full h-full object-cover rounded-2xl transition duration-500 hover:scale-105"
+              />
+            </div>
+            <div className="space-y-4">
+              <h2 className="text-3xl font-extrabold text-gray-900 leading-snug">
+                Transform Your Life Through Structured Education
+              </h2>
+              <p className="text-gray-600 leading-relaxed text-sm">
+                Learners around the world are launching new careers, advancing in their fields, and enriching their lives by gaining certified, industry-recognized knowledge on Cognon.
+              </p>
+              <button
+                onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
+                className="px-6 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition font-bold text-sm shadow-sm"
+              >
+                Checkout Courses
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-16 bg-gray-900 text-white">
-        <div className="w-full px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Join Us By Creating Account<br />
-            <span className="text-gray-400 text-2xl">or Start a Free Trial</span>
-          </h2>
-          <p className="text-gray-400 mb-8 text-sm">Get started today and unlock your potential</p>
-          <button className="px-8 py-3 bg-white text-gray-900 rounded-md hover:bg-gray-100 transition font-medium text-sm">
-            Get Started
-          </button>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-black text-white py-12">
-        <div className="w-full px-6">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-purple-400">Cognon</h3>
-              <p className="text-gray-400 text-sm">Empowering learners worldwide with quality education</p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4 text-sm">Quick Links</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition">Home</a></li>
-                <li><a href="#" className="hover:text-white transition">About</a></li>
-                <li><a href="#courses" className="hover:text-white transition">Courses</a></li>
-                <li><a href="#" className="hover:text-white transition">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4 text-sm">Support</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition">Terms of Service</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4 text-sm">Follow Us</h4>
-              <div className="flex gap-3">
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-purple-600 transition text-sm">f</a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-purple-600 transition text-sm">t</a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-purple-600 transition text-sm">in</a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-purple-600 transition text-sm">yt</a>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 Cognon. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
+
 export default StudentDashboard;

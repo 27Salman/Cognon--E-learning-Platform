@@ -19,8 +19,13 @@ export default function Cart() {
         try {
             const res = await studentAPI.getCart();
             setCart(res.data);
+
+            if(res.data.removedItems && res.data.removedItems.length > 0){
+                toast.error(`Removed unavailable course from your cart : ${res.data.removedItems.join(', ')}`, {duration:5000});
+                window.dispatchEvent(new Event('cart-updated'));
+            }
         } catch {
-            toast.error('Failed to load cart', { id: 'cart-error' });
+            toast.error('Failed to load the cart', {id: 'cart-error'})
         } finally {
             setLoading(false);
         }
