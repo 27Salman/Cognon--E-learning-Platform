@@ -2,7 +2,23 @@ const Course = require('../models/Course');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
 const Category = require('../models/Category');
+const Cart = require('../models/Cart');
+const Wishlist = require('../models/Wishlist');
 const { COURSE_STATUS } = require('../config/constants');
+
+function groupByChapter(lessons) {
+    const map = {};
+    for (const lesson of lessons) {
+        const key = lesson.chapter?.order ?? 1;
+        if (!map[key]) {
+            map[key] = { order: key, title: lesson.chapter?.title ?? 'Chapter 1', lessons: [] };
+        }
+        map[key].lessons.push(lesson);
+    }
+    return Object.values(map)
+        .sort((a, b) => a.order - b.order)
+        .map(ch => ({ ...ch, lessons: ch.lessons.sort((a, b) => a.order - b.order) }));
+}
 
 const courseService = {
 
@@ -63,6 +79,9 @@ const courseService = {
         }
 
         await Lesson.deleteMany({ course: courseId });
+
+        await Cart.updateMany({}, { $pull: { items: { course: courseId } } });
+        await Wishlist.updateMany({}, { $pull: { courses: courseId } });
 
         await User.findByIdAndUpdate(
             tutorId,
@@ -139,7 +158,7 @@ const courseService = {
             }
         }
 
-        const lessons = await Lesson.find({ course: courseId }).sort({ order: 1 });
+        const lessons = await Lesson.find({ course: courseId }).sort({ 'chapter.order': 1, order: 1 });
 
         const sanitizedLessons = lessons.map(l => {
             const lesson = l.toJSON();
@@ -156,6 +175,7 @@ const courseService = {
         return {
             ...courseObj,
             lessons: sanitizedLessons,
+            chapters: groupByChapter(sanitizedLessons),
             isEnrolled
         };
     },

@@ -4,11 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { fetchPublishedCourses, fetchEnrolledCourses } from "../../store/slices/studentSlice";
 import StudentNavbar from "../../components/student/StudentNavbar";
 import Footer from "../../components/common/Footer";
-import { studentAPI } from "../../api/studentAPI";
 import {
     BookOpen, ChevronLeft, ChevronRight,
     Clock, Heart, Tag
 } from "lucide-react";
+import { ROUTES } from "../../utils/constants";
 
 function formatDuration(minutes) {
     if (!minutes || minutes === 0) return null;
@@ -119,22 +119,12 @@ export default function CourseCatalog() {
     const navigate = useNavigate();
     const { catalog, enrolledCourses, loading } = useSelector(state => state.student);
 
-    const [studentInfo, setStudentInfo] = useState(() => {
-        try { return JSON.parse(localStorage.getItem("studentInfo")) || {}; } catch { return {}; }
-    });
-
     const [dynamicCategories, setDynamicCategories] = useState([]);
     const [recommendedPage, setRecommendedPage] = useState(0);
     const [topRatedPage, setTopRatedPage] = useState(0);
     const coursesPerPage = 4;
 
     useEffect(() => {
-        studentAPI.getProfile()
-            .then(res => {
-                const data = res.data || res;
-                setStudentInfo({ ...data, profileImage: data.profileImageURL || data.profileImage || null });
-            })
-            .catch(() => {});
         dispatch(fetchPublishedCourses({}));
         dispatch(fetchEnrolledCourses());
 
@@ -176,7 +166,7 @@ export default function CourseCatalog() {
 
     return (
         <div className="min-h-screen bg-white flex flex-col">
-            <StudentNavbar studentInfo={studentInfo} />
+            <StudentNavbar />
 
             <div className="flex-1">
                         {/* Welcome back / In Progress */}
@@ -186,7 +176,7 @@ export default function CourseCatalog() {
                                     <div className="flex items-center justify-between mb-4">
                                         <h2 className="text-lg font-bold text-gray-800">Welcome back, ready for your next lesson?</h2>
                                         <button
-                                            onClick={() => navigate("/student/my-courses")}
+                                            onClick={() => navigate(ROUTES.STUDENT_MY_COURSES)}
                                             className="text-sm text-purple-600 font-medium hover:underline"
                                         >
                                             View history

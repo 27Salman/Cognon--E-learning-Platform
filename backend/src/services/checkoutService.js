@@ -5,11 +5,12 @@ const Order = require('../models/Order');
 const Course = require('../models/Course');
 const Coupon = require('../models/Coupon');
 const User = require('../models/User');
+const Wishlist = require('../models/Wishlist');
 const cartService = require('./cartService');
 const couponService = require('./couponService');
 const walletService = require('./walletService');
 const { PLATFORM_COMMISSION } = require('../config/constants');
-
+const CourseRestrict = require('../models/CourseRestrict');
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET
@@ -45,7 +46,6 @@ const checkoutService = {
             };
         }
 
-        // Keep 2 decimal places — only round at the Razorpay API boundary (paise)
         const finalAmount = Math.max(0, subtotal - couponDiscount);
         const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -66,6 +66,18 @@ const checkoutService = {
         if (priceData.finalAmount === 0) {
             throw new Error('Order amount cannot be zero');
         }
+
+        for(let num of priceData.items){
+            const restriction = await CourseRestrict.findOne({
+                userId,
+                courseId: num.course._id,
+            });
+
+            if(restriction?.blocked){
+                throw new Error(`You are blocked from purchasing the course: ${num.course.title}`);
+            }
+        }
+
 
         const cartCourseIds = priceData.items.map(item => item.course._id.toString()).sort();
 
@@ -102,7 +114,6 @@ const checkoutService = {
         }
 
         const razorpayOrder = await razorpay.orders.create({
-            // Razorpay requires integer paise — round only here
             amount: Math.round(priceData.finalAmount * 100),
             currency: 'INR',
             receipt: `receipt_${Date.now()}`,
@@ -112,7 +123,6 @@ const checkoutService = {
             }
         });
 
-        // Distribute finalAmount across courses proportionally, preserving decimals.
         const round2 = (n) => Math.round(n * 100) / 100;
         let allocatedTotal = 0;
         const orderCourses = priceData.items.map((item, idx) => {
@@ -121,14 +131,12 @@ const checkoutService = {
                 ? item.finalPrice / priceData.subtotal
                 : 1 / priceData.items.length;
 
-            // Last item gets the exact remainder to avoid any drift
             const courseActualAmount = isLast
                 ? round2(priceData.finalAmount - allocatedTotal)
                 : round2(priceData.finalAmount * courseWeight);
 
             allocatedTotal = round2(allocatedTotal + courseActualAmount);
 
-            // tutorShare + platformShare === courseActualAmount exactly
             const tutorShare = round2(courseActualAmount * PLATFORM_COMMISSION.TUTOR_SHARE);
             const platformShare = round2(courseActualAmount - tutorShare);
 
@@ -261,6 +269,11 @@ const checkoutService = {
 
         await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
 
+        await Wishlist.findOneAndUpdate(
+            { user: userId},
+            { $pull: {courses: {$in: courseIds}}}
+        )
+
         return await Order.findById(order._id)
             .populate('user', 'name email phone')
             .populate('courses.course', 'title thumbnail')
@@ -320,6 +333,16 @@ const checkoutService = {
         const studentWallet = await walletService.getOrCreateWallet(userId, 'student');
         if (studentWallet.balance < priceData.finalAmount) {
             throw new Error('Insufficient wallet balance');
+        }
+
+        for (const num of priceData.items) {
+            const restriction = await CourseRestrict.findOne({
+                userId,
+                courseId: num.course._id,
+            });
+            if (restriction?.blocked) {
+                throw new Error(`You are blocked from purchasing the course: ${num.course.title}`);
+            }
         }
 
         const round2 = (n) => Math.round(n * 100) / 100;
@@ -419,6 +442,11 @@ const checkoutService = {
         }
 
         await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
+
+        await Wishlist.findOneAndUpdate(
+            { user: userId },
+            { $pull : {courses: {$in: courseIds}}}
+        )
 
         return await Order.findById(order._id)
             .populate('user', 'name email phone')

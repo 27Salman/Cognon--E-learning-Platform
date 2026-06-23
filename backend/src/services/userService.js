@@ -71,6 +71,7 @@ const userService = {
         student.password = newPassword;
         await student.save();
     },
+
 };
 
 module.exports = userService;

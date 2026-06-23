@@ -16,7 +16,7 @@ const Login = () => {
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
   const submitBtnRef = useRef(null);
 
-  const initialRole = location.pathname === '/tutor/login' ? ROLES.TUTOR : ROLES.STUDENT;
+  const initialRole = location.pathname === ROUTES.LOGIN_TUTOR ? ROLES.TUTOR : ROLES.STUDENT;
   const [activeRole, setActiveRole] = useState(initialRole);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [formErrors, setFormErrors] = useState({});
@@ -50,7 +50,7 @@ const Login = () => {
     setActiveRole(role);
     setFormData({ email: '', password: '' });
     setFormErrors({});
-    navigate(role === ROLES.TUTOR ? '/tutor/login' : '/login', { replace: true });
+    navigate(role === ROLES.TUTOR ? ROUTES.LOGIN_TUTOR : ROUTES.LOGIN, { replace: true });
   };
 
   const handleChange = (e) => {

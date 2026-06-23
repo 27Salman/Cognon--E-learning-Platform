@@ -30,7 +30,6 @@ const PORT = process.env.PORT || 5000;
 const app = express();
 connectDB();
 
-// Start background jobs (daily hold release for inactive wallets)
 const { startHoldReleaseJob } = require('./src/jobs/holdReleaseJob');
 startHoldReleaseJob();
 
@@ -39,11 +38,12 @@ app.use(helmet({
 }));
 
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: [process.env.CLIENT_URL, 'http://localhost:3000', 'http://localhost:3001'].filter(Boolean),
   credentials: true,
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+
 
 app.post('/api/webhook/razorpay', express.raw({ type: 'application/json' }), checkoutController.handleWebhook);
 

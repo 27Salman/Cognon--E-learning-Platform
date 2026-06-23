@@ -7,15 +7,13 @@ import Footer from "../../components/common/Footer";
 import { studentAPI } from "../../api/studentAPI";
 import toast from "react-hot-toast";
 import { BookOpen, Clock, Users, CheckCircle, PlayCircle, ShoppingCart, Heart } from 'lucide-react';
+import { ROUTES } from "../../utils/constants";
 
 export default function CourseDetails() {
-    const { id } = useParams();
+    const { courseId: id } = useParams();
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const { currentCourse, loading, catalog, courseError } = useSelector(state => state.student);
-    const [studentInfo, setStudentInfo] = useState(() => {
-        try { return JSON.parse(localStorage.getItem("studentInfo")) || {}; } catch { return {}; }
-    });
     const [cartLoading, setCartLoading] = useState(false);
     const [wishlistLoading, setWishlistLoading] = useState(false);
     const [inWishlist, setInWishlist] = useState(false);
@@ -24,10 +22,6 @@ export default function CourseDetails() {
     useEffect(() => {
         dispatch(fetchCourseDetails(id));
         dispatch(fetchPublishedCourses({}));
-        studentAPI.getProfile().then(res => {
-            const data = res.data || res;
-            setStudentInfo({ ...data, profileImage: data.profileImageURL || data.profileImage || null });
-        }).catch(() => {});
 
         studentAPI.getWishlist().then(res => {
             const courses = res.data?.courses || [];
@@ -51,7 +45,7 @@ export default function CourseDetails() {
             const msg = err.response?.data?.message || '';
             if (msg.includes('already in your cart')) {
                 setInCart(true);
-                navigate('/student/cart');
+                navigate(ROUTES.STUDENT_CART);
             } else {
                 toast.error(msg || 'Failed to add to cart');
             }
@@ -81,7 +75,7 @@ export default function CourseDetails() {
     };
 
     const handleEnrollNow = () => {
-        navigate('/student/checkout', { state: { directCourseId: id } });
+        navigate(ROUTES.STUDENT_CHECKOUT, { state: { directCourseId: id } });
     };
 
     const lessons = (currentCourse?.lessons || []).slice().sort((a, b) => a.order - b.order);
@@ -107,7 +101,7 @@ export default function CourseDetails() {
     if (!currentCourse || courseError) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col">
-                <StudentNavbar studentInfo={studentInfo} />
+                <StudentNavbar />
                 <div className="flex-1 flex items-center justify-center px-6 py-20">
                     <div className="text-center max-w-md">
                         <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -118,7 +112,7 @@ export default function CourseDetails() {
                             Sorry for the inconvenience. This course is currently unavailable. It may have been removed or unlisted by the instructor.
                         </p>
                         <button
-                            onClick={() => navigate('/student/courses')}
+                            onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
                             className="px-8 py-3.5 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition text-base"
                         >
                             Browse All Courses
@@ -136,14 +130,14 @@ export default function CourseDetails() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <StudentNavbar studentInfo={studentInfo} />
+            <StudentNavbar />
 
             {/* Breadcrumb */}
             <div className="bg-white border-b border-gray-100 py-3 px-6">
                 <nav className="flex items-center gap-2 text-sm text-gray-500">
-                    <button onClick={() => navigate('/student/dashboard')} className="hover:text-purple-600 transition">Home</button>
+                    <button onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)} className="hover:text-purple-600 transition">Home</button>
                     <span className="text-gray-300">›</span>
-                    <button onClick={() => navigate('/student/courses')} className="hover:text-purple-600 transition">Categories</button>
+                    <button onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)} className="hover:text-purple-600 transition">Categories</button>
                     <span className="text-gray-300">›</span>
                     <span className="text-purple-600 font-medium truncate max-w-xs">{currentCourse.title}</span>
                 </nav>
@@ -237,24 +231,51 @@ export default function CourseDetails() {
                             {lessons.length > 0 && (
                                 <div className="mb-8">
                                     <h2 className="text-lg font-bold text-gray-800 mb-3">Syllabus</h2>
-                                    <div className="space-y-2">
-                                        {lessons.map((lesson, idx) => (
-                                            <div key={lesson._id} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-purple-200 transition">
-                                                <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                    <PlayCircle className="w-4 h-4 text-purple-600" />
+                                    {(() => {
+                                        const chapMap = {};
+                                        lessons.forEach(l => {
+                                            const key = l.chapter?.order ?? 1;
+                                            if (!chapMap[key]) chapMap[key] = { order: key, title: l.chapter?.title ?? 'Chapter 1', lessons: [] };
+                                            chapMap[key].lessons.push(l);
+                                        });
+                                        const chapters = Object.values(chapMap)
+                                            .sort((a, b) => a.order - b.order)
+                                            .map(ch => ({ ...ch, lessons: ch.lessons.sort((a, b) => a.order - b.order) }));
+
+                                        return chapters.map(chapter => (
+                                            <div key={chapter.order} className="mb-3 border border-gray-200 rounded-xl overflow-hidden">
+                                                {/* Chapter header */}
+                                                <div className="flex items-center gap-3 px-4 py-3 bg-purple-50">
+                                                    <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-white text-xs font-bold">{chapter.order}</span>
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-gray-800 text-sm">Chapter {chapter.order}: {chapter.title}</p>
+                                                        <p className="text-xs text-gray-500">{chapter.lessons.length} lesson{chapter.lessons.length !== 1 ? 's' : ''}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-gray-800">{idx + 1}. {lesson.title}</p>
-                                                    {lesson.description && (
-                                                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{lesson.description}</p>
-                                                    )}
+                                                {/* Lessons in chapter */}
+                                                <div className="divide-y divide-gray-100">
+                                                    {chapter.lessons.map((lesson, idx) => (
+                                                        <div key={lesson._id} className="flex items-start gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition">
+                                                            <div className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 mt-0.5 bg-purple-100">
+                                                                <PlayCircle className="w-4 h-4 text-purple-600" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium text-gray-800">{idx + 1}. {lesson.title}</p>
+                                                                {lesson.description && (
+                                                                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{lesson.description}</p>
+                                                                )}
+                                                            </div>
+                                                            {lesson.duration > 0 && (
+                                                                <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">{lesson.duration} min</span>
+                                                            )}
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                {lesson.duration > 0 && (
-                                                    <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">{lesson.duration} min</span>
-                                                )}
                                             </div>
-                                        ))}
-                                    </div>
+                                        ));
+                                    })()}
                                 </div>
                             )}
                         </div>
@@ -310,7 +331,7 @@ export default function CourseDetails() {
 
                                             {/* Add to Cart */}
                                             <button
-                                                onClick={inCart ? () => navigate('/student/cart') : handleAddToCart}
+                                                onClick={inCart ? () => navigate(ROUTES.STUDENT_CART) : handleAddToCart}
                                                 disabled={cartLoading}
                                                 className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium border transition disabled:opacity-60 ${
                                                     inCart
@@ -366,7 +387,7 @@ export default function CourseDetails() {
                     <div className="w-full px-5 py-8 bg-white border-t border-gray-100">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-gray-800">More Courses Like This</h2>
-                            <button onClick={() => navigate('/student/courses')} className="text-sm text-purple-600 font-medium hover:underline">See all</button>
+                            <button onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)} className="text-sm text-purple-600 font-medium hover:underline">See all</button>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
                             {moreCourses.map(course => (

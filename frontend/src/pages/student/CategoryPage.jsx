@@ -1,11 +1,11 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { fetchPublishedCourses, setFilters } from "../../store/slices/studentSlice";
+import { fetchPublishedCourses } from "../../store/slices/studentSlice";
 import StudentNavbar from "../../components/student/StudentNavbar";
 import Footer from "../../components/common/Footer";
-import { studentAPI } from "../../api/studentAPI";
 import { BookOpen, Search, X, Clock, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
+import { ROUTES } from "../../utils/constants";
 
 const SORT_OPTIONS = [
     { value: "newest",    label: "Newest" },
@@ -69,9 +69,6 @@ export default function CategoryPage() {
     const params = new URLSearchParams(location.search);
     const focusCategory = params.get("category") || null;
 
-    const [studentInfo, setStudentInfo] = useState(() => {
-        try { return JSON.parse(localStorage.getItem("studentInfo")) || {}; } catch { return {}; }
-    });
     const [searchValue, setSearchValue] = useState("");
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -81,10 +78,6 @@ export default function CategoryPage() {
     const [categoryPages, setCategoryPages] = useState({});
 
     useEffect(() => {
-        studentAPI.getProfile().then(res => {
-            const data = res.data || res;
-            setStudentInfo({ ...data, profileImage: data.profileImageURL || data.profileImage || null });
-        }).catch(() => {});
         dispatch(fetchPublishedCourses({}));
 
         fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/public`)
@@ -159,7 +152,7 @@ export default function CategoryPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <StudentNavbar studentInfo={studentInfo} />
+            <StudentNavbar />
 
             {/* Search header */}
             <div className="bg-white border-b border-gray-200 py-5 px-6">
@@ -198,7 +191,7 @@ export default function CategoryPage() {
                     </div>
                     {focusCategory && (
                         <button
-                            onClick={() => { navigate('/student/categories'); setCategoryFilter(""); }}
+                            onClick={() => { navigate(ROUTES.STUDENT_CATEGORIES); setCategoryFilter(""); }}
                             className="mt-3 text-sm text-purple-600 hover:underline"
                         >
                             ← All Categories

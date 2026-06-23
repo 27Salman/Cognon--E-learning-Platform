@@ -5,7 +5,8 @@ import { adminAPI } from '../../api/adminAPI';
 import { validateImageFile } from '../../utils/helpers';
 import { Camera, Pencil, User, Mail, Phone, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
-import AdminChangePasswordModal from '../../components/admin/AdminChangePasswordModal';
+import ChangePasswordModal from '../../components/common/ChangePasswordModal';
+import { ROUTES } from '../../utils/constants';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
@@ -236,8 +237,11 @@ export default function AdminProfile() {
       </div>
 
       {showPasswordModal && (
-        <AdminChangePasswordModal
-          adminInfo={{ ...adminInfo, email: formData.email }}
+        <ChangePasswordModal
+          userInfo={{ ...adminInfo, email: formData.email }}
+          onRequestOTP={() => adminAPI.requestPasswordChange()}
+          onVerify={(pwd, otp) => adminAPI.verifyPasswordChange(pwd, otp)}
+          onSuccessRedirect={ROUTES.LOGIN_ADMIN}
           onClose={() => setShowPasswordModal(false)}
         />
       )}

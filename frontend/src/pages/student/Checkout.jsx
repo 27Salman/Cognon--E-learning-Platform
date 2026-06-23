@@ -5,6 +5,7 @@ import { BookOpen, Tag, X, CreditCard, ChevronDown, ChevronUp, Check, Wallet } f
 import toast from 'react-hot-toast';
 import StudentNavbar from '../../components/student/StudentNavbar';
 import { useSelector } from 'react-redux';
+import { ROUTES } from '../../utils/constants';
 
 export default function Checkout() {
     const navigate = useNavigate();
@@ -32,7 +33,7 @@ export default function Checkout() {
             setPriceData(res.data);
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to load checkout');
-            if (isInitial) navigate('/student/cart');
+            if (isInitial) navigate(ROUTES.STUDENT_CART);
         } finally {
             if (isInitial) setLoading(false);
             else setCouponLoading(false);
@@ -61,7 +62,7 @@ export default function Checkout() {
                     const msg = err.response?.data?.message || '';
                     if (!msg.includes('already in your cart') && !msg.includes('already purchased')) {
                         toast.error(msg || 'Failed to add course to cart');
-                        navigate('/student/courses');
+                        navigate(ROUTES.STUDENT_COURSE_CATALOG);
                         return;
                     }
                 }
@@ -120,7 +121,7 @@ export default function Checkout() {
         try {
             const res = await studentAPI.payWithWallet(couponCode || null);
             toast.success('Payment successful!');
-            navigate('/student/order-success', { state: { order: res.data } });
+            navigate(ROUTES.STUDENT_ORDER_SUCCESS, { state: { order: res.data } });
         } catch (err) {
             toast.error(err.response?.data?.message || 'Wallet payment failed');
             setWalletPaying(false);
@@ -155,7 +156,7 @@ export default function Checkout() {
                             razorpaySignature: response.razorpay_signature,
                             couponCode: couponCode || null
                         });
-                        navigate('/student/order-success', {
+                        navigate(ROUTES.STUDENT_ORDER_SUCCESS, {
                             state: { order: verifyRes.data }
                         });
                     } catch {
@@ -192,7 +193,7 @@ export default function Checkout() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50">
-                <StudentNavbar studentInfo={user} />
+                <StudentNavbar />
                 <div className="flex items-center justify-center min-h-64">
                     <div className="animate-pulse text-gray-400">Loading checkout...</div>
                 </div>
@@ -202,7 +203,7 @@ export default function Checkout() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <StudentNavbar studentInfo={user} />
+            <StudentNavbar />
 
             <div className="max-w-5xl mx-auto px-4 py-8">
                 {/* Breadcrumb */}

@@ -6,17 +6,18 @@ import {
   LayoutDashboard, User, Tag, GraduationCap, BookOpen,
   ShoppingCart, LogOut, Users, Ticket, Wallet
 } from 'lucide-react';
+import { ROUTES } from '../../utils/constants';
 
 const menuItems = [
-  { name: 'Dashboard',  path: '/admin/dashboard',  icon: LayoutDashboard },
-  { name: 'Profile',    path: '/admin/profile',    icon: User },
-  { name: 'Categories', path: '/admin/categories', icon: Tag },
-  { name: 'Courses',    path: '/admin/courses',    icon: BookOpen },
-  { name: 'Students',   path: '/admin/students',   icon: GraduationCap },
-  { name: 'Tutors',     path: '/admin/tutors',     icon: Users },
-  { name: 'Orders',     path: '/admin/orders',     icon: ShoppingCart },
-  { name: 'Coupons',    path: '/admin/coupons',    icon: Ticket },
-  { name: 'Wallet',     path: '/admin/wallet',     icon: Wallet },
+  { name: 'Dashboard',  path: ROUTES.ADMIN_DASHBOARD,  icon: LayoutDashboard },
+  { name: 'Profile',    path: ROUTES.ADMIN_PROFILE,    icon: User },
+  { name: 'Categories', path: ROUTES.ADMIN_CATEGORIES, icon: Tag },
+  { name: 'Courses',    path: ROUTES.ADMIN_COURSES,    icon: BookOpen },
+  { name: 'Students',   path: ROUTES.ADMIN_STUDENTS,   icon: GraduationCap },
+  { name: 'Tutors',     path: ROUTES.ADMIN_TUTORS,     icon: Users },
+  { name: 'Orders',     path: ROUTES.ADMIN_ORDERS,     icon: ShoppingCart },
+  { name: 'Coupons',    path: ROUTES.ADMIN_COUPONS,    icon: Ticket },
+  { name: 'Wallet',     path: ROUTES.ADMIN_WALLET,     icon: Wallet },
 ];
 
 export default function AdminSidebar({ adminInfo }) {
@@ -30,7 +31,7 @@ export default function AdminSidebar({ adminInfo }) {
   const handleLogout = async () => {
     await dispatch(logoutUser());
     toast.success('Logged out successfully');
-    navigate('/admin/login', { replace: true });
+    navigate(ROUTES.LOGIN_ADMIN, { replace: true });
   };
 
   const displayName = user?.name || adminInfo?.name || 'Admin';

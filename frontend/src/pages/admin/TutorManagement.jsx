@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Search, X, ChevronLeft, ChevronRight, CheckCircle, XCircle, Shield } from 'lucide-react';
+import { X, CheckCircle, XCircle, Shield } from 'lucide-react';
 import { adminAPI } from '../../api/adminAPI';
 import toast from 'react-hot-toast';
 import { formatDate } from '../../utils/helpers';
 import ConfirmActionModal from '../../components/admin/ConfirmActionModal';
+import SearchInput from '../../components/common/SearchInput';
+import Pagination from '../../components/common/Pagination';
+import StatCard from '../../components/common/StatCard';
+import StatusBadge from '../../components/common/StatusBadge';
+import AvatarInitial from '../../components/common/AvatarInitial';
 
 const LIMIT = 5;
-
-const APPROVAL_STYLES = {
-    approved: 'bg-green-100 text-green-700',
-    rejected: 'bg-red-100 text-red-600',
-    pending:  'bg-yellow-100 text-yellow-700',
-};
 
 export default function TutorManagement() {
     const [tutors, setTutors] = useState([]);
@@ -50,8 +49,6 @@ export default function TutorManagement() {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    const handleFilterChange = (value) => { setFilter(value); setPage(1); };
-
     const handleApproval = async (tutorId, action) => {
         const prevApprovalStatus = tutors.find(t => t._id === tutorId)?.tutorProfile?.approvalStatus || 'pending';
         setActionLoading(`approval-${tutorId}`);
@@ -64,7 +61,6 @@ export default function TutorManagement() {
             setTutors(prev => prev.map(t => t._id === tutorId ? updated : t));
             setSelectedTutor(updated);
 
-            // Update summary counts based on the previous and new approval status
             setSummary(prev => {
                 const next = { ...prev };
                 if (prevApprovalStatus === 'pending') next.pending = Math.max(0, prev.pending - 1);
@@ -118,16 +114,6 @@ export default function TutorManagement() {
         }
     };
 
-    const getPageNumbers = () => {
-        const { totalPages, currentPage } = pagination;
-        const delta = 2;
-        const start = Math.max(1, currentPage - delta);
-        const end = Math.min(totalPages, currentPage + delta);
-        const range = [];
-        for (let i = start; i <= end; i++) range.push(i);
-        return range;
-    };
-
     const approvalStatus = selectedTutor?.tutorProfile?.approvalStatus || 'pending';
     const isApprovalLoading = actionLoading?.startsWith('approval-');
 
@@ -137,25 +123,18 @@ export default function TutorManagement() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
-                {[
-                    { label: 'Total Tutors',    value: summary.total,    color: 'text-gray-800' },
-                    { label: 'Active',          value: summary.active,   color: 'text-green-600' },
-                    { label: 'Blocked',         value: summary.blocked,  color: 'text-red-500' },
-                    { label: 'Approved',        value: summary.approved, color: 'text-blue-600' },
-                    { label: 'Pending Approval',value: summary.pending,  color: 'text-yellow-600' },
-                ].map(({ label, value, color }) => (
-                    <div key={label} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                        <p className="text-xs text-gray-500 leading-tight">{label}</p>
-                        <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
-                    </div>
-                ))}
+                <StatCard label="Total Tutors" value={summary.total} />
+                <StatCard label="Active" value={summary.active} color="text-green-600" />
+                <StatCard label="Blocked" value={summary.blocked} color="text-red-500" />
+                <StatCard label="Approved" value={summary.approved} color="text-blue-600" />
+                <StatCard label="Pending Approval" value={summary.pending} color="text-yellow-600" />
             </div>
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3 mb-5">
                 <select
                     value={filter}
-                    onChange={e => handleFilterChange(e.target.value)}
+                    onChange={e => { setFilter(e.target.value); setPage(1); }}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                     <option value="">All Tutors</option>
@@ -163,27 +142,15 @@ export default function TutorManagement() {
                     <option value="blocked">Blocked</option>
                 </select>
 
-                <div className="relative flex-1 sm:max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search by name or email..."
-                        value={searchInput}
-                        onChange={e => setSearchInput(e.target.value)}
-                        className="w-full pl-9 pr-9 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                    {searchInput && (
-                        <button
-                            onClick={() => { setSearchInput(''); setSearch(''); setPage(1); }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
+                <SearchInput
+                    value={searchInput}
+                    onChange={e => setSearchInput(e.target.value)}
+                    onClear={() => { setSearchInput(''); setSearch(''); setPage(1); }}
+                    placeholder="Search by name or email..."
+                />
             </div>
 
-            {/* Table — scrollable on mobile */}
+            {/* Table */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     {loading ? (
@@ -206,9 +173,7 @@ export default function TutorManagement() {
                                         <tr key={tutor._id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-700 font-semibold flex items-center justify-center flex-shrink-0">
-                                                        {tutor.name.charAt(0).toUpperCase()}
-                                                    </div>
+                                                    <AvatarInitial name={tutor.name} color="purple" />
                                                     <div>
                                                         <p className="font-medium text-gray-800">{tutor.name}</p>
                                                         <p className="text-xs text-gray-400 truncate max-w-[120px]">{tutor._id}</p>
@@ -220,19 +185,13 @@ export default function TutorManagement() {
                                                 <p className="text-xs text-gray-400">{tutor.phone || '—'}</p>
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${APPROVAL_STYLES[approval]}`}>
-                                                    {approval.charAt(0).toUpperCase() + approval.slice(1)}
-                                                </span>
+                                                <StatusBadge status={approval} />
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tutor.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                                                    {tutor.status === 'active' ? 'Active' : 'Blocked'}
-                                                </span>
+                                                <StatusBadge status={tutor.status} />
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tutor.isVerified ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                    {tutor.isVerified ? 'Verified' : 'Unverified'}
-                                                </span>
+                                                <StatusBadge status={tutor.isVerified ? 'verified' : 'unverified'} />
                                             </td>
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-2">
@@ -263,26 +222,14 @@ export default function TutorManagement() {
                     )}
                 </div>
 
-                {!loading && pagination.totalPages > 1 && (
-                    <div className="flex flex-col items-center gap-3 px-5 py-4 border-t border-gray-100">
-                        <p className="text-sm text-gray-500">
-                            Showing {((pagination.currentPage - 1) * LIMIT) + 1}–{Math.min(pagination.currentPage * LIMIT, pagination.totalFiltered)} of {pagination.totalFiltered} tutors
-                        </p>
-                        <div className="flex items-center gap-1">
-                            <button onClick={() => setPage(p => p - 1)} disabled={pagination.currentPage === 1} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed">
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            {getPageNumbers().map(num => (
-                                <button key={num} onClick={() => setPage(num)} className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${num === pagination.currentPage ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-                                    {num}
-                                </button>
-                            ))}
-                            <button onClick={() => setPage(p => p + 1)} disabled={pagination.currentPage === pagination.totalPages} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed">
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                )}
+                <Pagination
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    totalFiltered={pagination.totalFiltered}
+                    limit={LIMIT}
+                    onPageChange={setPage}
+                    itemLabel="tutors"
+                />
             </div>
 
             {/* Tutor Detail Modal */}
@@ -290,7 +237,6 @@ export default function TutorManagement() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
 
-                        {/* Modal Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                             <h2 className="text-lg font-semibold text-gray-800">Tutor Details</h2>
                             <button onClick={() => setSelectedTutor(null)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
@@ -298,21 +244,17 @@ export default function TutorManagement() {
                             </button>
                         </div>
 
-                        {/* Avatar + Name */}
                         <div className="px-6 pt-5 pb-4 flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-700 font-bold text-2xl flex items-center justify-center flex-shrink-0">
-                                {selectedTutor.name.charAt(0).toUpperCase()}
-                            </div>
+                            <AvatarInitial name={selectedTutor.name} color="purple" size="lg" />
                             <div>
                                 <p className="font-semibold text-gray-900 text-lg leading-tight">{selectedTutor.name}</p>
                                 <p className="text-sm text-gray-400 capitalize">{selectedTutor.role}</p>
-                                <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${APPROVAL_STYLES[approvalStatus]}`}>
-                                    {approvalStatus.charAt(0).toUpperCase() + approvalStatus.slice(1)}
-                                </span>
+                                <div className="mt-1">
+                                    <StatusBadge status={approvalStatus} />
+                                </div>
                             </div>
                         </div>
 
-                        {/* Info rows */}
                         <div className="px-6 pb-4 space-y-3 text-sm">
                             {[
                                 { label: 'Email', value: selectedTutor.email },
@@ -327,16 +269,12 @@ export default function TutorManagement() {
 
                             <div className="flex justify-between items-center py-2 border-b border-gray-50">
                                 <span className="text-gray-500">Account Status</span>
-                                <span className={`font-medium ${selectedTutor.status === 'active' ? 'text-green-600' : 'text-red-500'}`}>
-                                    {selectedTutor.status === 'active' ? 'Active' : 'Blocked'}
-                                </span>
+                                <StatusBadge status={selectedTutor.status} />
                             </div>
 
                             <div className="flex justify-between items-center py-2 border-b border-gray-50">
                                 <span className="text-gray-500">Email Verified</span>
-                                <span className={`font-medium ${selectedTutor.isVerified ? 'text-blue-600' : 'text-gray-400'}`}>
-                                    {selectedTutor.isVerified ? 'Yes' : 'No'}
-                                </span>
+                                <StatusBadge status={selectedTutor.isVerified ? 'verified' : 'unverified'} />
                             </div>
 
                             {selectedTutor.tutorProfile?.bio && (
@@ -347,7 +285,6 @@ export default function TutorManagement() {
                             )}
                         </div>
 
-                        {/* Approval Section */}
                         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
                             <div className="flex items-center gap-2 mb-3">
                                 <Shield className="w-4 h-4 text-gray-500" />

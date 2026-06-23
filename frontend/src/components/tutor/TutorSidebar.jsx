@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { BarChart3, User, BookOpen, TrendingUp, MessageSquare, LogOut, Wallet } from 'lucide-react';
+import { ROUTES } from '../../utils/constants';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
@@ -17,12 +18,12 @@ const getFullImageUrl = (src) => {
 };
 
 const menuItems = [
-    { name: 'Dashboard',    path: '/tutor/dashboard', icon: BarChart3 },
-    { name: 'Profile',      path: '/tutor/profile',   icon: User },
-    { name: 'Courses',      path: '/tutor/courses',   icon: BookOpen },
-    { name: 'Revenue',      path: '/tutor/revenue',   icon: TrendingUp },
-    { name: 'Wallet',       path: '/tutor/wallet',    icon: Wallet },
-    { name: 'Chat & Video', path: '/tutor/chat',      icon: MessageSquare },
+    { name: 'Dashboard',    path: ROUTES.TUTOR_DASHBOARD, icon: BarChart3 },
+    { name: 'Profile',      path: ROUTES.TUTOR_PROFILE,   icon: User },
+    { name: 'Courses',      path: ROUTES.TUTOR_COURSES,   icon: BookOpen },
+    { name: 'Revenue',      path: ROUTES.TUTOR_REVENUE,   icon: TrendingUp },
+    { name: 'Wallet',       path: ROUTES.TUTOR_WALLET,    icon: Wallet },
+    { name: 'Chat & Video', path: ROUTES.TUTOR_CHAT,      icon: MessageSquare },
 ];
 
 export default function TutorSidebar({ tutorInfo }) {
@@ -37,7 +38,7 @@ export default function TutorSidebar({ tutorInfo }) {
         localStorage.removeItem('tutorInfo');
         await dispatch(logoutUser());
         toast.success('Logged out successfully');
-        navigate('/login', { replace: true });
+        navigate(ROUTES.LOGIN, { replace: true });
     };
 
     const imageSrc = getFullImageUrl(tutorInfo?.profileImageURL || tutorInfo?.profileImage);

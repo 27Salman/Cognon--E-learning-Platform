@@ -54,7 +54,7 @@ import AdminCoupons from './pages/admin/AdminCoupons';
 import TutorWallet from './pages/tutor/TutorWallet';
 import AdminWallet from './pages/admin/AdminWallet';
 import StudentWallet from './pages/student/StudentWallet';
-import Loader from './components/Loader';
+import Loader from './components/common/Loader';
 
 
 function App() {
@@ -76,30 +76,19 @@ function App() {
     <Routes>
       {/* Public Routes */}
       <Route path={ROUTES.HOME} element={<Home />} />
-      <Route path={ROUTES.LOGIN} element={<Login />} />
-      <Route path="/tutor/login" element={<Login />} />
+      <Route path={ROUTES.LOGIN} element={<Login />} />      
       <Route path={ROUTES.SIGNUP} element={<Signup />} />
-      <Route path="/tutor/register" element={<Signup />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
-      <Route path="/admin/reset-password" element={<AdminResetPassword />} />
-      <Route path="/verify-otp" element={<VerifyOTP />} />
-      <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
+      <Route path={ROUTES.LOGIN_TUTOR} element={<Login />} />
+      <Route path={ROUTES.TUTOR_SIGNUP} element={<Signup />} />
+      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
+      <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
+      <Route path={ROUTES.LOGIN_ADMIN} element={<AdminLogin />} />
+      <Route path={ROUTES.ADMIN_FORGOT_PASSWORD} element={<AdminForgotPassword />} />
+      <Route path={ROUTES.ADMIN_RESET_PASSWORD} element={<AdminResetPassword />} />
+      <Route path={ROUTES.VERIFY_OTP} element={<VerifyOTP />} />
+      <Route path={ROUTES.GOOGLE_AUTH_SUCCESS} element={<GoogleAuthSuccess />} />
 
       {/* Protected Student Routes */}
-      <Route
-        path="/student/dashboard"
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <StudentDashboard />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-
       <Route
         path="/student"
         element={
@@ -110,7 +99,8 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/student/dashboard" replace />} />
+        <Route index element={<Navigate to={ROUTES.STUDENT_DASHBOARD} replace />} />
+        <Route path="dashboard" element={<StudentDashboard />} />
         <Route path="profile" element={<StudentProfile />} />
         <Route path="my-courses" element={<MyCourses />} />
         <Route path="courses/:courseId/lessons" element={<CourseLessons />} />
@@ -120,39 +110,12 @@ function App() {
         <Route path="orders/:id" element={<StudentOrderDetail />} />
       </Route>
 
-      {/* Student Course Catalog - standalone full page */}
+      {/* Public student-facing pages — no login required */}
+      <Route path={ROUTES.STUDENT_COURSE_CATALOG} element={<CourseCatalog />} />
+      <Route path={ROUTES.STUDENT_CATEGORIES} element={<CategoryPage />} />
+      <Route path={ROUTES.STUDENT_COURSE_DETAIL} element={<CourseDetails />} />
       <Route
-        path="/student/courses"
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <CourseCatalog />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/categories"
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <CategoryPage />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/courses/:id"
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <CourseDetails />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/courses/:courseId/learn"
+        path={ROUTES.STUDENT_LESSON_VIEWER}
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.STUDENT]}>
@@ -163,7 +126,7 @@ function App() {
       />
 
       <Route
-        path="/student/cart"
+        path={ROUTES.STUDENT_CART}
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.STUDENT]}>
@@ -173,7 +136,7 @@ function App() {
         }
       />
       <Route
-        path="/student/checkout"
+        path={ROUTES.STUDENT_CHECKOUT}
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.STUDENT]}>
@@ -183,7 +146,7 @@ function App() {
         }
       />
       <Route
-        path="/student/order-success"
+        path={ROUTES.STUDENT_ORDER_SUCCESS}
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.STUDENT]}>
@@ -204,7 +167,7 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/tutor/dashboard" replace />} />
+        <Route index element={<Navigate to={ROUTES.TUTOR_DASHBOARD} replace />} />
         <Route path="dashboard" element={<TutorDashboard />} />
         <Route path="profile" element={<TutorProfile />} />
         <Route path="courses" element={<TutorCourses />} />
@@ -228,7 +191,7 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route index element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
         <Route path="dashboard" element={<AdminDashboard/>} />
         <Route path="profile" element={<AdminProfile />} />
         <Route path="tutors" element={<TutorManagement />} />
@@ -243,7 +206,7 @@ function App() {
       </Route>
 
           {/* Fallback */}
-          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path={ROUTES.UNAUTHORIZED} element={<Unauthorized />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       )}

@@ -2,9 +2,8 @@ import { useSelector } from 'react-redux';
 import { Mail, Phone, MapPin } from 'lucide-react';
 
 export default function Footer() {
-  const { user } = useSelector((state) => state.auth);
-  const adminEmail = user?.email || 'cognon.elearning@gmail.com';
-  const adminPhone = user?.phone || '7012334610';
+  const adminEmail = 'cognon.elearning@gmail.com';
+  const adminPhone = '7012334610';
 
   return (
     <footer className="bg-gray-900 text-white">

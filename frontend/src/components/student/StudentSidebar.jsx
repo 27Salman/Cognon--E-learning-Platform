@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard, Wallet } from 'lucide-react';
+import { ROUTES } from '../../utils/constants';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
@@ -33,13 +34,13 @@ const getAvatarColors = (name) => {
 };
 
 const menuItems = [
-    { name: 'Dashboard',    path: '/student/dashboard',    icon: LayoutDashboard },
-    { name: 'Profile',      path: '/student/profile',      icon: User },
-    { name: 'My Courses',   path: '/student/my-courses',   icon: ShoppingBag },
-    { name: 'My Orders',    path: '/student/orders',       icon: ShoppingCart },
-    { name: 'Wallet',       path: '/student/wallet',       icon: Wallet},
-    { name: 'Wishlist',     path: '/student/wishlist',     icon: Heart },
-    { name: 'Certificates', path: '/student/certificates', icon: Award },
+    { name: 'Dashboard',    path: ROUTES.STUDENT_DASHBOARD,       icon: LayoutDashboard },
+    { name: 'Profile',      path: ROUTES.STUDENT_PROFILE,         icon: User },
+    { name: 'My Courses',   path: ROUTES.STUDENT_MY_COURSES,      icon: ShoppingBag },
+    { name: 'My Orders',    path: ROUTES.STUDENT_ORDERS,          icon: ShoppingCart },
+    { name: 'Wallet',       path: ROUTES.STUDENT_WALLET,          icon: Wallet },
+    { name: 'Wishlist',     path: ROUTES.STUDENT_WISHLIST,        icon: Heart },
+    { name: 'Certificates', path: '/student/certificates',        icon: Award },
 ];
 
 export default function StudentSidebar({ studentInfo }) {
@@ -50,7 +51,7 @@ export default function StudentSidebar({ studentInfo }) {
     const isActive = (path) => {
         if (location.pathname === path) return true;
         if (location.pathname.startsWith(path + '/')) return true;
-        if (path === '/student/my-courses' && location.pathname.includes('/student/courses/') && location.pathname.endsWith('/lessons')) return true;
+        if (path === ROUTES.STUDENT_MY_COURSES && location.pathname.includes('/student/courses/') && location.pathname.endsWith('/lessons')) return true;
         return false;
     };
 
@@ -58,7 +59,7 @@ export default function StudentSidebar({ studentInfo }) {
         localStorage.removeItem('studentInfo');
         await dispatch(logoutUser());
         toast.success('Logged out successfully');
-        navigate('/login', { replace: true });
+        navigate(ROUTES.LOGIN, { replace: true });
     };
 
     return (

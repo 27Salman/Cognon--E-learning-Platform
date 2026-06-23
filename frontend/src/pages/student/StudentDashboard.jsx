@@ -1,27 +1,16 @@
-import { useState, useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import StudentNavbar from '../../components/student/StudentNavbar';
-import { studentAPI } from '../../api/studentAPI';
 import { fetchPublishedCourses, fetchEnrolledCourses } from '../../store/slices/studentSlice';
 import { BookOpen } from 'lucide-react';
+import { ROUTES } from '../../utils/constants';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { catalog, enrolledCourses } = useSelector(state => state.student);
-  const [studentInfo, setStudentInfo] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('studentInfo')) || {}; } catch { return {}; }
-  });
 
   useEffect(() => {
-    studentAPI.getProfile().then(res => {
-      const data = res.data || res;
-      setStudentInfo({
-        ...data,
-        profileImage: data.profileImageURL || data.profileImage || null,
-      });
-    }).catch(() => {});
     dispatch(fetchPublishedCourses({}));
     dispatch(fetchEnrolledCourses());
   }, [dispatch]);
@@ -33,7 +22,6 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <StudentNavbar studentInfo={studentInfo} />
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-purple-50 via-blue-50 to-white py-20">
@@ -110,7 +98,7 @@ const StudentDashboard = () => {
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Continue Learning</h2>
             <button
-              onClick={() => navigate('/student/my-courses')}
+              onClick={() => navigate(ROUTES.STUDENT_MY_COURSES)}
               className="text-purple-600 hover:text-purple-700 font-medium text-sm"
             >
               View all courses
@@ -123,7 +111,7 @@ const StudentDashboard = () => {
               <h3 className="text-2xl font-bold text-gray-900 mb-3">No Enrolled Courses</h3>
               <p className="text-gray-600 mb-8 text-sm">Start your learning journey by enrolling in a course</p>
               <button
-                onClick={() => navigate('/student/courses')}
+                onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
                 className="px-8 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition font-medium text-sm inline-flex items-center gap-2"
               >
                 Browse Courses <span>→</span>
@@ -168,7 +156,7 @@ const StudentDashboard = () => {
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Top Categories</h2>
             <button
-              onClick={() => navigate('/student/categories')}
+              onClick={() => navigate(ROUTES.STUDENT_CATEGORIES)}
               className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2"
             >
               See All <span>→</span>
@@ -198,7 +186,7 @@ const StudentDashboard = () => {
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Best Rated Courses</h2>
             <button
-              onClick={() => navigate('/student/courses')}
+              onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
               className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2"
             >
               See All <span>→</span>
@@ -277,9 +265,9 @@ const StudentDashboard = () => {
             </div>
             <div>
               <p className="text-gray-600 leading-relaxed mb-6 text-sm">
-                Install practical, industry-ready web development skills into your career and gain access to modern tools, frameworks, and real-world projects. Learn how to build responsive websites and scalable applications using popular frameworks. We guide you through architecture, best practices, and deployment so you can focus on building clean, efficient, and production-ready web applications.              </p>
+                Install practical, industry-ready web development skills into your career and gain access to modern tools, frameworks, and real-world projects.Learn how to build responsive websites and scalable applications using popular frameworks. We guide you through architecture, best practices, and deployment so you can focus on building clean, efficient, and production-ready web applications.              </p>
               <p className="text-gray-600 leading-relaxed text-sm">
-                Launch high-impact digital marketing strategies and get hands-on experience with SEO, social media, paid ads, and content marketing.  Learn how to reach the right audience, drive meaningful traffic, and convert users into loyal customers. Start building campaigns based on real data and measurable outcomes. We connect you with tools, analytics, and proven frameworks.              </p>
+                Launch high-impact digital marketing strategies and get hands-on experience with SEO, social media, paid ads, and content marketing. Learn how to reach the right audience, drive meaningful traffic, and convert users into loyal customers. Start building campaigns based on real data and measurable outcomes. We connect you with tools, analytics, and proven frameworks.              </p>
             </div>
           </div>
         </div>
@@ -309,7 +297,7 @@ const StudentDashboard = () => {
         <div className="w-full px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="bg-gray-700 rounded-3xl p-12 aspect-square flex items-center justify-center">
-              <span className="text-9xl">�</span>
+              <span className="text-9xl">🌟</span>
             </div>
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6 uppercase">
@@ -384,5 +372,4 @@ const StudentDashboard = () => {
     </div>
   );
 };
-
 export default StudentDashboard;

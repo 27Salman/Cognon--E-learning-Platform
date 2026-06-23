@@ -5,6 +5,7 @@ import Button from '../../components/common/Button';
 import { validateEmail } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 import { FiArrowLeft } from 'react-icons/fi';
+import { ROUTES } from '../../utils/constants';
 
 const AdminForgotPassword = () => {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ const AdminForgotPassword = () => {
       const data = await response.json();
       if (response.ok) {
         toast.success('Password reset OTP sent to your email!');
-        navigate('/admin/reset-password', { state: { email: trimmed }, replace: true });
+        navigate(ROUTES.ADMIN_RESET_PASSWORD, { state: { email: trimmed }, replace: true });
       } else {
         toast.error(data.message || 'Failed to send reset OTP');
       }
@@ -92,7 +93,7 @@ const AdminForgotPassword = () => {
           </form>
 
           <div className="mt-6 text-center">
-            <Link to="/admin/login" className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium">
+            <Link to={ROUTES.LOGIN_ADMIN} className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium">
               <FiArrowLeft className="mr-2" />
               Back to admin login
             </Link>

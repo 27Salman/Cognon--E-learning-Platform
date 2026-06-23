@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
+const Wallet = require('../models/Wallet');
 const { COURSE_STATUS } = require('../config/constants');
 const { deleteOldProfileImage } = require('./fileService');
 const { createOTP, verifyOTP } = require('./otpService');
@@ -270,6 +271,24 @@ const tutorService = {
             activeCourses: courses.filter(c => c.status === COURSE_STATUS.PUBLISHED).length
         };
 
+        const wallet = await Wallet.findOne({ owner: tutorId });
+        const now = new Date();
+        let pendingEarnings = 0;
+        let availableEarnings = 0;
+        if (wallet) {
+            for (const txn of wallet.transactions) {
+                if (txn.type !== 'credit') continue;
+                if (txn.status === 'cancelled' || txn.status === 'refunded') continue;
+                if (txn.status === 'pending' && txn.releaseAt && txn.releaseAt > now) {
+                    pendingEarnings += txn.amount;
+                } else if (txn.status === 'completed') {
+                    availableEarnings += txn.amount;
+                }
+            }
+        }
+        summary.pendingEarnings = Math.round(pendingEarnings);
+        summary.availableEarnings = Math.round(availableEarnings);
+
         return {
             summary,
             monthlyRevenue,
@@ -442,7 +461,7 @@ const tutorService = {
 
                 if (!courseMap[key]) {
                     courseMap[key] = {
-                        courseTitle:    key,
+                        courseTitle:    item.courseTitle || key,
                         courseCategory: item.courseCategory || '-',
                         enrollments:    0,
                         grossRevenue:   0,
@@ -462,7 +481,16 @@ const tutorService = {
         // Payment method 
         const paymentMethodAgg = await Order.aggregate([
             {
-                $match: query
+                $match: {
+                    'courses.tutor': new mongoose.Types.ObjectId(tutorId),
+                    paymentStatus: { $nin: ['refunded', 'failed', 'pending'] },
+                    ...(dateFrom || dateTo ? {
+                        orderDate: {
+                            ...(dateFrom ? { $gte: new Date(dateFrom) } : {}),
+                            ...(dateTo ? { $lte: (() => { const e = new Date(dateTo); e.setHours(23,59,59,999); return e; })() } : {})
+                        }
+                    } : {})
+                }
             },
             {
                 $unwind: '$courses'

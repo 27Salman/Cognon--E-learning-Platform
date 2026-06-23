@@ -5,6 +5,7 @@ import Input from '../../components/common/Input';
 import toast from 'react-hot-toast';
 import { FiArrowLeft } from 'react-icons/fi';
 import { validatePassword } from '../../utils/helpers';
+import { ROUTES } from '../../utils/constants';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const ResetPassword = () => {
   };
 
   useEffect(() => {
-    if (!email) { navigate('/forgot-password'); return; }
+    if (!email) { navigate(ROUTES.FORGOT_PASSWORD); return; }
     startTimers();
     return () => { clearInterval(resendIntervalRef.current); clearInterval(expiryIntervalRef.current); };
   }, [email, navigate]);
@@ -134,7 +135,7 @@ const ResetPassword = () => {
       if (response.ok) {
         toast.success('Password reset successful! Redirecting to login...');
         setTimeout(() => {
-          navigate('/login', { replace: true });
+          navigate(ROUTES.LOGIN, { replace: true });
         }, 2000);
       } else {
         toast.error(data.message || 'Failed to reset password');

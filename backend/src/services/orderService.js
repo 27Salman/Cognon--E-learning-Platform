@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
 const walletService = require('./walletService');
+const CourseRestrict = require('../models/CourseRestrict');
 
 const orderService = {
     async getStudentOrders(userId, { search, status, page = 1, limit = 5 } = {}) {
@@ -158,6 +159,7 @@ const orderService = {
     },
 
     async cancelCourse(userId, orderId) {
+
         const order = await Order.findOne({ _id: orderId, user: userId });
         if (!order) throw new Error('Order not found');
 
@@ -173,6 +175,7 @@ const orderService = {
         if (daysSincePurchase > 3) throw new Error('Refund window has expired (3 days from purchase)');
 
         const student = await User.findById(userId).select('studentProfile.enrolledCourses');
+        
         for (const courseItem of order.courses) {
             const totalLessons = await Lesson.countDocuments({ course: courseItem.course });
             if (totalLessons === 0) continue;
@@ -209,6 +212,25 @@ const orderService = {
         await User.findByIdAndUpdate(userId, {
             $pull: { 'studentProfile.enrolledCourses': { courseId: { $in: courseIds } } }
         });
+
+        let latestRestriction = await CourseRestrict.findOne({ userId, courseId: { $in: courseIds } });
+        for (const cId of courseIds) {
+            let restriction = await CourseRestrict.findOne({ userId, courseId: cId });
+            if (!restriction) {
+                restriction = await CourseRestrict.create({
+                    userId,
+                    courseId: cId,
+                    refundCount: 1
+                });
+            } else {
+                restriction.refundCount++;
+                if (restriction.refundCount >= 3) {
+                    restriction.blocked = true;
+                    restriction.blockedAt = new Date();
+                }
+                await restriction.save();
+            }
+        }
 
         return { message: 'Course cancelled and refund credited to your wallet', refundAmount: order.finalAmount };
     },

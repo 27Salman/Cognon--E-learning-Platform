@@ -2,6 +2,7 @@ import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Logo from '../common/Logo';
+import { ROUTES } from '../../utils/constants';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
@@ -19,7 +20,6 @@ export default function AdminNavbar({ adminInfo }) {
   const { user } = useSelector((state) => state.auth);
 
   const displayName = user?.name || adminInfo?.name || 'Admin';
-  // Prefer profileImageURL (full URL) over profileImage (raw filename)
   const profileImageSrc = getFullImageUrl(adminInfo?.profileImageURL || adminInfo?.profileImage);
 
   return (
@@ -27,7 +27,7 @@ export default function AdminNavbar({ adminInfo }) {
       <div className="flex items-center justify-between px-6 py-3">
 
         {/* Logo */}
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/admin/dashboard')}>
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate(ROUTES.ADMIN_DASHBOARD)}>
           <Logo size={36} />
           <div>
             <h1 className="text-xl font-bold text-purple-600">Cognon</h1>
@@ -43,7 +43,7 @@ export default function AdminNavbar({ adminInfo }) {
           </button>
           
           <button
-            onClick={() => navigate('/admin/profile')}
+            onClick={() => navigate(ROUTES.ADMIN_PROFILE)}
             className="focus:outline-none"
           >
             {profileImageSrc ? (

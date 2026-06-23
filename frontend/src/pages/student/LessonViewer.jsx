@@ -5,9 +5,10 @@ import { fetchCourseDetails, fetchCourseProgress, markLessonComplete, fetchPubli
 import VideoPlayer from '../../components/student/VideoPlayer';
 import {
     CheckCircle, ChevronLeft, Download, MessageSquare,
-    Clock, BookOpen, ArrowLeft, ArrowRight, Lock
+    Clock, BookOpen, ArrowLeft, ArrowRight, Lock, ChevronDown, ChevronUp
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { ROUTES } from '../../utils/constants';
 
 export default function LessonViewer() {
     const { courseId } = useParams();
@@ -19,6 +20,7 @@ export default function LessonViewer() {
     const [marking, setMarking] = useState(false);
     const [elapsed, setElapsed] = useState(0);
     const timerRef = useRef(null);
+    const [openChapters, setOpenChapters] = useState({});
 
     useEffect(() => {
         dispatch(fetchCourseDetails(courseId));
@@ -40,7 +42,24 @@ export default function LessonViewer() {
     const currentProgressLesson = progressLessons.find(l => l._id?.toString() === currentLesson?._id?.toString());
     const isCompleted = currentProgressLesson?.isCompleted ?? false;
 
-    // --- Timer: reset on lesson change, count up while not completed ---
+    const chapMap = {};
+    lessons.forEach(l => {
+        const key = l.chapter?.order ?? 1;
+        if (!chapMap[key]) chapMap[key] = { order: key, title: l.chapter?.title ?? 'Chapter 1', lessons: [] };
+        chapMap[key].lessons.push(l);
+    });
+    const chapters = Object.values(chapMap)
+        .sort((a, b) => a.order - b.order)
+        .map(ch => ({ ...ch, lessons: ch.lessons.sort((a, b) => a.order - b.order) }));
+
+    useEffect(() => {
+        if (chapters.length > 0 && Object.keys(openChapters).length === 0) {
+            const allOpen = {};
+            chapters.forEach(ch => { allOpen[ch.order] = true; });
+            setOpenChapters(allOpen);
+        }
+    }, [chapters.length]);
+
     useEffect(() => {
         setElapsed(0);
         clearInterval(timerRef.current);
@@ -50,12 +69,11 @@ export default function LessonViewer() {
         return () => clearInterval(timerRef.current);
     }, [currentLesson?._id, isCompleted]);
 
-    // Required: 80% of lesson duration in seconds. If no duration set, unlock immediately.
+    // 80% of lesson duration in seconds
     const requiredSeconds = currentLesson?.duration ? currentLesson.duration * 60 * 0.8 : 0;
     const canMarkComplete = isCompleted || requiredSeconds === 0 || elapsed >= requiredSeconds;
     const remainingMin = Math.ceil((requiredSeconds - elapsed) / 60);
 
-    // --- Sequential lock: lesson N accessible only if lesson N-1 is completed ---
     const isLessonAccessible = (index) => {
         if (index === 0) return true;
         const prevLesson = lessons[index - 1];
@@ -138,40 +156,56 @@ export default function LessonViewer() {
 
             {/* Main layout */}
             <div className="flex flex-1 overflow-hidden">
-                {/* Left sidebar — lesson list */}
+                {/* Left sidebar — lesson list grouped by chapter */}
                 <aside className="w-64 flex-shrink-0 bg-white border-r border-gray-200 overflow-y-auto">
-                    {/* In-progress section (first few) */}
-                    {progressLessons.filter(l => l.isCompleted).length > 0 && (
-                        <div className="px-3 pt-4 pb-2">
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Completed</p>
-                            {progressLessons.filter(l => l.isCompleted).map(pl => {
-                                const full = lessons.find(l => l._id === pl._id) || pl;
-                                return (
-                                    <LessonRow
-                                        key={pl._id}
-                                        lesson={full}
-                                        isActive={currentLesson?._id === full._id}
-                                        isCompleted={true}
-                                        onClick={() => selectLesson(full)}
-                                    />
-                                );
-                            })}
-                        </div>
-                    )}
-                    <div className="px-3 pt-4 pb-4">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Lessons</p>
-                        {lessons.map((lesson, index) => {
-                            const pl = progressLessons.find(p => p._id?.toString() === lesson._id?.toString());
-                            const accessible = isLessonAccessible(index);
+                    <div className="px-3 pt-3 pb-4">
+                        {chapters.map(chapter => {
+                            const isOpen = openChapters[chapter.order] !== false;
+                            const completedInChapter = chapter.lessons.filter(l =>
+                                progressLessons.find(p => p._id?.toString() === l._id?.toString())?.isCompleted
+                            ).length;
                             return (
-                                <LessonRow
-                                    key={lesson._id}
-                                    lesson={lesson}
-                                    isActive={currentLesson?._id === lesson._id}
-                                    isCompleted={pl?.isCompleted ?? false}
-                                    isLocked={!accessible}
-                                    onClick={() => accessible && selectLesson(lesson)}
-                                />
+                                <div key={chapter.order} className="mb-2">
+                                    {/* Chapter header — clickable toggle */}
+                                    <button
+                                        onClick={() => setOpenChapters(prev => ({ ...prev, [chapter.order]: !isOpen }))}
+                                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors mb-1"
+                                    >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                                                <span className="text-white text-[9px] font-bold">{chapter.order}</span>
+                                            </div>
+                                            <span className="text-xs font-semibold text-gray-700 truncate">{chapter.title}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                                            <span className="text-[10px] text-gray-400">
+                                                {completedInChapter}/{chapter.lessons.length}
+                                            </span>
+                                            {isOpen
+                                                ? <ChevronUp className="w-3.5 h-3.5 text-gray-500" />
+                                                : <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                                            }
+                                        </div>
+                                    </button>
+
+                                    {/* Lessons in this chapter */}
+                                    {isOpen && chapter.lessons.map((lesson, index) => {
+                                        const lessonIndex = lessons.findIndex(l => l._id === lesson._id);
+                                        const pl = progressLessons.find(p => p._id?.toString() === lesson._id?.toString());
+                                        const accessible = isLessonAccessible(lessonIndex);
+                                        return (
+                                            <LessonRow
+                                                key={lesson._id}
+                                                lesson={lesson}
+                                                index={index}
+                                                isActive={currentLesson?._id === lesson._id}
+                                                isCompleted={pl?.isCompleted ?? false}
+                                                isLocked={!accessible}
+                                                onClick={() => accessible && selectLesson(lesson)}
+                                            />
+                                        );
+                                    })}
+                                </div>
                             );
                         })}
                     </div>
@@ -218,7 +252,7 @@ export default function LessonViewer() {
 
                             <button
                                 className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
-                                onClick={() => navigate('/student/chat')}
+                                onClick={() => navigate(ROUTES.STUDENT_CHAT)}
                             >
                                 <MessageSquare className="w-4 h-4" />
                                 Chat with Tutor
@@ -274,7 +308,7 @@ export default function LessonViewer() {
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-gray-800">Student also bought</h3>
                                     <button
-                                        onClick={() => navigate('/student/courses')}
+                                        onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
                                         className="text-sm text-purple-600 font-medium hover:underline"
                                     >
                                         See all
@@ -318,7 +352,7 @@ export default function LessonViewer() {
     );
 }
 
-function LessonRow({ lesson, isActive, isCompleted, isLocked, onClick }) {
+function LessonRow({ lesson, index = 0, isActive, isCompleted, isLocked, onClick }) {
     return (
         <button
             onClick={onClick}
@@ -338,13 +372,15 @@ function LessonRow({ lesson, isActive, isCompleted, isLocked, onClick }) {
             }`}>
                 {isLocked
                     ? <Lock className="w-3 h-3 text-gray-400" />
-                    : <BookOpen className={`w-3 h-3 ${isActive ? 'text-white' : isCompleted ? 'text-orange-600' : 'text-gray-500'}`} />
+                    : isCompleted
+                    ? <CheckCircle className={`w-3 h-3 ${isActive ? 'text-white' : 'text-orange-600'}`} />
+                    : <BookOpen className={`w-3 h-3 ${isActive ? 'text-white' : 'text-gray-500'}`} />
                 }
             </div>
-            <span className="flex-1 text-xs font-medium truncate">{lesson.title}</span>
+            <span className="flex-1 text-xs font-medium truncate">{index + 1}. {lesson.title}</span>
             {lesson.duration > 0 && (
                 <span className={`text-xs flex-shrink-0 ${isActive ? 'text-purple-200' : 'text-gray-400'}`}>
-                    {lesson.duration} min
+                    {lesson.duration}m
                 </span>
             )}
         </button>

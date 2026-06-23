@@ -6,6 +6,7 @@ import { validateEmail } from '../../utils/helpers';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import toast from 'react-hot-toast';
+import { ROUTES } from '../../utils/constants';
 
 const LoginForm = () => {
   const dispatch = useDispatch();
@@ -58,9 +59,9 @@ const LoginForm = () => {
       toast.success('Login successful!');
       
       const role = result.user.role;
-      if (role === 'admin') navigate('/admin/dashboard');
-      else if (role === 'tutor') navigate('/tutor/dashboard');
-      else navigate('/student/dashboard');
+      if (role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD);
+      else if (role === 'tutor') navigate(ROUTES.TUTOR_DASHBOARD);
+      else navigate(ROUTES.STUDENT_DASHBOARD);
     } catch (err) {
     }
   };

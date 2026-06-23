@@ -2,6 +2,20 @@ const mongoose = require("mongoose");
 
 const lessonSchema = new mongoose.Schema(
     {
+        chapter: {
+            title: {
+                type: String,
+                required: true,
+                default: 'Chapter 1',
+                trim: true,
+            },
+            order: {
+                type: Number,
+                required: true,
+                default: 1
+            }
+        },
+    
         title: {
             type: String,
             required: [true, 'Lesson title is required'],

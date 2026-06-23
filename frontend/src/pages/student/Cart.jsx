@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import StudentNavbar from '../../components/student/StudentNavbar';
 import StudentSidebar from '../../components/student/StudentSidebar';
 import { useSelector } from 'react-redux';
+import { ROUTES } from '../../utils/constants';
 
 export default function Cart() {
     const navigate = useNavigate();
@@ -43,7 +44,7 @@ export default function Cart() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <StudentNavbar studentInfo={user} />
+            <StudentNavbar />
             <div className="flex">
                 <StudentSidebar studentInfo={user} />
                 <main className="flex-1 p-6">
@@ -65,7 +66,7 @@ export default function Cart() {
                             <h2 className="text-xl font-semibold text-gray-600 mb-2">Your cart is empty</h2>
                             <p className="text-gray-400 mb-6">Add courses to your cart to get started</p>
                             <button
-                                onClick={() => navigate('/student/courses')}
+                                onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)}
                                 className="bg-purple-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-purple-700"
                             >
                                 Browse Courses
@@ -143,7 +144,7 @@ export default function Cart() {
                                     </p>
 
                                     <button
-                                        onClick={() => navigate('/student/checkout')}
+                                        onClick={() => navigate(ROUTES.STUDENT_CHECKOUT)}
                                         className="w-full mt-4 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 flex items-center justify-center gap-2"
                                     >
                                         Proceed to Checkout

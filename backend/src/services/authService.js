@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { USER_ROLES } = require("../config/constants");
+const { USER_ROLES, HTTP_STATUS } = require("../config/constants");
 const { sendVerificationOTP } = require('./emailService');
 const { createOTP } = require('./otpService');
 
@@ -125,25 +125,35 @@ const authService = {
     
 
         if (!user) {
-            if (role === USER_ROLES.ADMIN) {
-                throw new Error('Invalid admin credentials');
-            }
-            throw new Error(`No ${role} account found with this email. Please check your credentials or register.`);
+            const err = new Error(
+                role === USER_ROLES.ADMIN
+                    ? 'Invalid admin credentials'
+                    : `No ${role} account found with this email. Please check your credentials or register.`
+            );
+            err.statusCode = HTTP_STATUS.UNAUTHORIZED;
+            throw err;
+        
         }
 
         const isPasswordMatch = await user.comparePassword(password);
 
         if (!isPasswordMatch) {
 
-            throw new Error('Invalid email or password');
+            const err = new Error('Invalid email or password');
+            err.statusCode = HTTP_STATUS.UNAUTHORIZED;
+            throw err;
         }
 
         if (user.status === 'blocked') {
-            throw new Error('Your account has been blocked. Please contact admin.');
+            const err =  new Error('Your account has been blocked. Please contact admin.');
+            err.statusCode = HTTP_STATUS.FORBIDDEN;
+            throw err;
         }
 
         if (!user.isVerified && user.role !== USER_ROLES.ADMIN) {
-            throw new Error('Please verify your email before logging in');
+            const err = new Error('Please verify your email before logging in');
+            err.statusCode = HTTP_STATUS.UNAUTHORIZED;
+            throw err;
         }
 
         user.lastLogin = new Date();

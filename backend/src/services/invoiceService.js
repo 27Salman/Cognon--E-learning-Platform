@@ -1,5 +1,17 @@
 const PDFDocument = require('pdfkit');
+const path = require('path');
 const Order = require('../models/Order');
+
+const FONT_REGULAR = path.join(__dirname, '../../assets/fonts/Roboto-Regular.ttf');
+const FONT_BOLD    = path.join(__dirname, '../../assets/fonts/Roboto-Bold.ttf');
+
+const INR = (n) => {
+    const num = Number(n || 0);
+    return '\u20B9' + num.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+};
 
 const invoiceService = {
 
@@ -13,120 +25,260 @@ const invoiceService = {
         if (order.paymentStatus !== 'completed') {
             throw new Error('Invoice is only available for completed orders');
         }
-
         return order;
     },
 
     generateInvoicePDF(order, res) {
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const doc = new PDFDocument({ margin: 0, size: 'A4' });
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader(
-            'Content-Disposition',
-            `attachment; filename=invoice-${order.orderId}.pdf`
-        );
+        res.setHeader('Content-Disposition', `attachment; filename=invoice-${order.orderId}.pdf`);
         doc.pipe(res);
 
-        const purple = '#7c3aed';
-        const lightPurple = '#ede9fe';
-        const dark = '#111827';
-        const gray = '#6b7280';
-        const lightGray = '#f9fafb';
-        const borderGray = '#e5e7eb';
+        // ── Palette ───────────────────────────────────────────────────────
+        const PURPLE       = '#6d28d9';
+        const PURPLE_MID   = '#7c3aed';
+        const PURPLE_LIGHT = '#ede9fe';
+        const WHITE        = '#ffffff';
+        const DARK         = '#111827';
+        const GRAY         = '#6b7280';
+        const LIGHT_GRAY   = '#f9fafb';
+        const BORDER       = '#e5e7eb';
+        const GREEN        = '#059669';
+        const GREEN_LIGHT  = '#d1fae5';
 
-        const pageW = 595;
-        const margin = 50;
-        const cardW = pageW - margin * 2;
+        const PW = 595.28;
+        const PH = 841.89;
+        const ML = 48;   // margin left
+        const MR = 48;   // margin right
+        const CW = PW - ML - MR;  // content width = 499.28
 
-        //Outer card
-        doc.rect(margin, 40, cardW, 700).fill(lightPurple);
+        // ════════════════════════════════════════════════════════════════
+        // HEADER — full-width purple band
+        // ════════════════════════════════════════════════════════════════
+        doc.rect(0, 0, PW, 120).fill(PURPLE);
 
-        //Inner card
-        const cardX = margin + 20;
-        const cardY = 60;
-        const innerW = cardW - 40;
-        doc.rect(cardX, cardY, innerW, 660).fill('#ffffff');
+        // Cognon branding — left
+        doc.font(FONT_BOLD).fontSize(30).fillColor(WHITE).text('Cognon', ML, 28);
+        doc.font(FONT_REGULAR).fontSize(9).fillColor('#c4b5fd')
+            .text('Online Learning Platform', ML, 64)
+            .text('support@cognon.com', ML, 78);
 
-        //title 
-        doc.fontSize(20).font('Helvetica-Bold').fillColor(dark).text('Invoice', cardX + 20, cardY + 20);
+        // INVOICE label — right
+        doc.font(FONT_BOLD).fontSize(36).fillColor(WHITE)
+            .text('INVOICE', 0, 38, { align: 'right', width: PW - MR });
 
-        //Billed To 
-        doc.fontSize(9).font('Helvetica').fillColor(gray).text('Billed To:', cardX + 20, cardY + 55);
-        const firstCourse = order.courses[0];
-        const billedName = firstCourse?.courseTitle || firstCourse?.course?.title || order.user.name;
-        doc.fontSize(11).font('Helvetica-Bold').fillColor(dark).text(billedName, cardX + 20, cardY + 68);
+        // Thin accent line below header
+        doc.rect(0, 120, PW, 3).fill('#4c1d95');
 
-        //Invoice meta 
-        const metaX = cardX + innerW - 160;
-        doc.fontSize(9).font('Helvetica').fillColor(gray).text('Invoice No.', metaX, cardY + 20);
-        doc.fontSize(10).font('Helvetica-Bold').fillColor(purple).text(`#${order.orderId}`, metaX, cardY + 33);
+        // ════════════════════════════════════════════════════════════════
+        // INFO BLOCK — Billed To (left) | Invoice Meta (right)
+        // ════════════════════════════════════════════════════════════════
+        const infoY = 142;
 
-        doc.fontSize(9).font('Helvetica').fillColor(gray).text('Issued on', metaX, cardY + 55);
-        doc.fontSize(9).font('Helvetica').fillColor(dark).text(
-            new Date(order.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
-            metaX, cardY + 68
-        );
-
-        if (order.razorpayPaymentId) {
-            doc.fontSize(9).font('Helvetica').fillColor(gray).text('Payment ID', metaX, cardY + 88);
-            doc.fontSize(8).font('Helvetica').fillColor(dark).text(order.razorpayPaymentId, metaX, cardY + 101, { width: 150 });
+        // Left column: Billed To
+        doc.font(FONT_BOLD).fontSize(7.5).fillColor(PURPLE)
+            .text('BILLED TO', ML, infoY);
+        doc.font(FONT_BOLD).fontSize(14).fillColor(DARK)
+            .text(order.user?.name || 'Student', ML, infoY + 14);
+        doc.font(FONT_REGULAR).fontSize(9).fillColor(GRAY)
+            .text(order.user?.email || '', ML, infoY + 32);
+        if (order.user?.phone) {
+            doc.font(FONT_REGULAR).fontSize(9).fillColor(GRAY)
+                .text(order.user.phone, ML, infoY + 46);
         }
 
-        //Divider 
-        const divY = cardY + 130;
-        doc.moveTo(cardX + 20, divY).lineTo(cardX + innerW - 20, divY)
-            .strokeColor(borderGray).lineWidth(1).stroke();
+        // Right column: meta — label col + value col
+        // Right half starts at x=310, value at x=420, ends at PW-MR=547
+        const metaLabelX = 310;
+        const metaValX   = 420;
+        const metaValW   = PW - MR - metaValX;  // 127px — plenty of room
 
-        //Services table header 
-        const tblY = divY + 15;
-        const col1 = cardX + 20;
-        const col2 = cardX + innerW - 200;
-        const col3 = cardX + innerW - 120;
-        const col4 = cardX + innerW - 50;
+        const metaRows = [
+            ['Invoice No.',    `#${order.orderId}`,    true],
+            ['Issue Date',     new Date(order.orderDate).toLocaleDateString('en-IN', {
+                                    day: '2-digit', month: 'short', year: 'numeric'
+                               }), false],
+            ['Payment ID',     order.razorpayPaymentId || '—', false],
+            ['Payment Method', order.paymentMethod
+                                    ? order.paymentMethod.charAt(0).toUpperCase() + order.paymentMethod.slice(1)
+                                    : 'Razorpay', false],
+        ];
 
-        doc.fontSize(9).font('Helvetica-Bold').fillColor(gray);
-        doc.text('Services', col1, tblY);
-        doc.text('Qty.', col2, tblY, { align: 'right', width: 60 });
-        doc.text('Price', col3, tblY, { align: 'right', width: 60 });
-        doc.text('Total', col4, tblY, { align: 'right', width: 40 });
-
-        doc.moveTo(cardX + 20, tblY + 14).lineTo(cardX + innerW - 20, tblY + 14)
-            .strokeColor(borderGray).lineWidth(0.5).stroke();
-
-        //rows 
-        let rowY = tblY + 22;
-        order.courses.forEach((item) => {
-            const title = item.courseTitle || item.course?.title || 'Course';
-            const price = item.discountedPrice;
-
-            doc.fontSize(9).font('Helvetica').fillColor(dark);
-            doc.text(title, col1, rowY, { width: col2 - col1 - 10, ellipsis: true });
-            doc.text('1', col2, rowY, { align: 'right', width: 60 });
-            doc.text(`₹${price.toLocaleString('en-IN')}.00`, col3, rowY, { align: 'right', width: 60 });
-            doc.text(`₹${price.toLocaleString('en-IN')}.00`, col4, rowY, { align: 'right', width: 40 });
-            rowY += 22;
+        let mY = infoY;
+        metaRows.forEach(([label, value, highlight]) => {
+            doc.font(FONT_REGULAR).fontSize(8).fillColor(GRAY).text(label, metaLabelX, mY);
+            doc.font(highlight ? FONT_BOLD : FONT_REGULAR)
+               .fontSize(highlight ? 10 : 9)
+               .fillColor(highlight ? PURPLE : DARK)
+               .text(value, metaValX, mY, { width: metaValW, lineBreak: false });
+            mY += 19;
         });
 
-        //Total box 
-        const totalBoxY = rowY + 15;
-        const totalBoxW = 200;
-        const totalBoxX = cardX + innerW - totalBoxW - 20;
+        // Divider
+        const divY = infoY + 96;
+        doc.moveTo(ML, divY).lineTo(PW - MR, divY).strokeColor(BORDER).lineWidth(1).stroke();
 
-        doc.rect(totalBoxX, totalBoxY, totalBoxW, 36).fill(purple);
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#fff');
-        doc.text('Total (INR)', totalBoxX + 12, totalBoxY + 12);
-        doc.text(
-            `₹${order.finalAmount.toLocaleString('en-IN')}.00`,
-            totalBoxX + 12, totalBoxY + 12,
-            { align: 'right', width: totalBoxW - 24 }
-        );
+        // ════════════════════════════════════════════════════════════════
+        // TABLE
+        // ════════════════════════════════════════════════════════════════
+        const tblY = divY + 10;
 
-        //Footer  
-        const footY = totalBoxY + 60;
-        doc.fontSize(8).font('Helvetica').fillColor(gray)
-            .text('Thank you for learning with Cognon!', cardX + 20, footY, {
-                align: 'center', width: innerW - 40
-            });
+        // Column layout — all right-aligned within fixed-width boxes
+        // |  COURSE (left)  |  ORIGINAL 70px  |  DISCOUNT 70px  |  AMOUNT 80px  |
+        const COL_AMT_W    = 80;
+        const COL_DISC_W   = 70;
+        const COL_ORIG_W   = 70;
+        const COL_AMT      = PW - MR - COL_AMT_W;          // x=467, width=80
+        const COL_DISC     = COL_AMT - COL_DISC_W - 8;     // x=389, width=70
+        const COL_ORIG     = COL_DISC - COL_ORIG_W - 8;    // x=311, width=70
+        const COL_COURSE   = ML;
+
+        // Header row background
+        doc.rect(ML, tblY, CW, 26).fill(LIGHT_GRAY);
+
+        doc.font(FONT_BOLD).fontSize(8).fillColor(GRAY);
+        doc.text('COURSE / INSTRUCTOR', COL_COURSE + 8, tblY + 9);
+        doc.text('ORIGINAL', COL_ORIG,  tblY + 9, { align: 'right', width: COL_ORIG_W });
+        doc.text('DISCOUNT', COL_DISC,  tblY + 9, { align: 'right', width: COL_DISC_W });
+        doc.text('AMOUNT',   COL_AMT,   tblY + 9, { align: 'right', width: COL_AMT_W });
+
+        // Rows
+        let rowY = tblY + 34;
+        order.courses.forEach((item, idx) => {
+            const title      = item.courseTitle || item.course?.title || 'Course';
+            const instructor = item.tutor?.name || '';
+            const original   = item.originalPrice || item.discountedPrice;
+            const discounted = item.discountedPrice;
+            const disc       = original - discounted;
+            const rowH       = instructor ? 38 : 28;
+
+            // Alternating tint
+            if (idx % 2 === 1) {
+                doc.rect(ML, rowY - 4, CW, rowH + 4).fill('#faf8ff');
+            }
+
+            const courseColW = COL_ORIG - COL_COURSE - 16;
+
+            doc.font(FONT_BOLD).fontSize(10).fillColor(DARK)
+                .text(title, COL_COURSE + 8, rowY, { width: courseColW, ellipsis: true });
+
+            if (instructor) {
+                doc.font(FONT_REGULAR).fontSize(8).fillColor(GRAY)
+                    .text(`Instructor: ${instructor}`, COL_COURSE + 8, rowY + 14,
+                        { width: courseColW });
+            }
+
+            doc.font(FONT_REGULAR).fontSize(9).fillColor(GRAY)
+                .text(INR(original), COL_ORIG, rowY, { align: 'right', width: COL_ORIG_W });
+
+            if (disc > 0) {
+                doc.font(FONT_BOLD).fontSize(9).fillColor(GREEN)
+                    .text(`-${INR(disc)}`, COL_DISC, rowY, { align: 'right', width: COL_DISC_W });
+            } else {
+                doc.font(FONT_REGULAR).fontSize(9).fillColor(GRAY)
+                    .text('—', COL_DISC, rowY, { align: 'right', width: COL_DISC_W });
+            }
+
+            doc.font(FONT_BOLD).fontSize(10).fillColor(DARK)
+                .text(INR(discounted), COL_AMT, rowY, { align: 'right', width: COL_AMT_W });
+
+            rowY += rowH + 8;
+
+            // Row separator
+            doc.moveTo(ML, rowY - 4).lineTo(PW - MR, rowY - 4)
+                .strokeColor(BORDER).lineWidth(0.4).stroke();
+        });
+
+        // ════════════════════════════════════════════════════════════════
+        // SUMMARY — right-aligned block
+        // ════════════════════════════════════════════════════════════════
+        const sumY    = rowY + 12;
+        const sumLX   = 360;
+        const sumVX   = PW - MR;
+        const sumW    = sumVX - sumLX;
+        let   curSumY = sumY;
+
+        const sumRow = (label, value, bold = false, color = DARK) => {
+            doc.font(bold ? FONT_BOLD : FONT_REGULAR).fontSize(9)
+               .fillColor(GRAY).text(label, sumLX, curSumY);
+            doc.font(bold ? FONT_BOLD : FONT_REGULAR).fontSize(9)
+               .fillColor(color).text(value, sumLX, curSumY, { align: 'right', width: sumW });
+            curSumY += 18;
+        };
+
+        sumRow('Subtotal', INR(order.subtotal));
+
+        if (order.discount > 0) {
+            const couponLabel = order.couponCode ? `Coupon (${order.couponCode})` : 'Discount';
+            sumRow(couponLabel, `-${INR(order.discount)}`, false, GREEN);
+        }
+        if (order.offerApplied) {
+            sumRow(`Offer: ${order.offerApplied}`, '', false, GREEN);
+        }
+
+        // Thin line above total
+        curSumY += 4;
+        doc.moveTo(sumLX, curSumY).lineTo(PW - MR, curSumY)
+            .strokeColor(BORDER).lineWidth(0.5).stroke();
+        curSumY += 8;
+
+        // ── Total banner ──────────────────────────────────────────────
+        const totalY = curSumY;
+        doc.rect(ML, totalY, CW, 46).fill(PURPLE_MID);
+        doc.font(FONT_BOLD).fontSize(13).fillColor(WHITE)
+            .text('Total (INR)', ML + 16, totalY + 15);
+        doc.font(FONT_BOLD).fontSize(16).fillColor(WHITE)
+            .text(INR(order.finalAmount), ML + 16, totalY + 13,
+                { align: 'right', width: CW - 32 });
+
+        // ── Payment received badge ────────────────────────────────────
+        const badgeY = totalY + 56;
+        const badgeW = 170;
+        const badgeX = PW - MR - badgeW;
+        doc.rect(badgeX, badgeY, badgeW, 24).fill(GREEN_LIGHT);
+        doc.font(FONT_BOLD).fontSize(9).fillColor(GREEN)
+            .text('\u2713  PAYMENT RECEIVED', badgeX, badgeY + 8,
+                { align: 'center', width: badgeW });
+
+        // ════════════════════════════════════════════════════════════════
+        // THANK YOU CARD
+        // ════════════════════════════════════════════════════════════════
+        const thankY = badgeY + 50;
+
+        // Light purple card background
+        doc.rect(ML, thankY, CW, 80).fill(PURPLE_LIGHT);
+
+        // Left accent bar
+        doc.rect(ML, thankY, 4, 80).fill(PURPLE_MID);
+
+        doc.font(FONT_BOLD).fontSize(14).fillColor(PURPLE)
+            .text('Thank you for learning with Cognon!', ML + 20, thankY + 16);
+        doc.font(FONT_REGULAR).fontSize(9).fillColor(GRAY)
+            .text(
+                'We hope you enjoy your course. If you have any questions or need support,\nfeel free to reach out to us at support@cognon.com',
+                ML + 20, thankY + 36,
+                { width: CW - 40, lineGap: 3 }
+            );
+
+        // ════════════════════════════════════════════════════════════════
+        // FOOTER
+        // ════════════════════════════════════════════════════════════════
+        // Fixed at bottom of page
+        doc.rect(0, PH - 56, PW, 56).fill(PURPLE);
+
+        doc.font(FONT_REGULAR).fontSize(8).fillColor('#c4b5fd')
+            .text(
+                'This is a computer-generated invoice and does not require a signature.',
+                0, PH - 40,
+                { align: 'center', width: PW }
+            );
+        doc.font(FONT_BOLD).fontSize(9).fillColor(WHITE)
+            .text(
+                'Cognon  \u2022  Online Learning Platform  \u2022  support@cognon.com',
+                0, PH - 24,
+                { align: 'center', width: PW }
+            );
 
         doc.end();
     }

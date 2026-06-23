@@ -6,6 +6,7 @@ import { tutorAPI } from '../../api/tutorAPI';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import ImageCropModal from '../../components/common/ImageCropModal';
 import toast from 'react-hot-toast';
+import { ROUTES } from '../../utils/constants';
 
 export default function EditCourse() {
     const { id } = useParams();
@@ -19,7 +20,10 @@ export default function EditCourse() {
     const [saving, setSaving] = useState(false);
     const [categories, setCategories] = useState([]);
 
-    const [lessonForm, setLessonForm] = useState({ title: '', duration: '', videoUrl: '', description: '' });
+    const [lessonForm, setLessonForm] = useState({
+        title: '', duration: '', videoUrl: '', description: '',
+        chapterTitle: 'Chapter 1', chapterOrder: 1
+    });
     const [lessonThumbnail, setLessonThumbnail] = useState(null);
     const [lessonThumbnailPreview, setLessonThumbnailPreview] = useState(null);
     const [lessonPdf, setLessonPdf] = useState(null);
@@ -32,7 +36,7 @@ export default function EditCourse() {
     const [lessonCropSrc, setLessonCropSrc] = useState(null); // lesson thumbnail crop
 
     const resetLessonForm = () => {
-        setLessonForm({ title: '', duration: '', videoUrl: '', description: '' });
+        setLessonForm({ title: '', duration: '', videoUrl: '', description: '', chapterTitle: 'Chapter 1', chapterOrder: 1 });
         setLessonThumbnail(null);
         setLessonThumbnailPreview(null);
         setLessonPdf(null);
@@ -85,7 +89,7 @@ export default function EditCourse() {
             if (thumbnail) formData.append('thumbnail', thumbnail);
             await courseAPI.updateCourse(id, formData);
             toast.success('Course updated!');
-            navigate('/tutor/courses');
+            navigate(ROUTES.TUTOR_COURSES);
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to update course');
         } finally {
@@ -97,7 +101,7 @@ export default function EditCourse() {
         try {
             await courseAPI.deleteCourse(id);
             toast.success('Course deleted');
-            navigate('/tutor/courses');
+            navigate(ROUTES.TUTOR_COURSES);
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to delete');
         }
@@ -105,6 +109,7 @@ export default function EditCourse() {
 
     const handleAddLesson = async () => {
         if (!lessonForm.title) return toast.error('Lesson title required');
+        if (!lessonForm.chapterTitle?.trim()) return toast.error('Chapter title required');
         setAddingLesson(true);
         try {
             const formData = new FormData();
@@ -112,6 +117,8 @@ export default function EditCourse() {
             formData.append('description', lessonForm.description || '');
             formData.append('videoUrl', lessonForm.videoUrl || '');
             formData.append('duration', lessonForm.duration || 0);
+            formData.append('chapterTitle', lessonForm.chapterTitle.trim());
+            formData.append('chapterOrder', lessonForm.chapterOrder || 1);
             if (lessonThumbnail) formData.append('thumbnail', lessonThumbnail);
             if (lessonPdf) formData.append('pdfNotes', lessonPdf);
 
@@ -142,6 +149,8 @@ export default function EditCourse() {
             duration: lesson.duration || '',
             videoUrl: lesson.videoUrl || '',
             description: lesson.description || '',
+            chapterTitle: lesson.chapter?.title || 'Chapter 1',
+            chapterOrder: lesson.chapter?.order || 1,
         });
         setLessonThumbnailPreview(lesson.thumbnailURL || null);
         setLessonPdf(null);
@@ -255,12 +264,21 @@ export default function EditCourse() {
                     )}
                 </div>
                 <div className="grid grid-cols-2 gap-3 mb-3">
+                    {/* Chapter fields */}
+                    <input placeholder="Chapter Title (e.g. Introduction)" value={lessonForm.chapterTitle}
+                        onChange={e => setLessonForm(p => ({ ...p, chapterTitle: e.target.value }))}
+                        className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                    <input placeholder="Chapter Order (e.g. 1)" type="number" min="1" value={lessonForm.chapterOrder}
+                        onChange={e => setLessonForm(p => ({ ...p, chapterOrder: e.target.value }))}
+                        className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
+
                     <input placeholder="Lesson Title" value={lessonForm.title}
                         onChange={e => setLessonForm(p => ({ ...p, title: e.target.value }))}
                         className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
                     <input placeholder="Duration (minutes)" type="number" value={lessonForm.duration}
                         onChange={e => setLessonForm(p => ({ ...p, duration: e.target.value }))}
                         className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
+    
                     <input placeholder="Video URL (YouTube or Vimeo)" value={lessonForm.videoUrl}
                         onChange={e => setLessonForm(p => ({ ...p, videoUrl: e.target.value }))}
                         className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 col-span-2" />
@@ -316,43 +334,69 @@ export default function EditCourse() {
                 </button>
             </div>
 
-            {/* Lessons list */}
+            {/* Lessons grouped by chapter */}
             {lessons.length > 0 && (
                 <div className="mb-6">
-                    <h2 className="text-sm font-semibold text-gray-700 mb-3">Lessons</h2>
-                    <div className="space-y-3">
-                        {lessons.map((lesson, i) => (
-                            <div key={lesson._id} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
-                                <div className="w-16 h-12 rounded-lg overflow-hidden bg-purple-100 flex-shrink-0">
-                                    {lesson.thumbnailURL ? (
-                                        <img src={lesson.thumbnailURL} alt={lesson.title} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-purple-600 text-xs font-bold">
-                                            #{i + 1}
+                    <h2 className="text-sm font-semibold text-gray-700 mb-3">
+                        Lessons ({lessons.length})
+                    </h2>
+                    {(() => {
+                        const chapMap = {};
+                        lessons.forEach(l => {
+                            const key = l.chapter?.order ?? 1;
+                            if (!chapMap[key]) chapMap[key] = { order: key, title: l.chapter?.title ?? 'Chapter 1', lessons: [] };
+                            chapMap[key].lessons.push(l);
+                        });
+                        const chapters = Object.values(chapMap)
+                            .sort((a, b) => a.order - b.order)
+                            .map(ch => ({ ...ch, lessons: ch.lessons.sort((a, b) => a.order - b.order) }));
+
+                        return chapters.map(chapter => (
+                            <div key={chapter.order} className="mb-4">
+                                {/* Chapter header */}
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="h-px flex-1 bg-purple-200" />
+                                    <span className="text-xs font-bold text-purple-700 bg-purple-50 border border-purple-200 px-3 py-1 rounded-full">
+                                        Chapter {chapter.order}: {chapter.title}
+                                    </span>
+                                    <div className="h-px flex-1 bg-purple-200" />
+                                </div>
+                                <div className="space-y-2">
+                                    {chapter.lessons.map((lesson, i) => (
+                                        <div key={lesson._id} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+                                            <div className="w-16 h-12 rounded-lg overflow-hidden bg-purple-100 flex-shrink-0">
+                                                {lesson.thumbnailURL ? (
+                                                    <img src={lesson.thumbnailURL} alt={lesson.title} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-purple-600 text-xs font-bold">
+                                                        #{i + 1}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-gray-800 text-sm truncate">{lesson.title}</p>
+                                                <p className="text-xs text-gray-500">
+                                                    {lesson.duration > 0 ? `${lesson.duration} min` : 'No duration'}
+                                                    {lesson.videoUrl ? ' · Video' : ''}
+                                                    {lesson.pdfNotesURL ? ' · PDF' : ''}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2 flex-shrink-0">
+                                                <button onClick={() => handleEditLesson(lesson)}
+                                                    className="flex items-center gap-1 bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors">
+                                                    Edit
+                                                </button>
+                                                <button onClick={() => setConfirmLesson({ open: true, id: lesson._id, title: lesson.title })}
+                                                    className="flex items-center gap-1 bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-600 transition-colors">
+                                                    <Trash2 className="w-3 h-3" /> Delete
+                                                </button>
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-gray-800 text-sm truncate">{lesson.title}</p>
-                                    <p className="text-xs text-gray-500">
-                                        {lesson.duration > 0 ? `${lesson.duration} min` : 'No duration'}
-                                        {lesson.videoUrl ? ' · Video' : ''}
-                                        {lesson.pdfNotesURL ? ' · PDF' : ''}
-                                    </p>
-                                </div>
-                                <div className="flex gap-2 flex-shrink-0">
-                                    <button onClick={() => handleEditLesson(lesson)}
-                                        className="flex items-center gap-1 bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors">
-                                        Edit
-                                    </button>
-                                    <button onClick={() => setConfirmLesson({ open: true, id: lesson._id, title: lesson.title })}
-                                        className="flex items-center gap-1 bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-600 transition-colors">
-                                        <Trash2 className="w-3 h-3" /> Delete
-                                    </button>
+                                    ))}
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        ));
+                    })()}
                 </div>
             )}
 

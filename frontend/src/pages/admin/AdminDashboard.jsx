@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../utils/constants';
 import { adminAPI } from '../../api/adminAPI';
 import {
   Users, BookOpen, GraduationCap, DollarSign,
@@ -403,7 +404,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-700">Recent Orders</h2>
           <button
-            onClick={() => navigate('/admin/orders')}
+            onClick={() => navigate(ROUTES.ADMIN_ORDERS)}
             className="text-xs text-purple-600 hover:underline font-medium"
           >
             View all
