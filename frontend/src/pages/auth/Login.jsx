@@ -7,8 +7,6 @@ import { validateEmail } from '../../utils/helpers';
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
-const MAX_ATTEMPTS = 3;
-
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,29 +18,6 @@ const Login = () => {
   const [activeRole, setActiveRole] = useState(initialRole);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [formErrors, setFormErrors] = useState({});
-  const [attemptsByKey, setAttemptsByKey] = useState(()=>{
-    try{
-      const saved = localStorage.getItem('cognon_login_attempts');
-      return saved ? JSON.parse(saved) : {};
-    }catch (e){
-      return {}
-    }
-  });
-
-  const attemptKey = `${formData.email.trim().toLowerCase()}:${activeRole}`;
-  const failedAttempts = attemptsByKey[attemptKey] || 0;
-  const isLocked = failedAttempts >= MAX_ATTEMPTS;
-  const attemptsRemaining = MAX_ATTEMPTS - failedAttempts;
-
-  useEffect(()=>{
-    localStorage.setItem('cognon_login_attempts', JSON.stringify(attemptsByKey));
-  },[attemptsByKey]);
-
-  useEffect(() => {
-    if (isLocked && submitBtnRef.current) {
-      submitBtnRef.current.blur();
-    }
-  }, [isLocked]);
 
   useEffect(() => {
     return () => dispatch(clearError());
@@ -81,7 +56,6 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLocked) return;
 
     const errors = validateForm();
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
@@ -92,23 +66,10 @@ const Login = () => {
       role: activeRole,
     }));
 
-    const errorMsg = resultAction.payload;
-    if (errorMsg?.includes('blocked')) {
-        toast.error(errorMsg);  
-    }
-
-    if (loginUser.fulfilled.match(resultAction)) {
-      setAttemptsByKey(prev => ({ ...prev, [attemptKey]: 0 }));
-      toast.success('Login successful!');
-    } else {
-      const newCount = failedAttempts + 1;
-      setAttemptsByKey(prev => ({ ...prev, [attemptKey]: newCount }));
-      if (newCount >= MAX_ATTEMPTS) {
-        toast.error('Too many failed attempts. Please reset your password.');
-      } else {
-        const remaining = MAX_ATTEMPTS - newCount;
-        toast.error(`Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`);
-      }
+    if(loginUser.fulfilled.match(resultAction)){
+      toast.success('Login successful')
+    }else{
+      toast.error(resultAction.payload || 'Login Failed');
     }
   };
 
@@ -188,30 +149,6 @@ const Login = () => {
             </span>
           </div>
 
-          {/* Lockout banner */}
-          {isLocked && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                </svg>
-                <div>
-                  <p className="text-sm font-medium text-red-800">Too many failed attempts</p>
-                  <p className="text-sm text-red-600 mt-1">Login disabled for this account. Reset your password to continue.</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Attempts warning */}
-          {!isLocked && failedAttempts > 0 && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-700 text-center">
-                {attemptsRemaining} attempt{attemptsRemaining === 1 ? '' : 's'} remaining before login is disabled
-              </p>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input label="Email" type="email" name="email" value={formData.email}
               onChange={handleChange} placeholder="Enter your email"
@@ -219,7 +156,7 @@ const Login = () => {
 
             <Input label="Password" type="password" name="password" value={formData.password}
               onChange={handleChange} placeholder="Enter your Password"
-              error={formErrors.password} disabled={isLocked} required />
+              error={formErrors.password} required />
 
             {/* Forgot Password — always same style */}
             <div className="flex items-center justify-end">
@@ -231,14 +168,10 @@ const Login = () => {
             <button
               ref={submitBtnRef}
               type="submit"
-              disabled={loading || isLocked}
-              className={`w-full py-3 px-4 font-medium rounded-lg transition-colors ${
-                isLocked
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed'
-              }`}
+              disabled={loading}
+              className="w-full py-3 px-4 font-medium rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Loading...' : isLocked ? 'Login disabled' : 'Login'}
+              {loading ? 'Loading...' : 'Login'}
             </button>
           </form>
 
@@ -254,15 +187,12 @@ const Login = () => {
                 <span className="px-4 bg-gray-50 text-gray-500">Sign in with</span>
               </div>
             </div>
-            <button type="button" disabled={isLocked}
+            <button type="button"
               onClick={() => {
-                if (isLocked) return;
                 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
                 window.location.href = `${API_URL}/auth/google?role=${activeRole}`;
               }}
-              className={`mt-4 w-full flex items-center justify-center px-4 py-3 border rounded-lg font-medium transition-colors ${
-                isLocked ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`mt-4 w-full flex items-center justify-center px-4 py-3 border rounded-lg font-medium transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50`}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

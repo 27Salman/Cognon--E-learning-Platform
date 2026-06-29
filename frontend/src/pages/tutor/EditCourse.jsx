@@ -114,8 +114,8 @@ export default function EditCourse() {
         try {
             const formData = new FormData();
             formData.append('title', lessonForm.title);
-            formData.append('description', lessonForm.description || '');
-            formData.append('videoUrl', lessonForm.videoUrl || '');
+            if (lessonForm.description) formData.append('description', lessonForm.description);
+            if (lessonForm.videoUrl?.trim()) formData.append('videoUrl', lessonForm.videoUrl.trim());
             formData.append('duration', lessonForm.duration || 0);
             formData.append('chapterTitle', lessonForm.chapterTitle.trim());
             formData.append('chapterOrder', lessonForm.chapterOrder || 1);
@@ -136,7 +136,9 @@ export default function EditCourse() {
             }
             resetLessonForm();
         } catch (err) {
-            toast.error(err?.response?.data?.message || 'Failed to save lesson');
+            const data = err?.response?.data;
+            const errorMsg = data?.errors?.[0]?.message || data?.message || 'Failed to save lesson';
+            toast.error(errorMsg);
         } finally {
             setAddingLesson(false);
         }

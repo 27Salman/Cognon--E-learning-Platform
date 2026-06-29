@@ -25,6 +25,14 @@ const checkoutService = {
             throw new Error('Your cart is empty');
         }
 
+        if (cartData.hasUnavailable) {
+            const names = cartData.items
+                .filter(i => !i.isAvailable)
+                .map(i => i.course.title)
+                .join(', ');
+            throw new Error(`These courses are no longer available: ${names}. Remove them from your cart.`);
+        }
+
         let subtotal = cartData.subtotal;
         let couponDiscount = 0;
         let couponInfo = null;

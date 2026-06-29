@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentAPI } from '../../api/studentAPI';
-import { ShoppingCart, Trash2, BookOpen, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Trash2, BookOpen, ArrowRight, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentNavbar from '../../components/student/StudentNavbar';
 import StudentSidebar from '../../components/student/StudentSidebar';
@@ -14,18 +14,14 @@ export default function Cart() {
     const [cart, setCart] = useState({ items: [], subtotal: 0, totalItems: 0 });
     const [loading, setLoading] = useState(true);
     const [removing, setRemoving] = useState({});
+    const [checkingOut, setCheckingOut] = useState(false);
 
     const fetchCart = async () => {
         try {
             const res = await studentAPI.getCart();
             setCart(res.data);
-
-            if(res.data.removedItems && res.data.removedItems.length > 0){
-                toast.error(`Removed unavailable course from your cart : ${res.data.removedItems.join(', ')}`, {duration:5000});
-                window.dispatchEvent(new Event('cart-updated'));
-            }
         } catch {
-            toast.error('Failed to load the cart', {id: 'cart-error'})
+            toast.error('Failed to load the cart', { id: 'cart-error' });
         } finally {
             setLoading(false);
         }
@@ -47,6 +43,36 @@ export default function Cart() {
         }
     };
 
+    const handleCheckout = async () => {
+        setCheckingOut(true);
+        try {
+            const res = await studentAPI.getCart();
+            const freshCart = res.data;
+            setCart(freshCart);
+            
+            if (freshCart.hasUnavailable) {
+                toast.error(
+                    'Some courses in your cart are no longer available. Remove them to proceed.',
+                    { duration: 5000 }
+                );
+                return;
+            }
+
+            if(freshCart.items.length === 0){
+                toast.error('Your cart is empty');
+                setCart(freshCart);
+                return;
+            }
+
+            navigate(ROUTES.STUDENT_CHECKOUT);
+
+        } catch (error) {
+            toast.error('Could not verify the cart. Please try again.')
+        }finally {
+            setCheckingOut(false);  
+        }
+    }
+    
     return (
         <div className="min-h-screen bg-gray-50">
             <StudentNavbar />
@@ -81,8 +107,21 @@ export default function Cart() {
                         <div className="flex flex-col lg:flex-row gap-6">
                             {/* Cart Items */}
                             <div className="flex-1 space-y-3">
+                                {cart.hasUnavailable && (
+                                    <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                        <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                                        <p className="text-sm text-red-700 font-medium">
+                                            Some courses in your cart are no longer available. Remove them to proceed to checkout.
+                                        </p>
+                                    </div>
+                                )}
                                 {cart.items.map((item) => (
-                                    <div key={item._id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex gap-4">
+                                    <div key={item._id} className={`bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex gap-4 ${
+                                        !item.isAvailable 
+                                            ? 'border-red-200 opacity-70'
+                                            : 'border-gray-200'
+                                    }`}
+                                    >
                                         {item.course?.thumbnailURL ? (
                                             <img
                                                 src={item.course.thumbnailURL}
@@ -103,11 +142,18 @@ export default function Cart() {
                                                 {item.course?.title}
                                             </h3>
                                             <p className="text-xs text-gray-500 mt-0.5">{item.course?.tutor?.name}</p>
-                                            {item.offer && (
+
+                                            {/*Unavailable badge */}
+                                            {!item.isAvailable ? (
+                                                <span className="inline-flex items-center gap-1 mt-1 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                                                    <AlertTriangle className="w-3 h-3" />
+                                                    Course unavailable
+                                                </span>
+                                            ) : item.offer ? (
                                                 <span className="inline-block mt-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                                                     {item.offer.discountPercentage}% OFF
                                                 </span>
-                                            )}
+                                            ) : null}
                                         </div>
                                         <div className="flex flex-col items-end justify-between flex-shrink-0">
                                             <button
@@ -118,10 +164,16 @@ export default function Cart() {
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                             <div className="text-right">
-                                                {item.discountAmount > 0 && (
-                                                    <p className="text-xs text-gray-400 line-through">₹{item.originalPrice}</p>
+                                                {!item.isAvailable ? (
+                                                    <p className="text-xs text-red-400 font-medium">Unavailable</p>
+                                                ) : (
+                                                    <>
+                                                        {item.discountAmount > 0 && (
+                                                            <p className="text-xs text-gray-400 line-through">₹{item.originalPrice}</p>
+                                                        )}
+                                                        <p className="font-bold text-gray-800">₹{item.finalPrice}</p>
+                                                    </>
                                                 )}
-                                                <p className="font-bold text-gray-800">₹{item.finalPrice}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -149,11 +201,16 @@ export default function Cart() {
                                     </p>
 
                                     <button
-                                        onClick={() => navigate(ROUTES.STUDENT_CHECKOUT)}
-                                        className="w-full mt-4 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 flex items-center justify-center gap-2"
+                                        onClick={handleCheckout}
+                                        disabled={cart.hasUnavailable || cart.totalItems === 0 || checkingOut}
+                                        className={`w-full mt-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${
+                                            cart.hasUnavailable || cart.totalItems === 0
+                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                : 'bg-purple-600 text-white hover:bg-purple-700'
+                                        }`}
                                     >
-                                        Proceed to Checkout
-                                        <ArrowRight className="w-4 h-4" />
+                                        {checkingOut ? 'Checking...' : cart.hasUnavailable ? 'Remove unavailable courses' : 'Proceed to Checkout'}
+                                        {!cart.hasUnavailable && <ArrowRight className="w-4 h-4" />}
                                     </button>
                                 </div>
                             </div>

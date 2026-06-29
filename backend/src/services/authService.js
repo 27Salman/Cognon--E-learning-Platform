@@ -135,14 +135,37 @@ const authService = {
         
         }
 
+        if(user.lockUntil && user.lockUntil > new Date()){
+            const minutesLeft = Math.ceil((user.lockUntil - new Date()) / 60000);
+            const err = new Error(`Your account is locked. Try again after ${minutesLeft} minutes.`);
+            err.statusCode = HTTP_STATUS.FORBIDDEN;
+            throw err;
+        }
+
         const isPasswordMatch = await user.comparePassword(password);
 
         if (!isPasswordMatch) {
 
-            const err = new Error('Invalid email or password');
+            user.loginAttempts = (user.loginAttempts || 0) + 1;
+
+            if(user.loginAttempts >= 3){
+                user.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+                user.loginAttempts = 0;
+                await user.save();
+                const err = new Error('Too many failed attempts. Account is locked for 15 min. Try later!');
+                err.statusCode = HTTP_STATUS.FORBIDDEN;
+                throw err;
+            }
+
+            user.save();
+            const remaining = 3 - user.loginAttempts;
+            const err = new Error(`Invalid email or password. ${remaining} Attempts left.`);
             err.statusCode = HTTP_STATUS.UNAUTHORIZED;
             throw err;
         }
+
+        user.loginAttempts = 0;
+        user.lockUntil = null;
 
         if (user.status === 'blocked') {
             const err =  new Error('Your account has been blocked. Please contact admin.');

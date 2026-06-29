@@ -1,5 +1,7 @@
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
+const path = require('path');
+
 
 function groupByChapter(lessons) {
     const map = {};
@@ -173,6 +175,25 @@ const lessonService = {
         await Promise.all(updatePromises);
 
         return await Lesson.find({ course: courseId }).sort({ order: 1 });
+    },
+
+    async getPdfFilePath(lessonId, userId) {
+        const lesson = await Lesson.findById(lessonId).populate('course');
+
+        if (!lesson || !lesson.pdfNotes) {
+            throw new Error('PDF not found');
+        }
+
+        const isOwner = lesson.course.tutor.toString() === userId;
+        const isEnrolled = lesson.course.studentsEnrolled.map(s => s.toString()).includes(userId);
+
+        if (!isOwner && !isEnrolled) {
+            const err = new Error('Enroll in this course to access the PDF');
+            err.statusCode = 403;
+            throw err;
+        }
+
+        return path.join(__dirname, '../uploads/pdfs', lesson.pdfNotes);
     },
 
     async updateCourseTotals(courseId) {

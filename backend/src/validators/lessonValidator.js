@@ -12,9 +12,17 @@ const lessonValidation = [
         .isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters'),
 
     body('videoUrl')
-        .optional({ checkFalsy: true })
+        .optional({ nullable: true, checkFalsy: true })
         .trim()
-        .isURL().withMessage('Please provide a valid video URL'),
+        .custom((value) => {
+            if (!value || value.trim() === '') return true;
+            try {
+                new URL(value);
+                return true;
+            } catch {
+                throw new Error('Please provide a valid video URL');
+            }
+        }),
 
     body('duration')
         .optional({ checkFalsy: true })

@@ -84,71 +84,56 @@ const cartService = {
         });
 
         if (!cart || cart.items.length === 0) {
-            return {
-                items: [],
-                subtotal: 0,
-                totalItems: 0
-            };
-        }
-
-        const validItems = [];
-        let subtotal = 0;
-        const removedItems = [];
-
-
-        for (const item of cart.items) {
-            if (!item.course || item.course.status !== COURSE_STATUS.PUBLISHED) {
-
-                if(item.course && item.course.title){
-                    removedItems.push(item.course.title);
-                }else{
-                    removedItems.push('An unavailable Course');
-                }
-
-                continue;
-            }
-
-            const offerPct = item.course.offerPercentage || 0;
-            let finalPrice = item.course.price;
-            let discountAmount = 0;
-            let offerInfo = null;
-
-            if (offerPct > 0) {
-                discountAmount = (item.course.price * offerPct) / 100;
-                finalPrice = item.course.price - discountAmount;
-                offerInfo = {
-                    discountPercentage: offerPct
-                };
-            }
-
-            const round2 = (n) => Math.round(n * 100) / 100;
-
-            validItems.push({
-                _id: item._id,
-                course: item.course,
-                originalPrice: item.course.price,
-                discountAmount: round2(discountAmount),
-                finalPrice: round2(finalPrice),
-                offer: offerInfo,
-                addedAt: item.addedAt
-            });
-
-            subtotal += finalPrice;
-        }
-        if(removedItems.length > 0){
-            cart.items = cart.items.filter( item => item.course && item.course.status === COURSE_STATUS.PUBLISHED);
-            await cart.save();
+            return { items: [], subtotal: 0, totalItems: 0, hasUnavailable: false };
         }
 
         const round2 = (n) => Math.round(n * 100) / 100;
+        const allItems = [];
+        let subtotal = 0;
+
+        for (const item of cart.items) {
+            if (!item.course) continue;
+
+            const isAvailable = item.course.status === COURSE_STATUS.PUBLISHED;
+
+            const livePrice = item.course.price;
+            const offerPct = item.course.offerPercentage || 0;
+            let discountAmount = 0;
+            let finalPrice = livePrice;
+            let offerInfo = null;
+
+            if (offerPct > 0) {
+                discountAmount = round2((livePrice * offerPct) / 100);
+                finalPrice = round2(livePrice - discountAmount);
+                offerInfo = { discountPercentage: offerPct };
+            }
+
+            allItems.push({
+                _id: item._id,
+                course: item.course,
+                originalPrice: livePrice,
+                discountAmount: round2(discountAmount),
+                finalPrice: round2(finalPrice),
+                offer: offerInfo,
+                addedAt: item.addedAt,
+                isAvailable   
+            });
+
+            if (isAvailable) {
+                subtotal += finalPrice;
+            }
+        }
+
+        const hasUnavailable = allItems.some(item => !item.isAvailable);
 
         return {
-            items: validItems,
+            items: allItems,
             subtotal: round2(subtotal),
-            totalItems: validItems.length,
-            removedItems,
+            totalItems: allItems.filter(i => i.isAvailable).length,
+            hasUnavailable
         };
     },
+
 
     async clearCart(userId) {
         await Cart.findOneAndUpdate(
