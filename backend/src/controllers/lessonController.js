@@ -35,3 +35,8 @@ exports.reorderLessons = asyncHandler(async (req, res) => {
     const data = await lessonService.reorderLessons(req.params.courseId, req.user.id, req.body.lessons);
     res.status(HTTP_STATUS.OK).json({ success: true, message: 'Lessons reordered successfully', data });
 });
+
+exports.getLessonPdf = asyncHandler(async (req, res) => {
+    const filePath = await lessonService.getPdfFilePath(req.params.id, req.user.id);
+    res.sendFile(filePath);
+});

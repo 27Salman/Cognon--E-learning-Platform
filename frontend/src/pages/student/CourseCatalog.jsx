@@ -50,12 +50,16 @@ function CourseCardLarge({ course }) {
                         <span className="text-xs text-gray-600">{course.tutor?.name || "Tutor"}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                        {course.originalPrice && course.originalPrice > course.price && (
-                            <span className="text-xs text-gray-400 line-through">₹{course.originalPrice}</span>
+                        {course.offer && course.offer.discountedPrice < course.price ? (
+                            <>
+                                <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
+                                <span className="text-purple-600 font-bold text-sm">₹{course.offer.discountedPrice}</span>
+                            </>
+                        ) : (
+                            <span className="text-purple-600 font-bold text-sm">
+                                {course.price === 0 ? 'Free' : `₹${course.price}`}
+                            </span> 
                         )}
-                        <span className="text-purple-600 font-bold text-sm">
-                            {course.price === 0 ? "Free" : `₹${course.price}`}
-                        </span>
                     </div>
                 </div>
             </div>

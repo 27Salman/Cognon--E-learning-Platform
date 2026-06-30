@@ -51,9 +51,18 @@ function CourseCard({ course }) {
                         </div>
                         <span className="text-xs text-gray-600">{course.tutor?.name}</span>
                     </div>
-                    <span className="text-purple-600 font-bold text-sm">
-                        {course.price === 0 ? "Free" : `₹${course.price}`}
-                    </span>
+                        <div className="flex items-center gap-1.5">
+                            {course.offer && course.offer.discountedPrice < course.price ? (
+                                <>
+                                    <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
+                                    <span className="text-purple-600 font-bold text-sm">₹{course.offer.discountedPrice}</span>
+                                </>
+                            ) : (
+                                <span className="text-purple-600 font-bold text-sm">
+                                    {course.price === 0 ? "Free" : `₹${course.price}`}
+                                </span>
+                            )}
+                        </div>
                 </div>
             </div>
         </div>
@@ -78,13 +87,17 @@ export default function CategoryPage() {
     const [categoryPages, setCategoryPages] = useState({});
 
     useEffect(() => {
-        dispatch(fetchPublishedCourses({}));
-
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/public`)
-            .then(r => r.json())
-            .then(data => setAdminCategories(data?.data?.categories || []))
-            .catch(() => {});
-    }, [dispatch]);
+        const delayDebounce = setTimeout(()=>{
+            dispatch(fetchPublishedCourses({
+                search: searchValue,
+                category: categoryFilter,
+                sort: sortBy === 'newest' ? '-createdAt' : sortBy,
+                limit: 200,   // fetch all for client-side category grouping
+                page: 1
+            }));
+        },300);
+        return () => clearTimeout(delayDebounce);
+    }, [dispatch, searchValue, categoryFilter, sortBy]);
 
     useEffect(() => {
         setCategoryFilter(focusCategory || "");
@@ -123,19 +136,7 @@ export default function CategoryPage() {
         ? adminCategories.map(c => c.name)
         : [...new Set(catalog.map(c => c.category).filter(Boolean))].sort();
 
-    const filteredCatalog = catalog.filter(c => {
-        const matchSearch = !searchValue.trim() ||
-            c.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-            (c.category || "").toLowerCase().includes(searchValue.toLowerCase());
-        const matchCategory = !categoryFilter || c.category === categoryFilter;
-        return matchSearch && matchCategory;
-    });
-
-    const sortedCatalog = [...filteredCatalog].sort((a, b) => {
-        if (sortBy === "price_asc")  return (a.price || 0) - (b.price || 0);
-        if (sortBy === "price_desc") return (b.price || 0) - (a.price || 0);
-        return new Date(b.createdAt) - new Date(a.createdAt);
-    });
+    const sortedCatalog = catalog;
 
     const grouped = sortedCatalog.reduce((acc, course) => {
         const cat = course.category || "Other";
@@ -273,34 +274,41 @@ export default function CategoryPage() {
                             return (
                                 <section key={category}>
                                     <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-xl font-bold text-gray-800">{category}</h2>
+                                        <h2 className="text-xl font-bold text-gray-800">
+                                            {category}
+                                            <span className="ml-2 text-sm font-normal text-gray-400">
+                                                ({courses.length} course{courses.length !== 1 ? 's' : ''})
+                                            </span>
+                                        </h2>
                                         <div className="flex items-center gap-3">
-                                            {totalPages > 1 && !categoryFilter && (
-                                                <div className="flex items-center gap-2">
+                                            {!categoryFilter && (
+                                                <div className="flex items-center gap-1.5">
                                                     <button
                                                         onClick={() => handleCategoryPageChange(category, -1)}
                                                         disabled={currentPage === 0}
-                                                        className={`p-1.5 rounded-lg border ${
+                                                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
                                                             currentPage === 0
-                                                                ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                                                                : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                                                                ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                                                : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
                                                         }`}
                                                     >
-                                                        <ChevronLeft className="w-4 h-4" />
+                                                        <ChevronLeft className="w-5 h-5" />
                                                     </button>
-                                                    <span className="text-sm text-gray-600">
-                                                        {currentPage + 1} / {totalPages}
-                                                    </span>
+                                                    {totalPages > 1 && (
+                                                        <span className="text-sm text-gray-500 min-w-[3rem] text-center">
+                                                            {currentPage + 1} / {totalPages}
+                                                        </span>
+                                                    )}
                                                     <button
                                                         onClick={() => handleCategoryPageChange(category, 1)}
-                                                        disabled={currentPage === totalPages - 1}
-                                                        className={`p-1.5 rounded-lg border ${
-                                                            currentPage === totalPages - 1
-                                                                ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                                                                : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                                                        disabled={currentPage >= totalPages - 1}
+                                                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+                                                            currentPage >= totalPages - 1
+                                                                ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                                                : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
                                                         }`}
                                                     >
-                                                        <ChevronRight className="w-4 h-4" />
+                                                        <ChevronRight className="w-5 h-5" />
                                                     </button>
                                                 </div>
                                             )}

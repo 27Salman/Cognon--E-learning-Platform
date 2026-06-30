@@ -28,9 +28,16 @@ export default function Checkout() {
     const fetchPriceData = async (code, isInitial = false) => {
         if (isInitial) setLoading(true);
         else setCouponLoading(true);
+        
         try {
             const res = await studentAPI.calculatePrice(code || null);
             setPriceData(res.data);
+
+            if(res.data.removedItems && res.data.removedItems.length > 0){
+                toast.error(`Removed unavailable course from your checkout: ${res.data.removedItems.join(', ')}`, {duration: 5000});
+                window.dispatchEvent(new Event('cart-updated'));
+            }
+
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to load checkout');
             if (isInitial) navigate(ROUTES.STUDENT_CART);
