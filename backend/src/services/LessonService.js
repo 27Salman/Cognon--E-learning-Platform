@@ -1,7 +1,8 @@
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 const path = require('path');
-
+const notificationService = require('./notificationService');
+const { NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
 
 function groupByChapter(lessons) {
     const map = {};
@@ -45,7 +46,21 @@ const lessonService = {
         });
 
         await lesson.save();
-        await this.updateCourseTotals(courseId);
+
+        await lessonService.updateCourseTotals(courseId);
+
+        const enrolledCourse = await Course.findById(courseId).select('studentsEnrolled title');
+        if (enrolledCourse?.studentsEnrolled?.length > 0) {
+            await notificationService.createBulk(enrolledCourse.studentsEnrolled, {
+                type: NOTIFICATION_TYPES.COURSE_CONTENT_UPDATED,
+                title: `New lesson added to "${enrolledCourse.title}"`,
+                message: `A new lesson "${title}" has been added to your enrolled course.`,
+                priority: 'low',
+                actionUrl: NOTIFICATION_ACTIONS.STUDENT_MY_COURSES(),
+                data: { courseId, lessonId: lesson._id, lessonTitle: title }
+            });
+        }
+
         return await Lesson.findById(lesson._id).populate('course', 'title');
     },
 

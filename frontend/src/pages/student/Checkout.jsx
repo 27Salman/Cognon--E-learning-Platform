@@ -5,7 +5,7 @@ import { BookOpen, Tag, X, CreditCard, ChevronDown, ChevronUp, Check, Wallet } f
 import toast from 'react-hot-toast';
 import StudentNavbar from '../../components/student/StudentNavbar';
 import { useSelector } from 'react-redux';
-import { ROUTES } from '../../utils/constants';
+import { ROUTES, DISCOUNT_TYPE } from '../../utils/constants';
 
 export default function Checkout() {
     const navigate = useNavigate();
@@ -378,7 +378,7 @@ export default function Checkout() {
                                                                             )}
                                                                         </div>
                                                                         <p className="text-xs text-gray-500 mt-0.5 truncate">
-                                                                            {c.discountType === 'percentage'
+                                                                            {c.discountType === DISCOUNT_TYPE.PERCENTAGE
                                                                                 ? `${c.discountValue}% off${c.maxDiscountAmount ? ` (max ₹${c.maxDiscountAmount})` : ''}`
                                                                                 : `₹${c.discountValue} off`}
                                                                             {c.minPurchaseAmount > 0 ? ` · min ₹${c.minPurchaseAmount}` : ''}

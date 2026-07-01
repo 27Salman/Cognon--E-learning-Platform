@@ -4,7 +4,8 @@ const Lesson = require('../models/Lesson');
 const Category = require('../models/Category');
 const Cart = require('../models/Cart');
 const Wishlist = require('../models/Wishlist');
-const { COURSE_STATUS } = require('../config/constants');
+const notificationService = require('./notificationService');
+const { COURSE_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
 
 function groupByChapter(lessons) {
     const map = {};
@@ -61,12 +62,47 @@ const courseService = {
         if(price !== undefined) course.price = price;
         if(offerPercentage !== undefined) course.offerPercentage = Number(offerPercentage) || 0;
         if(category) course.category = category;
-        if(status && Object.values(COURSE_STATUS).includes(status)){
+        const statusChanged = status && status !== course.status && Object.values(COURSE_STATUS).includes(status);
+        if(statusChanged){
             course.status = status;
         }
         if(file) course.thumbnail = file.filename;
 
         await course.save();
+
+        if (statusChanged) {
+            try {
+                const tutorUser = await User.findById(tutorId).select('name');
+                const tutorName = tutorUser ? tutorUser.name : 'Tutor';
+                const admin = await User.findOne({ role: 'admin' }).select('_id');
+                if (admin) {
+                    await notificationService.create({
+                        recipient: admin._id,
+                        type: NOTIFICATION_TYPES.COURSE_STATUS_CHANGED,
+                        title: `Course status updated by tutor`,
+                        message: `Tutor "${tutorName}" has updated "${course.title}" status to "${status}".`,
+                        priority: 'medium',
+                        actionUrl: NOTIFICATION_ACTIONS.ADMIN_COURSES(),
+                        data: { courseId: course._id, status }
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to notify admin on course status change:', err.message);
+            }
+        }
+
+        const change = title || description;
+        if (change && course.studentsEnrolled?.length > 0) {
+            await notificationService.createBulk(course.studentsEnrolled, {
+                type: NOTIFICATION_TYPES.COURSE_CONTENT_UPDATED,
+                title: `"${course.title}" has been updated`,
+                message: 'Your enrolled course has been updated by the tutor.',
+                priority: 'low',
+                actionUrl: NOTIFICATION_ACTIONS.STUDENT_MY_COURSES(),
+                data: { courseId: course._id }
+            });
+        }
+
         return await Course.findById(course._id).populate('tutor', 'name email');
     },
 

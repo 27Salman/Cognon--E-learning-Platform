@@ -9,12 +9,13 @@ const Wishlist = require('../models/Wishlist');
 const cartService = require('./cartService');
 const couponService = require('./couponService');
 const walletService = require('./walletService');
-const { PLATFORM_COMMISSION } = require('../config/constants');
+const { PLATFORM_COMMISSION, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
 const CourseRestrict = require('../models/CourseRestrict');
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET
 });
+const notificationService = require('./notificationService');
 
 const checkoutService = {
 
@@ -275,6 +276,44 @@ const checkoutService = {
 
         await walletService.creditFromOrder(order);
 
+        //notify student
+        await notificationService.create({
+            recipient: userId,
+            type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+            title: 'Payment successful!',
+            message: `Your payment of ₹${order.finalAmount} for ${order.courses.length} course(s) was successful.`,
+            priority: 'high',
+            actionUrl: NOTIFICATION_ACTIONS.PAYMENT_SUCCESS(order._id),
+            data: { orderId: order._id, amount: order.finalAmount }
+        });
+
+        //notify tutor
+        for (const item of order.courses) {
+            await notificationService.create({
+                recipient: item.tutor,
+                type: NOTIFICATION_TYPES.NEW_ENROLLMENT,
+                title: 'New student enrolled',
+                message: `A student has enrolled in "${item.courseTitle}". Earnings: ₹${item.tutorShare}.`,
+                priority: 'medium',
+                actionUrl: NOTIFICATION_ACTIONS.TUTOR_COURSE(item.course),
+                data: { courseId: item.course, courseTitle: item.courseTitle, amount: item.tutorShare }
+            });
+        };
+        
+        //notify admin
+        const adminUser = await User.findOne({ role: 'admin' }).select('_id');
+        if (adminUser) {
+            await notificationService.create({
+                recipient: adminUser._id,
+                type: NOTIFICATION_TYPES.NEW_ORDER,
+                title: 'New order received',
+                message: `Order ${order.orderId} for ₹${order.finalAmount} has been completed.`,
+                priority: 'low',
+                actionUrl: NOTIFICATION_ACTIONS.ADMIN_ORDER(order._id),
+                data: { orderId: order._id, amount: order.finalAmount }
+            });
+        }
+
         await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
 
         await Wishlist.findOneAndUpdate(
@@ -406,9 +445,48 @@ const checkoutService = {
             orderId: order.orderId,
             status: 'completed'
         });
+
         await studentWallet.save();
 
         await walletService.creditFromOrder(order);
+
+        //notify student
+        await notificationService.create({
+            recipient: userId,
+            type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+            title: 'Payment successful!',
+            message: `Your payment of ₹${order.finalAmount} for ${order.courses.length} course(s) was successful.`,
+            priority: 'high',
+            actionUrl: NOTIFICATION_ACTIONS.PAYMENT_SUCCESS(order._id),
+            data: { orderId: order._id, amount: order.finalAmount }
+        });
+
+        //notify tutor
+        for (const item of order.courses) {
+            await notificationService.create({
+                recipient: item.tutor,
+                type: NOTIFICATION_TYPES.NEW_ENROLLMENT,
+                title: 'New student enrolled',
+                message: `A student has enrolled in "${item.courseTitle}". Earnings: ₹${item.tutorShare}.`,
+                priority: 'medium',
+                actionUrl: NOTIFICATION_ACTIONS.TUTOR_COURSE(item.course),
+                data: { courseId: item.course, courseTitle: item.courseTitle, amount: item.tutorShare }
+            });
+        };
+        
+        //notify admin
+        const adminUser = await User.findOne({ role: 'admin' }).select('_id');
+        if (adminUser) {
+            await notificationService.create({
+                recipient: adminUser._id,
+                type: NOTIFICATION_TYPES.NEW_ORDER,
+                title: 'New order received',
+                message: `Order ${order.orderId} for ₹${order.finalAmount} has been completed.`,
+                priority: 'low',
+                actionUrl: NOTIFICATION_ACTIONS.ADMIN_ORDER(order._id),
+                data: { orderId: order._id, amount: order.finalAmount }
+            });
+        }
 
         const courseIds = order.courses.map(c => c.course);
         await Course.updateMany({ _id: { $in: courseIds } }, { $addToSet: { studentsEnrolled: userId } });

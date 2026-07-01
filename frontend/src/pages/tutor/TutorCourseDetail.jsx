@@ -4,7 +4,7 @@ import { ArrowLeft, Plus, Pencil, Users, Clock, BookOpen,  } from 'lucide-react'
 import { courseAPI } from '../../api/courseAPI';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
-import { ROUTES } from '../../utils/constants';
+import { ROUTES, COURSE_STATUS } from '../../utils/constants';
 
 export default function TutorCourseDetail() {
     const { id } = useParams();
@@ -59,7 +59,7 @@ export default function TutorCourseDetail() {
 
     if (!course) return null;
 
-    const isPublished = course.status === 'published';
+    const isPublished = course.status === COURSE_STATUS.PUBLISHED;
 
     return (
         <div className="p-6 max-w-5xl">

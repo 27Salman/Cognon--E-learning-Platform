@@ -1,4 +1,6 @@
 const Chat = require('../models/Chat');
+const notificationService = require('./notificationService');
+const { NOTIFICATION_TYPES } = require('../config/constants');
 
 const chatService = {
     async createOrGetChat(userId1, userId2) {
@@ -42,7 +44,24 @@ const chatService = {
             .populate('participants', 'name email profileImage')
             .populate('messages.sender', 'name email profileImage');
 
-        return savedChat.messages[savedChat.messages.length - 1];
+        const newMessage = savedChat.messages[savedChat.messages.length - 1];
+
+        // Notify the other participant(s) — not the sender
+        const recipients = savedChat.participants.filter(
+            p => p._id.toString() !== senderId.toString()
+        );
+        for (const recipient of recipients) {
+            await notificationService.create({
+                recipient: recipient._id,
+                type: NOTIFICATION_TYPES.NEW_CHAT_MESSAGE,
+                title: 'New message',
+                message: text.length > 60 ? `${text.slice(0, 60)}...` : text,
+                priority: 'medium',
+                data: { chatId, senderId }
+            });
+        }
+
+        return newMessage;
     },
 
     async getUserChats(userId) {

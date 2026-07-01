@@ -1,7 +1,8 @@
 const Wallet = require('../models/Wallet');
 const WithdrawalRequest = require('../models/WithdrawalRequest');
 const User = require('../models/User');
-const { PLATFORM_COMMISSION, TUTOR_HOLD_DAYS } = require('../config/constants');
+const { PLATFORM_COMMISSION, TUTOR_HOLD_DAYS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
+const notificationService = require('./notificationService');
 
 const round = (n) => Math.round(n * 100) / 100;
 
@@ -168,6 +169,17 @@ const walletService = {
             status: 'completed'
         });
         await studentWallet.save();
+
+        await notificationService.create({
+            recipient: studentId,
+            type: NOTIFICATION_TYPES.WALLET_UPDATED,
+            title: 'Refund credited to wallet',
+            message: `₹${amount} has been refunded to your wallet for order ${orderId}.`,
+            priority: 'high',
+            actionUrl: NOTIFICATION_ACTIONS.WALLET_STUDENT(),
+            data: { amount, orderId, transactionType: 'refund' }
+        });
+
         return { message: 'Refund processed successfully', refundAmount: amount };
     },
 
@@ -320,6 +332,20 @@ const walletService = {
         }
 
         const request = await WithdrawalRequest.create({ tutor: tutorId, amount, status: 'pending' });
+
+        const adminUser = await User.findOne({ role: 'admin' }).select('_id');
+        if (adminUser) {
+            await notificationService.create({
+                recipient: adminUser._id,
+                type: NOTIFICATION_TYPES.WITHDRAWAL_REQUEST,
+                title: 'New withdrawal request',
+                message: `A tutor has requested a withdrawal of ₹${amount}.`,
+                priority: 'medium',
+                actionUrl: NOTIFICATION_ACTIONS.ADMIN_WALLET(),
+                data: { tutorId, amount, requestId: request._id }
+            });
+        }
+
         return { request, message: `Withdrawal request of ₹${amount} submitted. Awaiting admin approval.` };
     },
 
@@ -392,6 +418,16 @@ const walletService = {
         request.processedBy = adminId;
         await request.save();
 
+        await notificationService.create({
+            recipient: request.tutor._id,
+            type: NOTIFICATION_TYPES.WALLET_UPDATED,
+            title: 'Withdrawal approved',
+            message: `Your withdrawal of ₹${request.amount} has been approved.`,
+            priority: 'high',
+            actionUrl: NOTIFICATION_ACTIONS.TUTOR_WALLET(),
+            data: { amount: request.amount, transactionType: 'withdrawal_approved' }
+        });
+
         return { request, message: `Withdrawal of ₹${request.amount} approved for ${request.tutor.name}` };
     },
 
@@ -405,6 +441,16 @@ const walletService = {
         request.processedAt = new Date();
         request.processedBy = adminId;
         await request.save();
+
+        await notificationService.create({
+            recipient: request.tutor._id,
+            type: NOTIFICATION_TYPES.WALLET_UPDATED,
+            title: 'Withdrawal request rejected',
+            message: `Your withdrawal request of ₹${request.amount} was rejected. ${adminNote ? `Reason: ${adminNote}` : ''}`,
+            priority: 'high',
+            actionUrl: NOTIFICATION_ACTIONS.TUTOR_WALLET(),
+            data: { amount: request.amount, transactionType: 'withdrawal_rejected' }
+        });
 
         return { request, message: `Withdrawal request rejected for ${request.tutor.name}` };
     },

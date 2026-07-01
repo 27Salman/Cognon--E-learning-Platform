@@ -6,17 +6,17 @@ import { fetchMyCourses, deleteCourse } from '../../store/slices/courseSlice';
 import { courseAPI } from '../../api/courseAPI';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
-import { ROUTES } from '../../utils/constants';
+import { ROUTES, COURSE_STATUS } from '../../utils/constants';
 
 function StatusToggle({ course, onToggle }) {
-    const isListed = course.status === 'published';
+    const isListed = course.status === COURSE_STATUS.PUBLISHED;
     const [loading, setLoading] = useState(false);
 
     const handleToggle = async () => {
         if (loading) return;
         setLoading(true);
         try {
-            await onToggle(course._id, isListed ? 'draft' : 'published');
+            await onToggle(course._id, isListed ? COURSE_STATUS.DRAFT : COURSE_STATUS.PUBLISHED);
         } finally {
             setLoading(false);
         }
@@ -67,7 +67,7 @@ export default function TutorCourses() {
         try {
             await courseAPI.toggleStatus(courseId, newStatus);
             dispatch(fetchMyCourses({ page: currentPage, limit: LIMIT }));
-            toast.success(newStatus === 'published' ? 'Course listed' : 'Course unlisted');
+            toast.success(newStatus === COURSE_STATUS.PUBLISHED ? 'Course listed' : 'Course unlisted');
         } catch (err) {
             toast.error('Failed to update status');
         }

@@ -3,11 +3,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchEnrolledCourses } from '../../store/slices/studentSlice';
 import { BookOpen, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { COURSE_STATUS } from '../../utils/constants';
 
 function CourseCard({ course, onClick }) {
     const progress = course.progress || 0;
     const isCompleted = progress >= 100;
-    const isUnavailable = course.status && course.status !== 'published';
+    const isUnavailable = course.status && course.status !== COURSE_STATUS.PUBLISHED;
 
     return (
         <div
