@@ -11,7 +11,7 @@ const connectDB = require("./src/config/db");
 const { HTTP_STATUS } = require('./src/config/constants');
 const { errorHandler, notFound } = require('./src/middleware/errorMiddleware');
 
-require('./src/controllers/googleAuthController'); 
+require('./src/controllers/googleAuthController');
 
 const { authRoutes } = require('./src/routes/authRoutes');
 const { adminRoutes } = require('./src/routes/adminRoutes');
@@ -24,6 +24,8 @@ const { progressRoutes } = require('./src/routes/progressRoutes');
 const { categoryRoutes } = require('./src/routes/categoryRoutes');
 const { couponRoutes } = require('./src/routes/couponRoutes');
 const checkoutController = require('./src/controllers/checkoutController');
+const quizRoutes = require('./src/routes/quizRoutes');
+
 
 const PORT = process.env.PORT || 5000;
 
@@ -58,15 +60,15 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use('/uploads', (req, res, next) => {
-    if (req.path.startsWith('/pdfs/')) {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-    next();
+  if (req.path.startsWith('/pdfs/')) {
+    return res.status(403).json({ success: false, message: 'Access denied' });
+  }
+  next();
 }, express.static(path.join(__dirname, 'src/uploads')));
 
 app.use('/api', (req, res, next) => {
-    res.set('Cache-Control', 'no-store');
-    next();
+  res.set('Cache-Control', 'no-store');
+  next();
 });
 
 app.use('/api/auth', authRoutes);
@@ -82,6 +84,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/courses', progressRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/quizzes', quizRoutes);
 
 
 app.get('/api/health', (req, res) => {

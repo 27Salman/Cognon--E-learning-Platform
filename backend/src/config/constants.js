@@ -11,23 +11,23 @@ const TUTOR_APPROVAL_STATUS = {
 }
 
 const USER_STATUS = {
-    ACTIVE: 'active',                
-    BLOCKED: 'blocked',         
-    INACTIVE: 'inactive',     
+    ACTIVE: 'active',
+    BLOCKED: 'blocked',
+    INACTIVE: 'inactive',
 };
 
 const COURSE_STATUS = {
-    DRAFT: 'draft',           
-    PUBLISHED: 'published',   
-    ARCHIVED: 'archived',      
+    DRAFT: 'draft',
+    PUBLISHED: 'published',
+    ARCHIVED: 'archived',
     PENDING_REVIEW: 'pending_review'
 };
 
 const ENROLLMENT_STATUS = {
-    ENROLLED: 'enrolled',       
-    IN_PROGRESS: 'in_progress', 
-    COMPLETED: 'completed',      
-    DROPPED: 'dropped'          
+    ENROLLED: 'enrolled',
+    IN_PROGRESS: 'in_progress',
+    COMPLETED: 'completed',
+    DROPPED: 'dropped'
 };
 
 const PAGINATION = {
@@ -57,7 +57,7 @@ const MESSAGES = {
         DELETED: 'Resource deleted successfully',
         FETCHED: 'Resource fetched successfully'
     },
-  
+
 
     ERROR: {
         INVALID_CREDENTIALS: 'Invalid email or password',
@@ -112,12 +112,19 @@ const OFFER_TYPE = {
 };
 
 const PLATFORM_COMMISSION = {
-    RATE: 0.10, 
-    TUTOR_SHARE: 0.90 
+    RATE: 0.10,
+    TUTOR_SHARE: 0.90
 };
 
 
 const TUTOR_HOLD_DAYS = 3;
+
+const QUIZ_STATUS = {
+    STARTED: 'started',
+    SUBMITTED: 'submitted',
+    TIMEOUT: 'time_out',
+    AUTO_SUBMISSION_VIOLATION: 'auto_submitted_violation',
+}
 
 
 module.exports = {
@@ -137,4 +144,6 @@ module.exports = {
     OFFER_TYPE,
     PLATFORM_COMMISSION,
     TUTOR_HOLD_DAYS,
+    QUIZ_STATUS,
+
 };

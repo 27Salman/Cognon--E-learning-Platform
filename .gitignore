@@ -30,6 +30,7 @@ coverage/
 backend/node_modules/
 backend/src/uploads/
 backend/.env
+backend/PROJECT_STATE.md
 
 # Frontend Specific
 frontend/node_modules/

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ROUTES } from '../../utils/constants';
+import QuizOpen from '../../components/student/QuizOpen';
 
 export default function LessonViewer() {
     const { courseId } = useParams();
@@ -19,6 +20,7 @@ export default function LessonViewer() {
     const [currentLesson, setCurrentLesson] = useState(null);
     const [marking, setMarking] = useState(false);
     const [elapsed, setElapsed] = useState(0);
+    const [timerActive, setTimerActive] = useState(false);
     const timerRef = useRef(null);
     const [openChapters, setOpenChapters] = useState({});
 
@@ -60,14 +62,36 @@ export default function LessonViewer() {
         }
     }, [chapters.length]);
 
+    // Restore persisted elapsed time when lesson changes, reset timer-active state
     useEffect(() => {
-        setElapsed(0);
+        if (!currentLesson?._id) return;
         clearInterval(timerRef.current);
-        if (!isCompleted) {
-            timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
+        setTimerActive(false);
+        const key = `lesson_elapsed_${currentLesson._id}`;
+        const saved = parseInt(localStorage.getItem(key) || '0', 10);
+        setElapsed(isCompleted ? Infinity : saved);
+    }, [currentLesson?._id, isCompleted]);
+
+    // Tick only while timerActive and lesson not complete
+    useEffect(() => {
+        clearInterval(timerRef.current);
+        if (timerActive && !isCompleted) {
+            timerRef.current = setInterval(() => {
+                setElapsed(e => {
+                    const next = e + 1;
+                    if (currentLesson?._id) {
+                        localStorage.setItem(`lesson_elapsed_${currentLesson._id}`, next);
+                    }
+                    return next;
+                });
+            }, 1000);
         }
         return () => clearInterval(timerRef.current);
-    }, [currentLesson?._id, isCompleted]);
+    }, [timerActive, isCompleted, currentLesson?._id]);
+
+    const handleVideoPlay = () => {
+        if (!isCompleted) setTimerActive(true);
+    };
 
     // 80% of lesson duration in seconds
     const requiredSeconds = currentLesson?.duration ? currentLesson.duration * 60 * 0.8 : 0;
@@ -89,6 +113,10 @@ export default function LessonViewer() {
         setMarking(true);
         try {
             await dispatch(markLessonComplete({ courseId, lessonId: currentLesson._id })).unwrap();
+            // Clear persisted timer for this lesson — it's done
+            localStorage.removeItem(`lesson_elapsed_${currentLesson._id}`);
+            setTimerActive(false);
+            clearInterval(timerRef.current);
             dispatch(fetchCourseProgress(courseId));
             toast.success('Lesson marked as complete!');
         } catch (err) {
@@ -208,6 +236,7 @@ export default function LessonViewer() {
                                 </div>
                             );
                         })}
+                        <QuizOpen courseId={courseId} courseProgress={progress?.progress} />
                     </div>
                 </aside>
 
@@ -216,7 +245,7 @@ export default function LessonViewer() {
                     {/* Video */}
                     <div className="bg-black">
                         <div className="max-w-4xl mx-auto">
-                            <VideoPlayer videoUrl={currentLesson?.videoUrl} />
+                            <VideoPlayer videoUrl={currentLesson?.videoUrl} onPlay={handleVideoPlay} />
                         </div>
                     </div>
 
@@ -357,24 +386,22 @@ function LessonRow({ lesson, index = 0, isActive, isCompleted, isLocked, onClick
         <button
             onClick={onClick}
             disabled={isLocked}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 text-left transition-colors ${
-                isLocked
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 text-left transition-colors ${isLocked
                     ? 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
                     : isActive
-                    ? 'bg-purple-600 text-white'
-                    : isCompleted
-                    ? 'bg-orange-50 text-gray-700 hover:bg-orange-100'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-            }`}
+                        ? 'bg-purple-600 text-white'
+                        : isCompleted
+                            ? 'bg-orange-50 text-gray-700 hover:bg-orange-100'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                }`}
         >
-            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${
-                isLocked ? 'bg-gray-200' : isActive ? 'bg-white/20' : isCompleted ? 'bg-orange-200' : 'bg-gray-200'
-            }`}>
+            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${isLocked ? 'bg-gray-200' : isActive ? 'bg-white/20' : isCompleted ? 'bg-orange-200' : 'bg-gray-200'
+                }`}>
                 {isLocked
                     ? <Lock className="w-3 h-3 text-gray-400" />
                     : isCompleted
-                    ? <CheckCircle className={`w-3 h-3 ${isActive ? 'text-white' : 'text-orange-600'}`} />
-                    : <BookOpen className={`w-3 h-3 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                        ? <CheckCircle className={`w-3 h-3 ${isActive ? 'text-white' : 'text-orange-600'}`} />
+                        : <BookOpen className={`w-3 h-3 ${isActive ? 'text-white' : 'text-gray-500'}`} />
                 }
             </div>
             <span className="flex-1 text-xs font-medium truncate">{index + 1}. {lesson.title}</span>

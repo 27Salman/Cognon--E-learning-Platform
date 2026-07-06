@@ -8,6 +8,7 @@ import ImageCropModal from '../../components/common/ImageCropModal';
 import toast from 'react-hot-toast';
 import { ROUTES } from '../../utils/constants';
 
+
 export default function EditCourse() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -179,14 +180,21 @@ export default function EditCourse() {
         <div className="p-6 max-w-5xl">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Edit Course</h1>
-                <button
-                    onClick={() => setConfirmCourse(true)}
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
-                >
-                    Delete Course
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate(`/tutor/courses/${id}/quiz`)}
+                        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                    >
+                        Manage Quiz
+                    </button>
+                    <button
+                        onClick={() => setConfirmCourse(true)}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+                    >
+                        Delete Course
+                    </button>
+                </div>
             </div>
-
             <div className="grid grid-cols-2 gap-6 mb-6">
                 {/* Left */}
                 <div className="space-y-4">
@@ -280,7 +288,7 @@ export default function EditCourse() {
                     <input placeholder="Duration (minutes)" type="number" value={lessonForm.duration}
                         onChange={e => setLessonForm(p => ({ ...p, duration: e.target.value }))}
                         className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
-    
+
                     <input placeholder="Video URL (YouTube or Vimeo)" value={lessonForm.videoUrl}
                         onChange={e => setLessonForm(p => ({ ...p, videoUrl: e.target.value }))}
                         className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 col-span-2" />

@@ -26,6 +26,52 @@ export const TUTOR_APPROVAL_STATUS = {
     REJECTED: 'rejected',
 };
 
+export const COURSE_STATUS = {
+    DRAFT: 'draft',
+    PUBLISHED: 'published',
+    ARCHIVED: 'archived',
+    PENDING_REVIEW: 'pending_review',
+};
+
+export const ENROLLMENT_STATUS = {
+    ENROLLED: 'enrolled',
+    IN_PROGRESS: 'in_progress',
+    COMPLETED: 'completed',
+    DROPPED: 'dropped',
+};
+
+export const PAYMENT_STATUS = {
+    PENDING: 'pending',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+    REFUNDED: 'refunded',
+};
+
+export const PAYMENT_METHOD = {
+    RAZORPAY: 'razorpay',
+    CARD: 'card',
+    UPI: 'upi',
+    NETBANKING: 'netbanking',
+    WALLET: 'wallet',
+};
+
+export const DISCOUNT_TYPE = {
+    PERCENTAGE: 'percentage',
+    FIXED: 'fixed',
+};
+
+export const COUPON_APPLICABLE_TO = {
+    ALL: 'all',
+    CATEGORY: 'category',
+    COURSE: 'course',
+};
+
+export const OFFER_TYPE = {
+    COURSE: 'course',
+    CATEGORY: 'category',
+    PLATFORM: 'platform',
+};
+
 export const ENDPOINTS = {
     // Auth
     SIGNUP: '/auth/signup',
