@@ -1,15 +1,7 @@
 const User = require('../models/User');
-const { deleteOldProfileImage } = require('./fileService');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
-
-const buildImageURL = (profileImage) => {
-    if (!profileImage) return null;
-    if (profileImage.startsWith('http')) return profileImage;
-    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const subfolder = profileImage.startsWith('user-') ? 'profiles/' : '';
-    return `${BASE_URL}/uploads/${subfolder}${profileImage}`;
-};
+const { deleteCloudinaryAsset } = require('./fileService');
 
 const userService = {
 
@@ -23,7 +15,7 @@ const userService = {
             email: student.email,
             phone: student.phone,
             profileImage: student.profileImage,
-            profileImageURL: buildImageURL(student.profileImage),
+            profileImageURL: student.profileImage,
             role: student.role,
             status: student.status,
         };
@@ -37,10 +29,10 @@ const userService = {
         if (phone !== undefined) student.phone = phone.trim() || null;
 
         if (file) {
-            if (student.profileImage && !student.profileImage.startsWith('http')) {
-                await deleteOldProfileImage(student.profileImage);
+            if (student.profileImage) {
+                await deleteCloudinaryAsset(student.profileImage);
             }
-            student.profileImage = file.filename;
+            student.profileImage = file.path; 
         }
 
         await student.save({ validateModifiedOnly: true });
@@ -51,7 +43,7 @@ const userService = {
             email: student.email,
             phone: student.phone,
             profileImage: student.profileImage,
-            profileImageURL: buildImageURL(student.profileImage),
+            profileImageURL: student.profileImage,
             role: student.role,
             status: student.status,
         };

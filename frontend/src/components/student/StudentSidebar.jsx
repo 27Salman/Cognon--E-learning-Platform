@@ -1,20 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { useState } from 'react';
 import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard, Wallet } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
+import ConfirmModal from '../common/ConfirmModal';
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
-
-const getFullImageUrl = (src) => {
-  if (!src) return null;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
-  const subfolder = src.startsWith('user-') ? 'profiles/' : '';
-  return `${API_BASE}/uploads/${subfolder}${src}`;
-};
 
 const isValidImageSrc = (src) => !!src;
 
@@ -47,6 +39,7 @@ export default function StudentSidebar({ studentInfo }) {
     const navigate = useNavigate();
     const location = useLocation();
     const dispatch = useDispatch();
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const isActive = (path) => {
         if (location.pathname === path) return true;
@@ -56,6 +49,7 @@ export default function StudentSidebar({ studentInfo }) {
     };
 
     const handleLogout = async () => {
+        setShowLogoutModal(false);
         localStorage.removeItem('studentInfo');
         await dispatch(logoutUser());
         toast.success('Logged out successfully');
@@ -69,7 +63,7 @@ export default function StudentSidebar({ studentInfo }) {
             <div className="px-4 pt-6 pb-5 border-b border-gray-100 flex flex-col items-center">
                 {isValidImageSrc(studentInfo?.profileImageURL || studentInfo?.profileImage) ? (
                     <img
-                        src={getFullImageUrl(studentInfo.profileImageURL || studentInfo.profileImage)}
+                        src={studentInfo?.profileImageURL || studentInfo?.profileImage}
                         alt="Student"
                         className="w-16 h-16 rounded-full object-cover border-2 border-purple-200 shadow-sm"
                     />
@@ -111,13 +105,22 @@ export default function StudentSidebar({ studentInfo }) {
                 ))}
 
                 <button
-                    onClick={handleLogout}
+                    onClick={() => setShowLogoutModal(true)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                     <LogOut className="w-4 h-4 flex-shrink-0" />
                     Logout
                 </button>
             </nav>
+
+            <ConfirmModal
+                isOpen={showLogoutModal}
+                title="Log Out"
+                message="Are you sure you want to log out?"
+                confirmText="Log Out"
+                onConfirm={handleLogout}
+                onClose={() => setShowLogoutModal(false)}
+            />
         </aside>
     );
 }

@@ -6,16 +6,7 @@ import { studentAPI } from '../../api/studentAPI';
 import Logo from '../common/Logo';
 import { ROUTES } from '../../utils/constants';
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
 
-const getFullImageUrl = (src) => {
-  if (!src) return null;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
-  const subfolder = src.startsWith('user-') ? 'profiles/' : '';
-  return `${API_BASE}/uploads/${subfolder}${src}`;
-};
 
 const isValidImageSrc = (src) => !!src;
 
@@ -40,7 +31,7 @@ export default function StudentNavbar() {
             const stored = localStorage.getItem('studentInfo');
             const parsed = stored ? JSON.parse(stored) : null;
             if (parsed && user && parsed._id === user._id) return parsed;
-            return user ? { name: user.name, email: user.email } : {};
+            return user ? { name: user.name, email: user.email, profileImage: user.profileImage, profileImageURL: user.profileImageURL } : {};
         } catch { return {}; }
     });
 
@@ -63,7 +54,7 @@ export default function StudentNavbar() {
             })
             .catch(() => {
                 if (!cancelled && user) {
-                    setStudentInfo(prev => ({ ...prev, name: user.name, email: user.email }));
+                    setStudentInfo(prev => ({ ...prev, name: user.name, email: user.email, profileImage: user.profileImage, profileImageURL: user.profileImageURL }));
                 }
             });
         return () => { cancelled = true; };
@@ -136,7 +127,7 @@ export default function StudentNavbar() {
                             </button>
                             <button onClick={() => navigate(ROUTES.STUDENT_PROFILE)} className="focus:outline-none" title="My Profile">
                                 {isValidImageSrc(studentInfo?.profileImageURL || studentInfo?.profileImage) ? (
-                                    <img src={getFullImageUrl(studentInfo.profileImageURL || studentInfo.profileImage)} alt="Student" className="w-9 h-9 rounded-full object-cover border-2 border-purple-200 hover:border-purple-400 transition-colors" />
+                                    <img src={studentInfo?.profileImageURL || studentInfo?.profileImage} alt="Student" className="w-9 h-9 rounded-full object-cover border-2 border-purple-200 hover:border-purple-400 transition-colors" />
                                 ) : (
                                     (() => {
                                         const [from, to] = getAvatarColors(studentInfo?.name);

@@ -1,83 +1,57 @@
 const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('./cloudinary');
 const path = require('path');
-const fs = require('fs');
-
-const uploadDir = path.join(__dirname, '../uploads');
-
-//Ensure directory exists
-const ensureDir = (dir) => {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
-};
-
-// Filter for images
-const imageFilter = (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|webp/;
-    const valid = allowed.test(path.extname(file.originalname).toLowerCase()) &&
-                  allowed.test(file.mimetype);
-    valid ? cb(null, true) : cb(new Error('Only image files are allowed'));
-};
 
 // Profile
-const profileStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dest = path.join(uploadDir, 'profiles');
-        ensureDir(dest);
-        cb(null, dest);
+const profileStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'Cognon/profiles',
+        allowed_formats: ['jpeg', 'jpg', 'png', 'webp'],
+        public_id: (req, file) => `user-${req.user._id}-${Date.now()}`,
     },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `user-${req.user._id}-${Date.now()}${ext}`);
-    }
 });
 
 // Course thumbnail 
-const courseStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dest = path.join(uploadDir, 'courses');
-        ensureDir(dest);
-        cb(null, dest);
+const courseStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'Cognon/courses',
+        allowed_formats: ['jpeg', 'jpg', 'png', 'webp'],
+        public_id: (req, file) => `course-${req.user._id}-${Date.now()}`,
     },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `course-${req.user._id}-${Date.now()}${ext}`);
-    }
 });
 
-// Lesson thumbnail 
-const lessonThumbnailStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dest = path.join(uploadDir, 'lessons');
-        ensureDir(dest);
-        cb(null, dest);
+// Combined lesson uploader
+const lessonCombinedStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => {
+        let folder = 'Cognon/lessons';
+        let resource_type = 'auto'; 
+        let public_id = '';
+        
+        if (file.fieldname === 'thumbnail') {
+            public_id = `lesson-thumb-${req.user._id}-${Date.now()}`;
+        } else if (file.fieldname === 'pdfNotes') {
+            folder = 'Cognon/pdfs';
+            public_id = `notes-${req.user._id}-${Date.now()}`;
+        } else if (file.fieldname === 'video') {
+            folder = 'Cognon/videos';
+            resource_type = 'video';
+            public_id = `video-${req.user._id}-${Date.now()}`;
+        } else {
+            public_id = `file-${req.user._id}-${Date.now()}`;
+        }
+
+        return {
+            folder: folder,
+            resource_type: resource_type,
+            public_id: public_id,
+        };
     },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `lesson-thumb-${req.user._id}-${Date.now()}${ext}`);
-    }
 });
 
-// PDF  
-const pdfFilter = (req, file, cb) => {
-    const valid = file.mimetype === 'application/pdf' ||
-                  path.extname(file.originalname).toLowerCase() === '.pdf';
-    valid ? cb(null, true) : cb(new Error('Only PDF files are allowed'));
-};
-
-const pdfStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dest = path.join(uploadDir, 'pdfs');
-        ensureDir(dest);
-        cb(null, dest);
-    },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `notes-${req.user._id}-${Date.now()}${ext}`);
-    }
-});
-
-// Combined lesson uploader — handles both thumbnail (image) and pdfNotes (pdf) fields
 const lessonFieldFilter = (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (file.fieldname === 'thumbnail') {
@@ -91,49 +65,30 @@ const lessonFieldFilter = (req, file, cb) => {
         isValid
             ? cb(null, true)
             : cb(new Error('Only PDF files are allowed for notes'), false);
+    } else if (file.fieldname === 'video') {
+        const allowed = /mp4|mov|avi|wmv|mkv/;
+        const isValid = allowed.test(ext) && file.mimetype.startsWith('video/');
+        isValid
+            ? cb(null, true)
+            : cb(new Error('Only video files are allowed for lesson videos'), false);
     } else {
         cb(new Error('Unexpected field name'), false);
     }
 };
 
-const lessonCombinedStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const isImage = file.mimetype.startsWith('image/');
-        const dest = path.join(uploadDir, isImage ? 'lessons' : 'pdfs');
-        ensureDir(dest);
-        cb(null, dest);
-    },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        const prefix = file.mimetype.startsWith('image/') ? 'lesson-thumb' : 'notes';
-        cb(null, `${prefix}-${req.user._id}-${Date.now()}${ext}`);
-    }
-});
-
 module.exports = {
     uploadProfile: multer({ 
         storage: profileStorage, 
-        fileFilter: imageFilter, 
         limits: { fileSize: 5 * 1024 * 1024 } 
     }),
     uploadCourse: multer({ 
         storage: courseStorage, 
-        fileFilter: imageFilter, 
         limits: { fileSize: 5 * 1024 * 1024 } 
     }),
-    uploadLesson: multer({
-        storage: lessonThumbnailStorage,
-        fileFilter: imageFilter,
-        limits: { fileSize: 5 * 1024 * 1024 }
-    }),
-    uploadPdf: multer({
-        storage: pdfStorage,
-        fileFilter: pdfFilter,
-        limits: { fileSize: 20 * 1024 * 1024 }
-    }),
+    
     uploadLessonFields: multer({
         storage: lessonCombinedStorage,
         fileFilter: lessonFieldFilter,
-        limits: { fileSize: 20 * 1024 * 1024 }
+        limits: { fileSize: 500 * 1024 * 1024 } 
     })
 };

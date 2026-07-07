@@ -1,5 +1,6 @@
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
+const { deleteCloudinaryAsset } = require('./fileService');
 const path = require('path');
 
 
@@ -40,9 +41,13 @@ const lessonService = {
                 title: chapterTitle || 'Chapter 1',
                 order: parseInt(chapterOrder) || 1
             },
-            thumbnail: files.thumbnail ? files.thumbnail[0].filename : null,
-            pdfNotes: files.pdfNotes ? files.pdfNotes[0].filename : null,
+            thumbnail: files.thumbnail ? files.thumbnail[0].path : null,
+            pdfNotes: files.pdfNotes ? files.pdfNotes[0].path : null,
         });
+
+        if (files.video) {
+            lesson.videoUrl = files.video[0].path;
+        }
 
         await lesson.save();
         await this.updateCourseTotals(courseId);
@@ -81,8 +86,18 @@ const lessonService = {
                 order: parseInt(chapterOrder) || lesson.chapter?.order || 1
             };
         }
-        if (files.thumbnail) lesson.thumbnail = files.thumbnail[0].filename;
-        if (files.pdfNotes) lesson.pdfNotes = files.pdfNotes[0].filename;
+        if (files.thumbnail) {
+            if (lesson.thumbnail) await deleteCloudinaryAsset(lesson.thumbnail);
+            lesson.thumbnail = files.thumbnail[0].path;
+        }
+        if (files.pdfNotes) {
+            if (lesson.pdfNotes) await deleteCloudinaryAsset(lesson.pdfNotes);
+            lesson.pdfNotes = files.pdfNotes[0].path;
+        }
+        if (files.video) {
+            if (lesson.videoUrl) await deleteCloudinaryAsset(lesson.videoUrl);
+            lesson.videoUrl = files.video[0].path;
+        }
 
         await lesson.save();
 
@@ -100,6 +115,11 @@ const lessonService = {
         }
 
         const courseId = lesson.course._id;
+
+        if (lesson.thumbnail) await deleteCloudinaryAsset(lesson.thumbnail);
+        if (lesson.videoUrl) await deleteCloudinaryAsset(lesson.videoUrl);
+        if (lesson.pdfNotes) await deleteCloudinaryAsset(lesson.pdfNotes);
+
         await Lesson.findByIdAndDelete(lessonId);
 
         await this.updateCourseTotals(courseId);
@@ -193,7 +213,7 @@ const lessonService = {
             throw err;
         }
 
-        return path.join(__dirname, '../uploads/pdfs', lesson.pdfNotes);
+        return lesson.pdfNotes; 
     },
 
     async updateCourseTotals(courseId) {

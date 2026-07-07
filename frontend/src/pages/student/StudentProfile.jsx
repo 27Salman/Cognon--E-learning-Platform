@@ -7,17 +7,7 @@ import { ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 import { validatePhone, validateImageFile } from '../../utils/helpers';
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
-
-const getFullImageUrl = (src) => {
-  if (!src) return null;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
-  return `${API_BASE}${src}`;
-};
-
-const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/'));
+const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:') || src.startsWith('blob:') || src.startsWith('/'));
 
 const getAvatarColors = (name) => {
     const palettes = [
@@ -133,9 +123,8 @@ export default function StudentProfile() {
         }
 
         selectedFileRef.current = file;
-        const reader = new FileReader();
-        reader.onloadend = () => setFormData(prev => ({ ...prev, profileImage: reader.result }));
-        reader.readAsDataURL(file);
+        setFormData(prev => ({ ...prev, profileImage: URL.createObjectURL(file) }));
+        e.target.value = '';
     };
 
     const validate = () => {
@@ -272,7 +261,7 @@ export default function StudentProfile() {
                         <div className="relative flex-shrink-0 mb-4">
                             {isValidImageSrc(formData.profileImage) ? (
                                 <img
-                                    src={getFullImageUrl(formData.profileImage)}
+                                    src={formData.profileImage}
                                     alt="Profile"
                                     className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
                                 />

@@ -28,6 +28,7 @@ export default function EditCourse() {
     const [lessonThumbnail, setLessonThumbnail] = useState(null);
     const [lessonThumbnailPreview, setLessonThumbnailPreview] = useState(null);
     const [lessonPdf, setLessonPdf] = useState(null);
+    const [lessonVideo, setLessonVideo] = useState(null);
     const [addingLesson, setAddingLesson] = useState(false);
     const [editingLesson, setEditingLesson] = useState(null);
     const [confirmCourse, setConfirmCourse] = useState(false);
@@ -41,6 +42,7 @@ export default function EditCourse() {
         setLessonThumbnail(null);
         setLessonThumbnailPreview(null);
         setLessonPdf(null);
+        setLessonVideo(null);
         setEditingLesson(null);
     };
 
@@ -116,12 +118,12 @@ export default function EditCourse() {
             const formData = new FormData();
             formData.append('title', lessonForm.title);
             if (lessonForm.description) formData.append('description', lessonForm.description);
-            if (lessonForm.videoUrl?.trim()) formData.append('videoUrl', lessonForm.videoUrl.trim());
             formData.append('duration', lessonForm.duration || 0);
             formData.append('chapterTitle', lessonForm.chapterTitle.trim());
             formData.append('chapterOrder', lessonForm.chapterOrder || 1);
             if (lessonThumbnail) formData.append('thumbnail', lessonThumbnail);
             if (lessonPdf) formData.append('pdfNotes', lessonPdf);
+            if (lessonVideo) formData.append('video', lessonVideo);
 
             if (editingLesson) {
                 const res = await courseAPI.updateLesson(editingLesson._id, formData);
@@ -157,6 +159,7 @@ export default function EditCourse() {
         });
         setLessonThumbnailPreview(lesson.thumbnailURL || null);
         setLessonPdf(null);
+        setLessonVideo(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -289,9 +292,18 @@ export default function EditCourse() {
                         onChange={e => setLessonForm(p => ({ ...p, duration: e.target.value }))}
                         className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
 
-                    <input placeholder="Video URL (YouTube or Vimeo)" value={lessonForm.videoUrl}
-                        onChange={e => setLessonForm(p => ({ ...p, videoUrl: e.target.value }))}
-                        className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 col-span-2" />
+                    <div className="col-span-2">
+                        <label className="flex items-center justify-between cursor-pointer bg-white border border-purple-200 px-3 py-2 rounded-lg hover:bg-purple-50 transition-colors w-full text-sm text-gray-500">
+                            <span className="flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-purple-600" />
+                                {lessonVideo ? lessonVideo.name : (lessonForm.videoUrl ? 'Replace existing video (MP4, MOV)' : 'Upload Video (MP4, MOV)')}
+                            </span>
+                            <input type="file" accept="video/*" className="hidden" onChange={e => {
+                                const file = e.target.files[0];
+                                if (file) setLessonVideo(file);
+                            }} />
+                        </label>
+                    </div>
                     <textarea
                         placeholder="Lesson description (optional)"
                         value={lessonForm.description}

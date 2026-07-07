@@ -5,6 +5,7 @@ const Category = require('../models/Category');
 const Cart = require('../models/Cart');
 const Wishlist = require('../models/Wishlist');
 const { COURSE_STATUS } = require('../config/constants');
+const { deleteCloudinaryAsset } = require('./fileService');
 
 function groupByChapter(lessons) {
     const map = {};
@@ -37,7 +38,7 @@ const courseService = {
             offerPercentage: Number(offerPercentage) || 0,
             category,
             tutor: tutorId,
-            thumbnail: file ? file.filename : null
+            thumbnail: file ? file.path : null // multer-storage-cloudinary stores the URL in path
         });
 
         await course.save();
@@ -64,7 +65,12 @@ const courseService = {
         if(status && Object.values(COURSE_STATUS).includes(status)){
             course.status = status;
         }
-        if(file) course.thumbnail = file.filename;
+        if(file) {
+            if (course.thumbnail) {
+                await deleteCloudinaryAsset(course.thumbnail);
+            }
+            course.thumbnail = file.path;
+        }
 
         await course.save();
         return await Course.findById(course._id).populate('tutor', 'name email');
@@ -87,6 +93,17 @@ const courseService = {
             tutorId,
             { $pull: { 'tutorProfile.coursesCreated': courseId } }
         );
+
+        if (course.thumbnail) {
+            await deleteCloudinaryAsset(course.thumbnail);
+        }
+
+        const lessons = await Lesson.find({ course: courseId });
+        for (const lesson of lessons) {
+            if (lesson.thumbnail) await deleteCloudinaryAsset(lesson.thumbnail);
+            if (lesson.videoUrl) await deleteCloudinaryAsset(lesson.videoUrl);
+            if (lesson.pdfNotes) await deleteCloudinaryAsset(lesson.pdfNotes);
+        }
 
         await Course.findByIdAndDelete(courseId);
         return { message: 'Course deleted successfully' };

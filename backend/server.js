@@ -25,6 +25,8 @@ const { categoryRoutes } = require('./src/routes/categoryRoutes');
 const { couponRoutes } = require('./src/routes/couponRoutes');
 const checkoutController = require('./src/controllers/checkoutController');
 const quizRoutes = require('./src/routes/quizRoutes');
+const certificateRoutes = require('./src/routes/certificateRoutes');
+const { publicCertificateRoutes } = require('./src/routes/certificateRoutes');
 
 
 const PORT = process.env.PORT || 5000;
@@ -85,7 +87,8 @@ app.use('/api/courses', progressRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/quizzes', quizRoutes);
-
+app.use('/api/certificates', certificateRoutes);
+app.use('/api/verify', publicCertificateRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(HTTP_STATUS.OK).json({

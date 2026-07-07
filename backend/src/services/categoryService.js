@@ -1,13 +1,6 @@
 const Category = require('../models/Category');
 const Course = require('../models/Course');
-const { deleteOldProfileImage } = require('./fileService');
-
-const buildImageURL = (image) => {
-    if (!image) return null;
-    if (image.startsWith('http')) return image;
-    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    return `${BASE_URL}/uploads/categories/${image}`;
-};
+const { deleteCloudinaryAsset } = require('./fileService');
 
 const categoryService = {
 
@@ -23,15 +16,12 @@ const categoryService = {
         const category = new Category({
             name: name.trim(),
             description: description?.trim(),
-            image: file ? file.filename : null
+            image: file ? file.path : null
         });
 
         await category.save();
 
-        return {
-            ...category.toJSON(),
-            imageURL: buildImageURL(category.image)
-        };
+        return category.toJSON();
     },
 
     async getCategories({ search, isActive, page = 1, limit = 10 } = {}) {
@@ -57,10 +47,7 @@ const categoryService = {
             Category.countDocuments(query)
         ]);
 
-        const categoriesWithURL = categories.map(cat => ({
-            ...cat.toJSON(),
-            imageURL: buildImageURL(cat.image)
-        }));
+        const categoriesWithURL = categories.map(cat => cat.toJSON());
 
         const pagination = {
             currentPage: pageNum,
@@ -82,10 +69,7 @@ const categoryService = {
             throw new Error('Category not found');
         }
 
-        return {
-            ...category.toJSON(),
-            imageURL: buildImageURL(category.image)
-        };
+        return category.toJSON();
     },
 
     async updateCategory(categoryId, { name, description }, file) {
@@ -117,10 +101,10 @@ const categoryService = {
         }
 
         if (file) {
-            if (category.image && !category.image.startsWith('http')) {
-                await deleteOldProfileImage(category.image);
+            if (category.image) {
+                await deleteCloudinaryAsset(category.image);
             }
-            category.image = file.filename;
+            category.image = file.path;
         }
 
         await category.save();
@@ -132,10 +116,7 @@ const categoryService = {
             );
         }
 
-        return {
-            ...category.toJSON(),
-            imageURL: buildImageURL(category.image)
-        };
+        return category.toJSON();
     },
 
     async deleteCategory(categoryId) {
@@ -151,8 +132,8 @@ const categoryService = {
             throw new Error(`Cannot delete category. ${courseCount} course(s) are using this category`);
         }
 
-        if (category.image && !category.image.startsWith('http')) {
-            await deleteOldProfileImage(category.image);
+        if (category.image) {
+            await deleteCloudinaryAsset(category.image);
         }
 
         await Category.findByIdAndDelete(categoryId);
@@ -170,10 +151,7 @@ const categoryService = {
         category.isActive = !category.isActive;
         await category.save();
 
-        return {
-            ...category.toJSON(),
-            imageURL: buildImageURL(category.image)
-        };
+        return category.toJSON();
     }
 };
 

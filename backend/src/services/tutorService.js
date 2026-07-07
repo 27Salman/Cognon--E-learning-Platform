@@ -3,20 +3,11 @@ const Course = require('../models/Course');
 const Order = require('../models/Order');
 const Wallet = require('../models/Wallet');
 const { COURSE_STATUS } = require('../config/constants');
-const { deleteOldProfileImage } = require('./fileService');
+const cloudinary = require('../config/cloudinary');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
 const mongoose = require('mongoose');
-
-
-
-const buildImageURL = (profileImage) => {
-    if (!profileImage) return null;
-    if (profileImage.startsWith('http')) return profileImage;
-    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const subfolder = profileImage.startsWith('user-') ? 'profiles/' : '';
-    return `${BASE_URL}/uploads/${subfolder}${profileImage}`;
-};
+const { deleteCloudinaryAsset } = require('./fileService');
 
 const tutorService = {
 
@@ -49,10 +40,10 @@ const tutorService = {
         if (bio !== undefined) tutor.tutorProfile.bio = bio;
 
         if (file) {
-            if (tutor.profileImage && !tutor.profileImage.startsWith('http')) {
-                await deleteOldProfileImage(tutor.profileImage);
+            if (tutor.profileImage) {
+                await deleteCloudinaryAsset(tutor.profileImage);
             }
-            tutor.profileImage = file.filename;
+            tutor.profileImage = file.path; 
         }
 
         await tutor.save({ validateModifiedOnly: true });
@@ -63,7 +54,7 @@ const tutorService = {
             email: tutor.email,
             phone: tutor.phone,
             profileImage: tutor.profileImage,
-            profileImageURL: buildImageURL(tutor.profileImage),
+            profileImageURL: tutor.profileImage,
             tutorProfile: tutor.tutorProfile,
             role: tutor.role,
             status: tutor.status,

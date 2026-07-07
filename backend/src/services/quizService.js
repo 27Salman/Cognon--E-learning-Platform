@@ -1,10 +1,12 @@
+const crypto = require('crypto');
 const Quiz = require('../models/Quiz');
 const QuizAttempt = require('../models/QuizAttempt');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const User = require('../models/User');
-const { QUIZ_STATUS, HTTP_STATUS } = require('../config/constants');
+const { QUIZ_STATUS, HTTP_STATUS, USER_ROLES } = require('../config/constants');
 const { validateQuizData } = require('../validators/quizValidator');
+const Certificate = require("../models/Certificate");
 
 
 const quizService = {
@@ -202,7 +204,8 @@ const quizService = {
 
         if (attempt.passed) {
             const student = await User.findById(studentId);
-            
+            let studentNeedsSave = false;
+
             const enrollment = student.studentProfile.enrolledCourses.find(
                 ec => ec.courseId.toString() === quiz.courseId.toString()
             );
@@ -213,8 +216,32 @@ const quizService = {
 
                 if (totalLessons === 0 || completedLessonsCount >= totalLessons) {
                     enrollment.progress = 100;
-                    await student.save();
+                    studentNeedsSave = true;
                 }
+            }
+
+            if (student.role === USER_ROLES.STUDENT) {
+                const existingCertificate = await Certificate.findOne({
+                    student: studentId,
+                    course: quiz.courseId
+                });
+
+                if (!existingCertificate) {
+                    const certificateNumber = `CGN-${crypto.randomUUID()}`;
+                    const newCertificate = await Certificate.create({
+                        student: studentId,
+                        course: quiz.courseId,
+                        certificateNumber,
+                        score: totalScore,
+                        issuedAt: new Date()
+                    });
+                    student.studentProfile.certificates.push(newCertificate._id);
+                    studentNeedsSave = true;
+                }
+            }
+
+            if (studentNeedsSave) {
+                await student.save();
             }
         }
 

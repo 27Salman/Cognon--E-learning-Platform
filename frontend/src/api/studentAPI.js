@@ -109,7 +109,20 @@ export const studentAPI = {
     // wallet payment
     payWithWallet: (couponCode) =>
         api.post('/student/checkout/wallet', { couponCode }),
-    
+
+    // Certificates
+    getCertificates: (page = 1, limit = 10) =>
+        api.get(`/certificates?page=${page}&limit=${limit}`),
+
+    getCertificateById: (id) =>
+        api.get(`/certificates/${id}`),
+
+    downloadCertificate: (id) =>
+        api.get(`/certificates/${id}/download`, { responseType: 'blob' }),
+
+    // Public — no auth needed
+    verifyCertificate: (certificateNumber) =>
+        api.get(`/verify/${certificateNumber}`),
 };
 
 

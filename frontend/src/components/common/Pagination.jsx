@@ -6,7 +6,7 @@ export default function Pagination({
     if(totalPages <= 1) return null;
 
     const getPageNumbers = () => {
-        const delta = 2;
+      const delta = 2;
         const start = Math.max(1, currentPage - delta);
         const end = Math.min(totalPages, currentPage + delta);
         const range = [];

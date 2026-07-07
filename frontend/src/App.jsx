@@ -57,6 +57,8 @@ import StudentWallet from './pages/student/StudentWallet';
 import Loader from './components/common/Loader';
 import QuizBuilder from './pages/tutor/QuizBuilder';
 import QuizAttempt from './pages/student/QuizAttempt';
+import Certificates from './pages/student/Certificates';
+import VerifyCertificate from './pages/VerifyCertificate';
 
 
 function App() {
@@ -111,6 +113,7 @@ function App() {
             <Route path="wallet" element={<StudentWallet />} />
             <Route path="orders" element={<StudentOrderList />} />
             <Route path="orders/:id" element={<StudentOrderDetail />} />
+            <Route path="certificates" element={<Certificates />} />
           </Route>
 
           {/* Public student-facing pages — no login required */}
@@ -210,6 +213,7 @@ function App() {
           </Route>
 
           {/* Fallback */}
+          <Route path="/verify/:certificateNumber" element={<VerifyCertificate />} />
           <Route path={ROUTES.UNAUTHORIZED} element={<Unauthorized />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
