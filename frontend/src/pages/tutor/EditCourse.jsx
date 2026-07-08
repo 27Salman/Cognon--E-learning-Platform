@@ -36,6 +36,7 @@ export default function EditCourse() {
     const [deletingLesson, setDeletingLesson] = useState(false);
     const [cropSrc, setCropSrc] = useState(null);         // course thumbnail crop
     const [lessonCropSrc, setLessonCropSrc] = useState(null); // lesson thumbnail crop
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const resetLessonForm = () => {
         setLessonForm({ title: '', duration: '', videoUrl: '', description: '', chapterTitle: 'Chapter 1', chapterOrder: 1 });
@@ -114,6 +115,7 @@ export default function EditCourse() {
         if (!lessonForm.title) return toast.error('Lesson title required');
         if (!lessonForm.chapterTitle?.trim()) return toast.error('Chapter title required');
         setAddingLesson(true);
+        setUploadProgress(0);
         try {
             const formData = new FormData();
             formData.append('title', lessonForm.title);
@@ -125,14 +127,23 @@ export default function EditCourse() {
             if (lessonPdf) formData.append('pdfNotes', lessonPdf);
             if (lessonVideo) formData.append('video', lessonVideo);
 
+            const config = {
+                onUploadProgress: (progressEvent) => {
+                    if (progressEvent.total) {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        setUploadProgress(percentCompleted);
+                    }
+                }
+            };
+
             if (editingLesson) {
-                const res = await courseAPI.updateLesson(editingLesson._id, formData);
+                const res = await courseAPI.updateLesson(editingLesson._id, formData, config);
                 const updated = res?.data || res;
                 setLessons(prev => prev.map(l => l._id === editingLesson._id ? updated : l));
                 toast.success('Lesson updated');
             } else {
                 formData.append('order', lessons.length + 1);
-                const res = await courseAPI.addLesson(id, formData);
+                const res = await courseAPI.createLesson(id, formData, config);
                 const newLesson = res?.data || res;
                 setLessons(prev => [...prev, newLesson]);
                 toast.success('Lesson added');
@@ -144,6 +155,7 @@ export default function EditCourse() {
             toast.error(errorMsg);
         } finally {
             setAddingLesson(false);
+            setUploadProgress(0);
         }
     };
 
@@ -271,8 +283,8 @@ export default function EditCourse() {
                         {editingLesson ? `Editing: ${editingLesson.title}` : 'Add New Lesson'}
                     </h2>
                     {editingLesson && (
-                        <button onClick={resetLessonForm} className="text-xs text-gray-500 hover:text-gray-700 underline">
-                            Cancel Edit
+                        <button onClick={resetLessonForm} className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700">
+                            Cancel
                         </button>
                     )}
                 </div>
@@ -351,8 +363,16 @@ export default function EditCourse() {
                 </div>
 
                 <button onClick={handleAddLesson} disabled={addingLesson}
-                    className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-60">
-                    {addingLesson ? 'Saving...' : editingLesson ? 'Update Lesson' : 'Add Lesson'}
+                    className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-60 flex items-center gap-2"
+                >
+                    {addingLesson ? (
+                        <>
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            {uploadProgress > 0 ? `Uploading (${uploadProgress}%)` : 'Saving...'}
+                        </>
+                    ) : (
+                        editingLesson ? 'Update Lesson' : 'Add Lesson'
+                    )}
                 </button>
             </div>
 

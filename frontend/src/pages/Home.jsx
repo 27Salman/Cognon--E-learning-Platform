@@ -10,6 +10,7 @@ import {
   MonitorPlay, LifeBuoy, MessageCircle, Upload, ImageIcon
 } from 'lucide-react';
 import Logo from '../components/common/Logo';
+import StarRating from '../components/common/StarRating';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
@@ -775,13 +776,13 @@ const Home = () => {
                         <h3 className="font-bold text-sm mt-1 mb-2 line-clamp-2 leading-snug text-gray-900">{course.title}</h3>
                         <p className="text-xs text-gray-400 mb-3">By {course.tutor?.name || 'Instructor'}</p>
 
-                        <div className="flex items-center gap-3 text-xs text-gray-400 mb-4">
-                          {course.rating > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                              {course.rating.toFixed(1)}
+                        <div className="flex items-center gap-3 text-xs text-gray-400 mb-4 justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <StarRating rating={course.rating || 0} size={13} />
+                            <span className="text-xs font-semibold text-gray-500">
+                              ({course.reviewCount || 0})
                             </span>
-                          )}
+                          </div>
                           {course.enrolledCount > 0 && (
                             <span className="flex items-center gap-1">
                               <Users className="w-3 h-3" />

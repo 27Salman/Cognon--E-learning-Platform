@@ -5,6 +5,9 @@ import { fetchCourseDetails, fetchPublishedCourses } from "../../store/slices/st
 import StudentNavbar from "../../components/student/StudentNavbar";
 import Footer from "../../components/common/Footer";
 import { studentAPI } from "../../api/studentAPI";
+import { courseAPI } from "../../api/courseAPI";
+import StarRating from "../../components/common/StarRating";
+import AvatarInitial from "../../components/common/AvatarInitial";
 import toast from "react-hot-toast";
 import { BookOpen, Clock, Users, CheckCircle, PlayCircle, ShoppingCart, Heart } from 'lucide-react';
 import { ROUTES } from "../../utils/constants";
@@ -18,6 +21,13 @@ export default function CourseDetails() {
     const [wishlistLoading, setWishlistLoading] = useState(false);
     const [inWishlist, setInWishlist] = useState(false);
     const [inCart, setInCart] = useState(false);
+
+    // Reviews State
+    const [reviews, setReviews] = useState([]);
+    const [reviewsPage, setReviewsPage] = useState(1);
+    const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
+    const [summary, setSummary] = useState(null);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
 
     useEffect(() => {
         dispatch(fetchCourseDetails(id));
@@ -33,6 +43,45 @@ export default function CourseDetails() {
             setInCart(items.some(item => item.course?._id === id));
         }).catch(() => {});
     }, [dispatch, id]);
+
+    useEffect(() => {
+        if (id) {
+            setReviewsPage(1);
+            setReviews([]);
+            loadReviews(1, true);
+            loadSummary();
+        }
+    }, [id]);
+
+    const loadReviews = async (page = 1, replace = false) => {
+        setReviewsLoading(true);
+        try {
+            const res = await courseAPI.getCourseReviews(id, { page, limit: 5 });
+            const data = res?.data || {};
+            const fetched = data.reviews || [];
+            setReviews(prev => replace ? fetched : [...prev, ...fetched]);
+            setReviewsTotalPages(data.pagination?.totalPages || 1);
+        } catch (err) {
+            console.error('Failed to load reviews', err);
+        } finally {
+            setReviewsLoading(false);
+        }
+    };
+
+    const loadSummary = async () => {
+        try {
+            const res = await courseAPI.getCourseReviewSummary(id);
+            setSummary(res?.data || null);
+        } catch (err) {
+            console.error('Failed to load review summary', err);
+        }
+    };
+
+    const handleLoadMore = () => {
+        const nextPage = reviewsPage + 1;
+        setReviewsPage(nextPage);
+        loadReviews(nextPage, false);
+    };
 
     const handleAddToCart = async () => {
         setCartLoading(true);
@@ -152,7 +201,16 @@ export default function CourseDetails() {
                         <div className="flex-1 min-w-0">
                             <div className="mb-5">
                                 <p className="text-xs text-purple-600 font-medium mb-1">{currentCourse.category}</p>
-                                <h1 className="text-2xl font-bold text-gray-900 mb-2">{currentCourse.title}</h1>
+                                <h1 className="text-2xl font-bold text-gray-900 mb-1">{currentCourse.title}</h1>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-sm font-bold text-yellow-600">
+                                        {currentCourse.rating ? currentCourse.rating.toFixed(1) : '0.0'}
+                                    </span>
+                                    <StarRating rating={currentCourse.rating || 0} size={14} />
+                                    <span className="text-xs text-gray-500">
+                                        ({currentCourse.reviewCount || 0} rating{currentCourse.reviewCount !== 1 ? 's' : ''})
+                                    </span>
+                                </div>
                                 <p className="text-gray-500 text-sm">{currentCourse.description}</p>
                             </div>
 
@@ -278,6 +336,111 @@ export default function CourseDetails() {
                                     })()}
                                 </div>
                             )}
+
+                            {/* Reviews section */}
+                            <div className="mt-8 pt-8 border-t border-gray-200">
+                                <h2 className="text-xl font-bold text-gray-800 mb-6">Student Feedback</h2>
+                                
+                                {summary && (
+                                    <div className="flex flex-col md:flex-row gap-6 items-center bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mb-8">
+                                        {/* Avg score block */}
+                                        <div className="flex flex-col items-center justify-center text-center px-4">
+                                            <span className="text-5xl font-black text-purple-700 leading-none mb-2">
+                                                {summary.averageRating?.toFixed(1) || '0.0'}
+                                            </span>
+                                            <StarRating rating={summary.averageRating || 0} size={20} className="mb-2" />
+                                            <span className="text-xs font-semibold text-gray-400">
+                                                Course Rating ({summary.totalReviews || 0} reviews)
+                                            </span>
+                                        </div>
+
+                                        {/* Progress Bars */}
+                                        <div className="flex-1 w-full space-y-2.5">
+                                            {[5, 4, 3, 2, 1].map(stars => {
+                                                const count = summary.distribution?.[stars] || 0;
+                                                const percent = summary.totalReviews > 0 ? (count / summary.totalReviews) * 100 : 0;
+                                                return (
+                                                    <div key={stars} className="flex items-center gap-3 text-sm">
+                                                        <span className="flex items-center gap-1 text-xs font-semibold text-purple-600 min-w-[36px]">
+                                                            {stars} ★
+                                                        </span>
+                                                        <div className="flex-1 bg-gray-250/70 h-2.5 rounded-full overflow-hidden bg-gray-250">
+                                                            <div 
+                                                                className="bg-yellow-400 h-full rounded-full transition-all duration-500" 
+                                                                style={{ width: `${percent}%` }}
+                                                            />
+                                                        </div>
+                                                        <span className="text-xs font-medium text-gray-500 min-w-[32px] text-right">
+                                                            {Math.round(percent)}%
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Reviews List */}
+                                <div className="space-y-4">
+                                    {reviews.length > 0 ? (
+                                        reviews.map(review => (
+                                            <div key={review._id} className="p-5 bg-white rounded-xl border border-gray-150 shadow-sm space-y-3">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        {review.student?.profileImageURL || review.student?.profileImage ? (
+                                                            <img
+                                                                src={review.student.profileImageURL || review.student.profileImage}
+                                                                alt={review.student.name}
+                                                                className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <AvatarInitial name={review.student?.name || '?'} size="md" color="purple" />
+                                                        )}
+                                                        <div>
+                                                            <h4 className="text-sm font-bold text-gray-800">{review.student?.name || 'Anonymous Student'}</h4>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <StarRating rating={review.rating} size={12} />
+                                                                <span className="text-xs text-gray-400">
+                                                                    {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                                                        year: 'numeric',
+                                                                        month: 'short',
+                                                                        day: 'numeric'
+                                                                    })}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {review.comment && (
+                                                    <p className="text-sm text-gray-600 leading-relaxed pl-1">
+                                                        {review.comment}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-200">
+                                            <p className="text-gray-400 text-sm">No reviews yet for this course</p>
+                                        </div>
+                                    )}
+
+                                    {/* View more reviews */}
+                                    {reviewsPage < reviewsTotalPages && (
+                                        <div className="flex justify-center pt-4">
+                                            <button
+                                                onClick={handleLoadMore}
+                                                disabled={reviewsLoading}
+                                                className="px-6 py-2.5 border border-purple-600 text-purple-600 rounded-xl text-sm font-semibold hover:bg-purple-50 transition disabled:opacity-50"
+                                            >
+                                                {reviewsLoading ? 'Loading...' : 'View more Reviews'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* RIGHT — sticky course card */}

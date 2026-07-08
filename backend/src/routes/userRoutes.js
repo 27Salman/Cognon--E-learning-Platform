@@ -19,6 +19,7 @@ const orderController = require('../controllers/orderController');
 const couponController = require('../controllers/couponController');
 const catalogController = require('../controllers/catalogController');
 const { optionalAuth } = require('../middleware/authMiddleware');
+const reviewController = require('../controllers/reviewController');
 
 
 const publicRouter = express.Router();
@@ -60,6 +61,11 @@ router.get('/orders/:id/invoice', orderController.downloadInvoice);
 router.get('/wallet', getMyWallet);
 router.post('/orders/:orderId/cancel', cancelOrder);
 router.post('/checkout/wallet', payWithWallet);
+
+// Reviews 
+router.post('/reviews/:courseId', reviewController.submitReview);
+router.delete('/reviews/:courseId', reviewController.deleteReview);
+router.get('/reviews/:courseId/mine', reviewController.getMyReview);
 
 module.exports = { userRoutes: router, publicCatalogRoutes: publicRouter };
 

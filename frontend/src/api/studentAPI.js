@@ -123,6 +123,16 @@ export const studentAPI = {
     // Public 
     verifyCertificate: (certificateNumber) =>
         api.get(`/verify/${certificateNumber}`),
+
+    // Reviews
+    submitReview: (courseId, rating, comment) =>
+        api.post(`/student/reviews/${courseId}`, { rating, comment }),
+
+    deleteReview: (courseId) =>
+        api.delete(`/student/reviews/${courseId}`),
+
+    getMyReview: (courseId) =>
+        api.get(`/student/reviews/${courseId}/mine`),
 };
 
 

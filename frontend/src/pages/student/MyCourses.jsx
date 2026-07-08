@@ -3,61 +3,103 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchEnrolledCourses } from '../../store/slices/studentSlice';
 import { BookOpen, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { COURSE_STATUS } from '../../utils/constants';
+import { ROUTES, COURSE_STATUS } from '../../utils/constants';
+import { studentAPI } from '../../api/studentAPI';
+import StarRating from '../../components/common/StarRating';
+import ReviewModal from '../../components/student/ReviewModal';
 
-function CourseCard({ course, onClick }) {
+function CourseCard({ course, onClick, onRateClick, refreshTrigger }) {
     const progress = course.progress || 0;
     const isCompleted = progress >= 100;
     const isUnavailable = course.status && course.status !== COURSE_STATUS.PUBLISHED;
 
+    const [myReview, setMyReview] = useState(null);
+
+    useEffect(() => {
+        if (course._id) {
+            studentAPI.getMyReview(course._id)
+                .then((res) => {
+                    if (res?.data) {
+                        setMyReview(res.data);
+                    } else {
+                        setMyReview(null);
+                    }
+                })
+                .catch(() => {});
+        }
+    }, [course._id, refreshTrigger]);
+
     return (
         <div
             onClick={onClick}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden transition hover:shadow-md cursor-pointer h-full flex flex-col"
+            className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden transition hover:shadow-md cursor-pointer h-full flex flex-col justify-between"
         >
-            <div className="w-full h-48 bg-gray-100 overflow-hidden relative">
-                {course.thumbnailURL ? (
-                    <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover" />
-                ) : (
-                    <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                        <BookOpen className="w-12 h-12 text-purple-300" />
-                    </div>
-                )}
-                {isUnavailable && (
-                    <div className="absolute top-2 left-2">
-                        <span className="bg-yellow-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                            <AlertTriangle className="w-3 h-3" /> Temporarly Unavailable
-                        </span>
-                    </div>
-                )}
-            </div>
-            <div className="p-5 flex-1 flex flex-col">
-                <h3 className="font-semibold text-gray-800 text-base leading-snug mb-2 line-clamp-2">
-                    {course.title}
-                </h3>
-                <p className="text-sm text-purple-600 font-medium mb-4">
-                    By {course.tutor?.name || 'Tutor'}
-                </p>
-                {isUnavailable && (
-                    <p className="text-sm text-yellow-600 mb-3">
-                        This course is unlisted. Your access is unaffected.
-                    </p>
-                )}
-                <div className="mt-auto">
-                    <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                        <div
-                            className={`h-2 rounded-full transition-all ${isCompleted ? 'bg-green-500' : 'bg-purple-600'}`}
-                            style={{ width: `${progress}%` }}
-                        />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">{progress}% complete</span>
-                        {isCompleted && (
-                            <span className="flex items-center gap-1 text-sm text-green-600 font-medium">
-                                <CheckCircle className="w-4 h-4" /> Done
+            <div>
+                <div className="w-full h-48 bg-gray-100 overflow-hidden relative">
+                    {course.thumbnailURL ? (
+                        <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                            <BookOpen className="w-12 h-12 text-purple-300" />
+                        </div>
+                    )}
+                    {isUnavailable && (
+                        <div className="absolute top-2 left-2">
+                            <span className="bg-yellow-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                                <AlertTriangle className="w-3 h-3" /> Temporarily Unavailable
                             </span>
-                        )}
-                    </div>
+                        </div>
+                    )}
+                </div>
+                <div className="p-5 flex-1 flex flex-col pb-0">
+                    <h3 className="font-semibold text-gray-800 text-base leading-snug mb-2 line-clamp-2">
+                        {course.title}
+                    </h3>
+                    <p className="text-sm text-purple-600 font-medium mb-4">
+                        By {course.tutor?.name || 'Tutor'}
+                    </p>
+                    {isUnavailable && (
+                        <p className="text-sm text-yellow-600 mb-3">
+                            This course is unlisted. Your access is unaffected.
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            <div className="p-5 pt-0">
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                    <div
+                        className={`h-2 rounded-full transition-all ${isCompleted ? 'bg-green-500' : 'bg-purple-600'}`}
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+                <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm text-gray-500">{progress}% complete</span>
+                    {isCompleted && (
+                        <span className="flex items-center gap-1 text-sm text-green-600 font-medium">
+                            <CheckCircle className="w-4 h-4" /> Done
+                        </span>
+                    )}
+                </div>
+
+                {/* Rating Display / Option */}
+                <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-1">
+                    {myReview ? (
+                        <div className="flex items-center gap-1">
+                            <StarRating rating={myReview.rating} size={14} />
+                        </div>
+                    ) : (
+                        <span className="text-xs text-gray-400">Not rated yet</span>
+                    )}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onRateClick(course._id);
+                        }}
+                        className="text-xs font-semibold text-purple-600 hover:text-purple-750 transition hover:underline bg-purple-50 hover:bg-purple-100/70 px-2.5 py-1.5 rounded-lg"
+                    >
+                        {myReview ? 'Edit Review' : 'Rate Course'}
+                    </button>
                 </div>
             </div>
         </div>
@@ -70,6 +112,8 @@ export default function MyCourses() {
     const { enrolledCourses, loading } = useSelector(state => state.student);
     const [inProgressPage, setInProgressPage] = useState(0);
     const [completedPage, setCompletedPage] = useState(0);
+    const [selectedCourseForReview, setSelectedCourseForReview] = useState(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const coursesPerPage = 4;
 
     useEffect(() => {
@@ -89,6 +133,15 @@ export default function MyCourses() {
     const completedStart = completedPage * coursesPerPage;
     const completedEnd = completedStart + coursesPerPage;
     const displayedCompleted = completed.slice(completedStart, completedEnd);
+
+    const handleRateClick = (courseId) => {
+        setSelectedCourseForReview(courseId);
+    };
+
+    const handleReviewSubmitted = () => {
+        setRefreshTrigger(prev => prev + 1);
+        dispatch(fetchEnrolledCourses());
+    };
 
     if (loading) {
         return (
@@ -157,6 +210,8 @@ export default function MyCourses() {
                                 key={course._id}
                                 course={course}
                                 onClick={() => navigate(`/student/courses/${course._id}/lessons`)}
+                                onRateClick={handleRateClick}
+                                refreshTrigger={refreshTrigger}
                             />
                         ))}
                     </div>
@@ -203,11 +258,21 @@ export default function MyCourses() {
                                 key={course._id}
                                 course={course}
                                 onClick={() => navigate(`/student/courses/${course._id}/lessons`)}
+                                onRateClick={handleRateClick}
+                                refreshTrigger={refreshTrigger}
                             />
                         ))}
                     </div>
                 </section>
             )}
+
+            {/* Modal for reviews */}
+            <ReviewModal
+                isOpen={!!selectedCourseForReview}
+                courseId={selectedCourseForReview}
+                onClose={() => setSelectedCourseForReview(null)}
+                onReviewSubmitted={handleReviewSubmitted}
+            />
         </div>
     );
 }

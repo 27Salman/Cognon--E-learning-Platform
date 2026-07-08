@@ -46,4 +46,8 @@ export const tutorAPI = {
 
     requestWithdrawal: (amount) =>
         api.post('/tutor/wallet/withdraw', { amount }),
+
+    // Reviews
+    getCourseReviews: (courseId, params = {}) =>
+        api.get(`/tutor/courses/${courseId}/reviews`, { params }),
 };

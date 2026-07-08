@@ -16,6 +16,7 @@ const {
     downloadSalesReportPDF,
     downloadSalesReportExcel,
 } = require('../controllers/tutorController');
+const reviewController = require('../controllers/reviewController');
 
 router.use(protect);
 router.use(restrictTo('tutor'));
@@ -39,5 +40,8 @@ router.get('/revenue/:courseId', getCourseRevenueDetails);
 const walletController = require('../controllers/walletController');
 router.get('/wallet', walletController.getMyWallet);
 router.post('/wallet/withdraw', walletController.requestWithdrawal);
+
+// Reviews 
+router.get('/courses/:courseId/reviews', reviewController.getTutorCourseReviews);
 
 module.exports = { tutorRoutes: router };

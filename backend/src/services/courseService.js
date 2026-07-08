@@ -4,7 +4,9 @@ const Lesson = require('../models/Lesson');
 const Category = require('../models/Category');
 const Cart = require('../models/Cart');
 const Wishlist = require('../models/Wishlist');
-const { COURSE_STATUS } = require('../config/constants');
+const { COURSE_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
+const { deleteCloudinaryAsset } = require('./fileService');
+const notificationService = require('./notificationService');
 
 function groupByChapter(lessons) {
     const map = {};
@@ -37,7 +39,7 @@ const courseService = {
             offerPercentage: Number(offerPercentage) || 0,
             category,
             tutor: tutorId,
-            thumbnail: file ? file.path : null // multer-storage-cloudinary stores the URL in path
+            thumbnail: file ? file.path : null 
         });
 
         await course.save();

@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Pencil, Users, Clock, BookOpen,  } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Users, Clock, BookOpen, MessageSquare, Star } from 'lucide-react';
 import { courseAPI } from '../../api/courseAPI';
+import { tutorAPI } from '../../api/tutorAPI';
+import StarRating from '../../components/common/StarRating';
+import AvatarInitial from '../../components/common/AvatarInitial';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
 import { ROUTES, COURSE_STATUS } from '../../utils/constants';
@@ -16,9 +19,56 @@ export default function TutorCourseDetail() {
     const [confirmLesson, setConfirmLesson] = useState({ open: false, id: null, title: '' });
     const [deletingLesson, setDeletingLesson] = useState(false);
 
+    // Reviews 
+    const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' or 'reviews'
+    const [reviews, setReviews] = useState([]);
+    const [reviewsPage, setReviewsPage] = useState(1);
+    const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
+    const [summary, setSummary] = useState(null);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
+
     useEffect(() => {
         loadCourse();
     }, [id]);
+
+    useEffect(() => {
+        if (id && activeTab === 'reviews') {
+            setReviewsPage(1);
+            setReviews([]);
+            loadReviews(1, true);
+            loadSummary();
+        }
+    }, [id, activeTab]);
+
+    const loadReviews = async (page = 1, replace = false) => {
+        setReviewsLoading(true);
+        try {
+            const res = await tutorAPI.getCourseReviews(id, { page, limit: 5 });
+            const data = res?.data || {};
+            const fetched = data.reviews || [];
+            setReviews(prev => replace ? fetched : [...prev, ...fetched]);
+            setReviewsTotalPages(data.pagination?.totalPages || 1);
+        } catch (err) {
+            toast.error('Failed to load reviews');
+        } finally {
+            setReviewsLoading(false);
+        }
+    };
+
+    const loadSummary = async () => {
+        try {
+            const res = await courseAPI.getCourseReviewSummary(id);
+            setSummary(res?.data || null);
+        } catch (err) {
+            console.error('Failed to load review summary', err);
+        }
+    };
+
+    const handleLoadMoreReviews = () => {
+        const nextPage = reviewsPage + 1;
+        setReviewsPage(nextPage);
+        loadReviews(nextPage, false);
+    };
 
     const loadCourse = async () => {
         setLoading(true);
@@ -108,109 +158,237 @@ export default function TutorCourseDetail() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: Course structure */}
+                {/* Left: Course structure & Reviews Tabs */}
                 <div className="lg:col-span-2">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4">Course Structure</h2>
-                        {lessons.length === 0 ? (
-                            <div className="bg-gray-50 rounded-xl p-8 text-center text-gray-400">
-                                No lessons yet. Click "Add New Lesson" to get started.
-                            </div>
-                        ) : (
-                            <div className="space-y-3 mb-8">
-                                {/* Group lessons by chapter */}
-                                {(() => {
-                                    const chapMap = {};
-                                    lessons.forEach(l => {
-                                        const key = l.chapter?.order ?? 1;
-                                        if (!chapMap[key]) chapMap[key] = { order: key, title: l.chapter?.title ?? 'Chapter 1', lessons: [] };
-                                        chapMap[key].lessons.push(l);
-                                    });
-                                    return Object.values(chapMap)
-                                        .sort((a, b) => a.order - b.order)
-                                        .map(ch => ({
-                                            ...ch,
-                                            lessons: ch.lessons.slice().sort((a, b) => a.order - b.order)
-                                        }))
-                                        .map(chapter => (
-                                            <div key={chapter.order} className="border border-gray-200 rounded-xl overflow-hidden">
-                                                {/* Chapter header */}
-                                                <div className="flex items-center gap-3 px-4 py-3 bg-purple-50">
-                                                    <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
-                                                        <span className="text-white text-xs font-bold">{chapter.order}</span>
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="font-semibold text-gray-800 text-sm">
-                                                            Chapter {chapter.order}: {chapter.title}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            {chapter.lessons.length} lesson{chapter.lessons.length !== 1 ? 's' : ''}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {/* Lessons in chapter */}
-                                                <div className="divide-y divide-gray-100">
-                                                    {chapter.lessons.map((lesson, idx) => (
-                                                        <div key={lesson._id} className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition">
-                                                            <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center flex-shrink-0">
-                                                                <BookOpen className="w-3.5 h-3.5 text-purple-600" />
-                                                            </div>
-                                                            <span className="flex-1 text-sm text-gray-700 truncate">
-                                                                {idx + 1}. {lesson.title}
-                                                            </span>
-                                                            {lesson.duration > 0 && (
-                                                                <span className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
-                                                                    <Clock className="w-3 h-3" /> {lesson.duration} mins
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ));
-                                })()}
-                            </div>
-                        )}
+                    {/* Tab Navigation */}
+                    <div className="flex border-b border-gray-200 mb-6 gap-6">
+                        <button
+                            onClick={() => setActiveTab('lessons')}
+                            className={`pb-3 font-semibold text-sm transition-all relative ${
+                                activeTab === 'lessons'
+                                    ? 'text-purple-600 font-bold border-b-2 border-purple-600'
+                                    : 'text-gray-400 hover:text-gray-650'
+                            }`}
+                        >
+                            Lessons & Structure
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('reviews')}
+                            className={`pb-3 font-semibold text-sm transition-all relative ${
+                                activeTab === 'reviews'
+                                    ? 'text-purple-600 font-bold border-b-2 border-purple-600'
+                                    : 'text-gray-400 hover:text-gray-650'
+                            }`}
+                        >
+                            Student Reviews ({course.reviewCount || 0})
+                        </button>
+                    </div>
 
-                    {/* Lessons grid */}
-                    {lessons.length > 0 && (
+                    {activeTab === 'lessons' && (
                         <>
-                            <h2 className="text-lg font-bold text-gray-800 mb-4">Lessons</h2>
-                            <div className="grid grid-cols-2 gap-4">
-                                {lessons.map((lesson) => (
-                                    <div key={lesson._id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                                        <div className="w-full h-32 bg-gray-100 overflow-hidden">
-                                            {lesson.thumbnailURL ? (
-                                                <img src={lesson.thumbnailURL} alt={lesson.title} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full bg-purple-50 flex items-center justify-center">
-                                                    <BookOpen className="w-8 h-8 text-purple-200" />
+                            <h2 className="text-lg font-bold text-gray-800 mb-4">Course Structure</h2>
+                            {lessons.length === 0 ? (
+                                <div className="bg-gray-50 rounded-xl p-8 text-center text-gray-400">
+                                    No lessons yet. Click "Add New Lesson" to get started.
+                                </div>
+                            ) : (
+                                <div className="space-y-3 mb-8">
+                                    {/* Group lessons by chapter */}
+                                    {(() => {
+                                        const chapMap = {};
+                                        lessons.forEach(l => {
+                                            const key = l.chapter?.order ?? 1;
+                                            if (!chapMap[key]) chapMap[key] = { order: key, title: l.chapter?.title ?? 'Chapter 1', lessons: [] };
+                                            chapMap[key].lessons.push(l);
+                                        });
+                                        return Object.values(chapMap)
+                                            .sort((a, b) => a.order - b.order)
+                                            .map(ch => ({
+                                                ...ch,
+                                                lessons: ch.lessons.slice().sort((a, b) => a.order - b.order)
+                                            }))
+                                            .map(chapter => (
+                                                <div key={chapter.order} className="border border-gray-200 rounded-xl overflow-hidden">
+                                                    <div className="flex items-center gap-3 px-4 py-3 bg-purple-50">
+                                                        <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-white text-xs font-bold">{chapter.order}</span>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold text-gray-800 text-sm">Chapter {chapter.order}: {chapter.title}</p>
+                                                            <p className="text-xs text-gray-500">{chapter.lessons.length} lessons</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="divide-y divide-gray-150">
+                                                        {chapter.lessons.map((lesson, idx) => (
+                                                            <div key={lesson._id} className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50/50 transition">
+                                                                <div className="w-7 h-7 rounded bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                                                    <BookOpen className="w-3.5 h-3.5 text-purple-600" />
+                                                                </div>
+                                                                <span className="flex-1 text-sm text-gray-700 truncate">
+                                                                    {idx + 1}. {lesson.title}
+                                                                </span>
+                                                                {lesson.duration > 0 && (
+                                                                    <span className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
+                                                                        <Clock className="w-3 h-3" /> {lesson.duration} mins
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="p-3">
-                                            <p className="text-sm font-semibold text-gray-800 truncate">{lesson.title}</p>
-                                            {lesson.duration > 0 && (
-                                                <p className="text-xs text-gray-400 mt-0.5">{lesson.duration} mins</p>
-                                            )}
-                                            <div className="flex gap-2 mt-2">
-                                                <button
-                                                    onClick={() => navigate(`/tutor/courses/${id}/edit`)}
-                                                    className="flex-1 text-xs bg-purple-600 text-white py-1.5 rounded-lg font-medium hover:bg-purple-700 transition-colors"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => setConfirmLesson({ open: true, id: lesson._id, title: lesson.title })}
-                                                    className="flex-1 text-xs bg-red-500 text-white py-1.5 rounded-lg font-medium hover:bg-red-600 transition-colors"
-                                                >
-                                                    Delete
-                                                </button>
+                                            ));
+                                    })()}
+                                </div>
+                            )}
+
+                            {/* Lessons grid */}
+                            {lessons.length > 0 && (
+                                <>
+                                    <h2 className="text-lg font-bold text-gray-800 mb-4">Lessons</h2>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {lessons.map((lesson) => (
+                                            <div key={lesson._id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                                                <div className="w-full h-32 bg-gray-100 overflow-hidden">
+                                                    {lesson.thumbnailURL ? (
+                                                        <img src={lesson.thumbnailURL} alt={lesson.title} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-purple-50 flex items-center justify-center">
+                                                            <BookOpen className="w-8 h-8 text-purple-200" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="p-3">
+                                                    <p className="text-sm font-semibold text-gray-800 truncate">{lesson.title}</p>
+                                                    {lesson.duration > 0 && (
+                                                        <p className="text-xs text-gray-400 mt-0.5">{lesson.duration} mins</p>
+                                                    )}
+                                                    <div className="flex gap-2 mt-2">
+                                                        <button
+                                                            onClick={() => navigate(`/tutor/courses/${id}/edit`)}
+                                                            className="flex-1 text-xs bg-purple-600 text-white py-1.5 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setConfirmLesson({ open: true, id: lesson._id, title: lesson.title })}
+                                                            className="flex-1 text-xs bg-red-500 text-white py-1.5 rounded-lg font-medium hover:bg-red-600 transition-colors"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                </>
+                            )}
                         </>
+                    )}
+
+                    {activeTab === 'reviews' && (
+                        <div className="space-y-6">
+                            <h2 className="text-lg font-bold text-gray-800 mb-2">Student Reviews</h2>
+                    
+                            {summary && (
+                                <div className="flex flex-col md:flex-row gap-6 items-center bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mb-8">
+                                    {/* Avg score block */}
+                                    <div className="flex flex-col items-center justify-center text-center px-4">
+                                        <span className="text-5xl font-black text-purple-700 leading-none mb-2">
+                                            {summary.averageRating?.toFixed(1) || '0.0'}
+                                        </span>
+                                        <StarRating rating={summary.averageRating || 0} size={20} className="mb-2" />
+                                        <span className="text-xs font-semibold text-gray-450">
+                                            Average Rating
+                                        </span>
+                                    </div>
+
+                                    {/* Progress Bars */}
+                                    <div className="flex-1 w-full space-y-2.5">
+                                        {[5, 4, 3, 2, 1].map(stars => {
+                                            const count = summary.distribution?.[stars] || 0;
+                                            const percent = summary.totalReviews > 0 ? (count / summary.totalReviews) * 100 : 0;
+                                            return (
+                                                <div key={stars} className="flex items-center gap-3 text-sm">
+                                                    <span className="flex items-center gap-1 text-xs font-semibold text-purple-650 min-w-[36px]">
+                                                        {stars} ★
+                                                    </span>
+                                                    <div className="flex-1 bg-gray-250/70 h-2.5 rounded-full overflow-hidden bg-gray-250">
+                                                        <div 
+                                                            className="bg-yellow-400 h-full rounded-full transition-all duration-500" 
+                                                            style={{ width: `${percent}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs font-medium text-gray-550 min-w-[32px] text-right">
+                                                        {Math.round(percent)}%
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Reviews List */}
+                            <div className="space-y-4">
+                                {reviews.length > 0 ? (
+                                    reviews.map(review => (
+                                        <div key={review._id} className="p-5 bg-white rounded-xl border border-gray-150 shadow-sm space-y-3">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    {review.student?.profileImageURL || review.student?.profileImage ? (
+                                                        <img
+                                                            src={review.student.profileImageURL || review.student.profileImage}
+                                                            alt={review.student.name}
+                                                            className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                                            onError={(e) => {
+                                                                e.target.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <AvatarInitial name={review.student?.name || '?'} size="md" color="purple" />
+                                                    )}
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-gray-800">{review.student?.name || 'Anonymous Student'}</h4>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <StarRating rating={review.rating} size={12} />
+                                                            <span className="text-xs text-gray-400">
+                                                                {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric'
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {review.comment && (
+                                                <p className="text-sm text-gray-600 leading-relaxed pl-1">
+                                                    {review.comment}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-200">
+                                        <p className="text-gray-400 text-sm">No reviews yet for this course</p>
+                                    </div>
+                                )}
+
+                                {/* Load More reviews */}
+                                {reviewsPage < reviewsTotalPages && (
+                                    <div className="flex justify-center pt-4">
+                                        <button
+                                            onClick={handleLoadMoreReviews}
+                                            disabled={reviewsLoading}
+                                            className="px-6 py-2.5 border border-purple-600 text-purple-600 rounded-xl text-sm font-semibold hover:bg-purple-50 transition disabled:opacity-50"
+                                        >
+                                            {reviewsLoading ? 'Loading...' : 'View more Reviews'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     )}
                 </div>
 
