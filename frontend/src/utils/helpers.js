@@ -15,6 +15,13 @@ export const removeToken = () => {
 
 // User 
 export const setUser = (user) => {
+  if (user) {
+    const normalizedId = user.id || user._id;
+    if (normalizedId) {
+      user.id = normalizedId;
+      user._id = normalizedId;
+    }
+  }
   sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 };
 

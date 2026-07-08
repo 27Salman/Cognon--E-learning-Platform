@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../../api/adminAPI';
 import { Search, Filter, ArrowLeft, BookOpen, Users, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { COURSE_STATUS } from '../../utils/constants';
 
 const STATUS_COLORS = {
-  published: 'bg-green-100 text-green-700',
-  draft: 'bg-gray-100 text-gray-600',
-  pending_review: 'bg-yellow-100 text-yellow-700',
-  archived: 'bg-red-100 text-red-700',
+  [COURSE_STATUS.PUBLISHED]: 'bg-green-100 text-green-700',
+  [COURSE_STATUS.DRAFT]: 'bg-gray-100 text-gray-600',
+  [COURSE_STATUS.PENDING_REVIEW]: 'bg-yellow-100 text-yellow-700',
+  [COURSE_STATUS.ARCHIVED]: 'bg-red-100 text-red-700',
 };
 
 const SORT_OPTIONS = [
@@ -20,8 +21,8 @@ const SORT_OPTIONS = [
 
 const LISTING_FILTERS = [
   { value: 'all', label: 'All Courses' },
-  { value: 'published', label: 'Listed' },
-  { value: 'archived', label: 'Unlisted' },
+  { value: COURSE_STATUS.PUBLISHED, label: 'Listed' },
+  { value: COURSE_STATUS.ARCHIVED, label: 'Unlisted' },
 ];
 
 // Course Card 
@@ -211,10 +212,10 @@ export default function AdminCourseManagement() {
   };
 
   const handleToggleListing = async (courseId, currentStatus) => {
-    const newStatus = currentStatus === 'published' ? 'archived' : 'published';
+    const newStatus = currentStatus === COURSE_STATUS.PUBLISHED ? COURSE_STATUS.ARCHIVED : COURSE_STATUS.PUBLISHED;
     try {
       await adminAPI.updateCourseStatus(courseId, newStatus);
-      toast.success(`Course ${newStatus === 'published' ? 'listed' : 'unlisted'} successfully`);
+      toast.success(`Course ${newStatus === COURSE_STATUS.PUBLISHED ? 'listed' : 'unlisted'} successfully`);
       if (selectedCourse?._id === courseId) {
         setSelectedCourse(prev => ({ ...prev, status: newStatus }));
       }
@@ -239,7 +240,7 @@ export default function AdminCourseManagement() {
     }
     if (!selectedCourse) return null;
 
-    const isListed = selectedCourse.status === 'published';
+    const isListed = selectedCourse.status === COURSE_STATUS.PUBLISHED;
 
     return (
       <div className="p-6">

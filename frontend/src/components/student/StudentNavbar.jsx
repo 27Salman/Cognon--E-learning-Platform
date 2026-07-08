@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Heart, ShoppingCart, Bell } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import { studentAPI } from '../../api/studentAPI';
 import Logo from '../common/Logo';
+import NotificationBell from '../common/NotificationBell';
 import { ROUTES } from '../../utils/constants';
 
 const API_BASE = import.meta.env.VITE_API_URL
@@ -131,9 +132,7 @@ export default function StudentNavbar() {
                                     </span>
                                 )}
                             </button>
-                            <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors" title="Notifications">
-                                <Bell className="w-5 h-5 text-gray-700" />
-                            </button>
+                            <NotificationBell />
                             <button onClick={() => navigate(ROUTES.STUDENT_PROFILE)} className="focus:outline-none" title="My Profile">
                                 {isValidImageSrc(studentInfo?.profileImageURL || studentInfo?.profileImage) ? (
                                     <img src={getFullImageUrl(studentInfo.profileImageURL || studentInfo.profileImage)} alt="Student" className="w-9 h-9 rounded-full object-cover border-2 border-purple-200 hover:border-purple-400 transition-colors" />

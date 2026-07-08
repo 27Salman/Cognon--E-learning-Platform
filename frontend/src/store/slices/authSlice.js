@@ -85,13 +85,21 @@ const authSlice = createSlice({
       state.isAuthenticated = !!getToken();
     },
     setCredentials: (state, action) => {
-      state.user = action.payload.user;
+      const user = action.payload.user;
+      if (user) {
+        const normalizedId = user.id || user._id;
+        if (normalizedId) {
+          user.id = normalizedId;
+          user._id = normalizedId;
+        }
+      }
+      state.user = user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
       state.error = null;
       
       setToken(action.payload.token);
-      setUser(action.payload.user);
+      setUser(user);
     },
   },
   extraReducers: (builder) => {
@@ -119,12 +127,20 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user;
+        const user = action.payload.user;
+        if (user) {
+          const normalizedId = user.id || user._id;
+          if (normalizedId) {
+            user.id = normalizedId;
+            user._id = normalizedId;
+          }
+        }
+        state.user = user;
         state.token = action.payload.token;
         state.error = null;
         
         setToken(action.payload.token);
-        setUser(action.payload.user);
+        setUser(user);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -158,10 +174,18 @@ const authSlice = createSlice({
       })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
+        const user = action.payload.user;
+        if (user) {
+          const normalizedId = user.id || user._id;
+          if (normalizedId) {
+            user.id = normalizedId;
+            user._id = normalizedId;
+          }
+        }
+        state.user = user;
         state.isAuthenticated = true;
         
-        setUser(action.payload.user);
+        setUser(user);
       })
       .addCase(fetchCurrentUser.rejected, (state) => {
         state.loading = false;

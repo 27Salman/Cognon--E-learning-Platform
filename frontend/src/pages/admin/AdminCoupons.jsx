@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '../../api/adminAPI';
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { COURSE_STATUS, DISCOUNT_TYPE, COUPON_APPLICABLE_TO } from '../../utils/constants';
 
 const initialForm = {
     code: '',
     description: '',
-    discountType: 'percentage',
+    discountType: DISCOUNT_TYPE.PERCENTAGE,
     discountValue: '',
     maxDiscountAmount: '',
     minPurchaseAmount: '',
@@ -14,7 +15,7 @@ const initialForm = {
     usageLimit: '',
     validFrom: '',
     validUntil: '',
-    applicableTo: 'all',
+    applicableTo: COUPON_APPLICABLE_TO.ALL,
     applicableIds: [],
 };
 
@@ -49,7 +50,7 @@ export default function AdminCoupons() {
             try {
                 const [catRes, courseRes] = await Promise.all([
                     adminAPI.getCategories({ limit: 100 }),
-                    adminAPI.getAdminCourses({ limit: 100, status: 'published' }),
+                    adminAPI.getAdminCourses({ limit: 100, status: COURSE_STATUS.PUBLISHED }),
                 ]);
                 setCategories(catRes.data?.categories || []);
                 setCourses(courseRes.data?.courses || []);
@@ -80,7 +81,7 @@ export default function AdminCoupons() {
             usageLimit: coupon.usageLimit || '',
             validFrom: coupon.validFrom?.split('T')[0] || '',
             validUntil: coupon.validUntil?.split('T')[0] || '',
-            applicableTo: coupon.applicableTo || 'all',
+            applicableTo: coupon.applicableTo || COUPON_APPLICABLE_TO.ALL,
             applicableIds: (coupon.applicableIds || []).map(item =>
                 typeof item === 'object' ? item._id || item : item
             ),
@@ -98,7 +99,7 @@ export default function AdminCoupons() {
         const minPurchase = Number(form.minPurchaseAmount) || 0;
         const maxDiscount = form.maxDiscountAmount ? Number(form.maxDiscountAmount) : null;
 
-        if (form.discountType === 'fixed' && minPurchase > 0 && discountVal >= minPurchase) {
+        if (form.discountType === DISCOUNT_TYPE.FIXED && minPurchase > 0 && discountVal >= minPurchase) {
             return toast.error(`Fixed discount (₹${discountVal}) must be less than minimum purchase amount (₹${minPurchase})`);
         }
 
@@ -106,11 +107,11 @@ export default function AdminCoupons() {
             return toast.error('Discount value must be greater than 0');
         }
 
-        if (form.discountType === 'percentage' && (discountVal <= 0 || discountVal > 100)) {
+        if (form.discountType === DISCOUNT_TYPE.PERCENTAGE && (discountVal <= 0 || discountVal > 100)) {
             return toast.error('Percentage discount must be between 1 and 100');
         }
 
-        if (form.discountType === 'percentage' && maxDiscount && minPurchase > 0 && maxDiscount >= minPurchase) {
+        if (form.discountType === DISCOUNT_TYPE.PERCENTAGE && maxDiscount && minPurchase > 0 && maxDiscount >= minPurchase) {
             return toast.error(`Max discount cap (₹${maxDiscount}) must be less than minimum purchase amount (₹${minPurchase})`);
         }
 
@@ -118,7 +119,7 @@ export default function AdminCoupons() {
             return toast.error('Expiry date must be after start date');
         }
 
-        if (form.applicableTo === 'category' && form.applicableIds.length === 0) {
+        if (form.applicableTo === COUPON_APPLICABLE_TO.CATEGORY && form.applicableIds.length === 0) {
             return toast.error('Please select at least one category');
         }
 
@@ -137,7 +138,7 @@ export default function AdminCoupons() {
                 validFrom: form.validFrom,
                 validUntil: form.validUntil,
                 applicableTo: form.applicableTo,
-                applicableIds: form.applicableTo !== 'all' ? form.applicableIds : [],
+                applicableIds: form.applicableTo !== COUPON_APPLICABLE_TO.ALL ? form.applicableIds : [],
             };
 
             if (editingId) {
@@ -232,7 +233,7 @@ export default function AdminCoupons() {
                                 <td className="px-5 py-3 font-mono font-bold text-purple-700">{coupon.code}</td>
                                 <td className="px-5 py-3 text-gray-600 max-w-xs truncate">{coupon.description || '—'}</td>
                                 <td className="px-5 py-3 font-medium text-gray-800">
-                                    {coupon.discountType === 'percentage'
+                                    {coupon.discountType === DISCOUNT_TYPE.PERCENTAGE
                                         ? `${coupon.discountValue}%${coupon.maxDiscountAmount ? ` (max ₹${coupon.maxDiscountAmount})` : ''}`
                                         : `₹${coupon.discountValue}`}
                                 </td>
@@ -338,8 +339,8 @@ export default function AdminCoupons() {
                                             onChange={e => setForm({ ...form, discountType: e.target.value })}
                                             className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                                         >
-                                            <option value="percentage">Percentage</option>
-                                            <option value="fixed">Fixed (₹)</option>
+                                            <option value={DISCOUNT_TYPE.PERCENTAGE}>Percentage</option>
+                                            <option value={DISCOUNT_TYPE.FIXED}>Fixed (₹)</option>
                                         </select>
                                     </div>
                                     <div>
@@ -348,11 +349,11 @@ export default function AdminCoupons() {
                                             type="number"
                                             value={form.discountValue}
                                             onChange={e => setForm({ ...form, discountValue: e.target.value })}
-                                            placeholder={form.discountType === 'percentage' ? '20' : '500'}
+                                            placeholder={form.discountType === DISCOUNT_TYPE.PERCENTAGE ? '20' : '500'}
                                             className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                                         />
                                     </div>
-                                    {form.discountType === 'percentage' && (
+                                    {form.discountType === DISCOUNT_TYPE.PERCENTAGE && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Max Discount (₹)</label>
                                             <input
@@ -374,18 +375,18 @@ export default function AdminCoupons() {
                                         onChange={e => setForm({ ...form, applicableTo: e.target.value, applicableIds: [] })}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                                     >
-                                        <option value="all">All Courses</option>
-                                        <option value="category">Specific Category</option>
+                                        <option value={COUPON_APPLICABLE_TO.ALL}>All Courses</option>
+                                        <option value={COUPON_APPLICABLE_TO.CATEGORY}>Specific Category</option>
                                     </select>
                                     <p className="text-xs text-gray-400 mt-1">
-                                        {form.applicableTo === 'all'
+                                        {form.applicableTo === COUPON_APPLICABLE_TO.ALL
                                             ? 'Coupon applies to all courses on the platform'
                                             : 'Coupon applies only to courses in the selected categories'}
                                     </p>
                                 </div>
 
                                 {/* Category selector — shown only when applicableTo = category */}
-                                {form.applicableTo === 'category' && (
+                                {form.applicableTo === COUPON_APPLICABLE_TO.CATEGORY && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Select Categories *
@@ -412,7 +413,7 @@ export default function AdminCoupons() {
                                                 ))}
                                             </div>
                                         )}
-                                        {form.applicableTo === 'category' && form.applicableIds.length === 0 && (
+                                        {form.applicableTo === COUPON_APPLICABLE_TO.CATEGORY && form.applicableIds.length === 0 && (
                                             <p className="text-xs text-red-500 mt-1">Select at least one category</p>
                                         )}
                                     </div>

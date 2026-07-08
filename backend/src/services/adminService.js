@@ -1,11 +1,12 @@
 const User = require('../models/User');
-const { USER_ROLES, USER_STATUS, TUTOR_APPROVAL_STATUS, COURSE_STATUS } = require('../config/constants');
+const { USER_ROLES, USER_STATUS, TUTOR_APPROVAL_STATUS, COURSE_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
 const { deleteOldProfileImage } = require('./fileService');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
+const notificationService = require('./notificationService');
 
 const buildImageURL = (profileImage) => {
     if(!profileImage) return null;
@@ -253,6 +254,17 @@ const adminService = {
 
         tutor.tutorProfile.approvalStatus = TUTOR_APPROVAL_STATUS.APPROVED;
         await tutor.save();
+
+        await notificationService.create({
+            recipient: tutorId,
+            type: NOTIFICATION_TYPES.TUTOR_APPROVED,
+            title: 'Your tutor account has been approved!',
+            message: 'Congratulations! You can now create and publish courses on Cognon.',
+            priority: 'high',
+            actionUrl: NOTIFICATION_ACTIONS.TUTOR_DASHBOARD(),
+            data: {}
+        });
+
         return tutor;
     },
 
@@ -262,6 +274,16 @@ const adminService = {
 
         tutor.tutorProfile.approvalStatus = TUTOR_APPROVAL_STATUS.REJECTED;
         await tutor.save();
+
+        await notificationService.create({
+            recipient: tutorId,
+            type: NOTIFICATION_TYPES.TUTOR_REJECTED,
+            title: 'Tutor application update',
+            message: 'Your tutor application was not approved. Please contact support for more information.',
+            priority: 'high',
+            actionUrl: NOTIFICATION_ACTIONS.TUTOR_DASHBOARD(),
+            data: {}
+        });
         return tutor;
     },
 
@@ -443,6 +465,29 @@ const adminService = {
 
         course.status = status;
         await course.save();
+
+        await notificationService.create({
+            recipient: course.tutor,
+            type: NOTIFICATION_TYPES.COURSE_STATUS_CHANGED,
+            title: `Your course "${course.title}" status changed`,
+            message: `The course status has been updated to "${status}" by admin.`,
+            priority: 'medium',
+            actionUrl: NOTIFICATION_ACTIONS.TUTOR_COURSE(course._id),
+            data: { courseId: course._id, status }
+        });
+
+        if (status === 'archived' || status === 'draft') {
+            if (course.studentsEnrolled && course.studentsEnrolled.length > 0) {
+                await notificationService.createBulk(course.studentsEnrolled, {
+                    type: NOTIFICATION_TYPES.COURSE_UNAVAILABLE,
+                    title: `Course "${course.title}" is temporarily unavailable`,
+                    message: 'The course you enrolled in has been temporarily taken down. Your access will be not affected. Finish the course as soon as possible',
+                    priority: 'medium',
+                    actionUrl: NOTIFICATION_ACTIONS.STUDENT_MY_COURSES(),
+                    data: { courseId: course._id }
+                });
+            }
+        }
 
         return course;
     },

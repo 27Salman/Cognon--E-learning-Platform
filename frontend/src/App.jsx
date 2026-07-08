@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setAuthFromStorage } from './store/slices/authSlice';
+import { useSocket } from './hooks/useSocket';
 import ProtectedRoute from './routes/ProtectedRoute';
 import RoleRoute from './routes/RoleRoute';
 import Home from './pages/Home';
@@ -64,6 +65,8 @@ function App() {
   useEffect(() => {
     dispatch(setAuthFromStorage());
   }, [dispatch]);
+
+  useSocket();
 
   const handleLoaderComplete = () => {
     setShowLoader(false);

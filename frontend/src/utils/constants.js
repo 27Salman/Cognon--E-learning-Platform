@@ -26,6 +26,52 @@ export const TUTOR_APPROVAL_STATUS = {
     REJECTED: 'rejected',
 };
 
+export const COURSE_STATUS = {
+    DRAFT: 'draft',
+    PUBLISHED: 'published',
+    ARCHIVED: 'archived',
+    PENDING_REVIEW: 'pending_review',
+};
+
+export const ENROLLMENT_STATUS = {
+    ENROLLED: 'enrolled',
+    IN_PROGRESS: 'in_progress',
+    COMPLETED: 'completed',
+    DROPPED: 'dropped',
+};
+
+export const PAYMENT_STATUS = {
+    PENDING: 'pending',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+    REFUNDED: 'refunded',
+};
+
+export const PAYMENT_METHOD = {
+    RAZORPAY: 'razorpay',
+    CARD: 'card',
+    UPI: 'upi',
+    NETBANKING: 'netbanking',
+    WALLET: 'wallet',
+};
+
+export const DISCOUNT_TYPE = {
+    PERCENTAGE: 'percentage',
+    FIXED: 'fixed',
+};
+
+export const COUPON_APPLICABLE_TO = {
+    ALL: 'all',
+    CATEGORY: 'category',
+    COURSE: 'course',
+};
+
+export const OFFER_TYPE = {
+    COURSE: 'course',
+    CATEGORY: 'category',
+    PLATFORM: 'platform',
+};
+
 export const ENDPOINTS = {
     // Auth
     SIGNUP: '/auth/signup',
@@ -65,6 +111,27 @@ export const ENDPOINTS = {
     // Enrollment
     ENROLL_COURSE: '/enrollments',
     GET_MY_COURSES: '/enrollments/my-courses',
+};
+
+export const NOTIFICATION_TYPES = {
+    PAYMENT_SUCCESS:        'payment_success',
+    REFUND_COMPLETED:       'refund_completed',
+    WALLET_UPDATED:         'wallet_updated',
+    NEW_CHAT_MESSAGE:       'new_chat_message',
+    TUTOR_APPROVED:         'tutor_approved',
+    TUTOR_REJECTED:         'tutor_rejected',
+    NEW_ENROLLMENT:         'new_enrollment',
+    COURSE_CONTENT_UPDATED: 'course_content_updated',
+    COURSE_UNAVAILABLE:     'course_unavailable',
+    COURSE_STATUS_CHANGED:  'course_status_changed',
+    COUPON_ADDED:           'coupon_added',
+    NEW_TUTOR_REGISTERED:   'new_tutor_registered',
+    NEW_COURSE_SUBMITTED:   'new_course_submitted',
+    WITHDRAWAL_REQUEST:     'withdrawal_request',
+    NEW_ORDER:              'new_order',
+    QUIZ_AVAILABLE:         'quiz_available',
+    QUIZ_RESULT:            'quiz_result',
+    CERTIFICATE_GENERATED:  'certificate_generated',
 };
 
 export const ROUTES = {

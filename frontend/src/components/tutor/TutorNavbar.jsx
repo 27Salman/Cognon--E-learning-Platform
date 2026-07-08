@@ -1,7 +1,7 @@
-import { Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Logo from "../common/Logo";
+import NotificationBell from "../common/NotificationBell";
 import { ROUTES } from "../../utils/constants";
 
 const API_BASE = import.meta.env.VITE_API_URL
@@ -37,9 +37,7 @@ export default function TutorNavbar({ tutorInfo }) {
 
                 {/* Right - Bell + Avatar */}
                 <div className="flex items-center space-x-4">
-                    <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
-                        <Bell className="w-5 h-5 text-gray-700" />
-                    </button>
+                    <NotificationBell />
 
                     <button
                         onClick={() => navigate(ROUTES.TUTOR_PROFILE)}

@@ -1,7 +1,8 @@
 const User = require('../models/User');
-const { USER_ROLES, HTTP_STATUS } = require("../config/constants");
+const { USER_ROLES, HTTP_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require("../config/constants");
 const { sendVerificationOTP } = require('./emailService');
 const { createOTP } = require('./otpService');
+const notificationService = require('./notificationService');
 
 const authService = {
     async registerUser(userData) {
@@ -68,6 +69,7 @@ const authService = {
             }
 
             let savedUser;
+
             for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
                     savedUser = await newUser.save();
@@ -93,6 +95,21 @@ const authService = {
 
             if (!savedUser) {
                 throw new Error('Failed to create user after multiple attempts');
+            }
+
+            if (userRole === USER_ROLES.TUTOR) {
+                const admin = await User.findOne({ role: USER_ROLES.ADMIN }).select('_id');
+                if (admin) {
+                    await notificationService.create({
+                        recipient: admin._id,
+                        type: NOTIFICATION_TYPES.NEW_TUTOR_REGISTERED,
+                        title: 'New tutor registration',
+                        message: `${name} has registered as a tutor and is awaiting approval.`,
+                        priority: 'medium',
+                        actionUrl: NOTIFICATION_ACTIONS.ADMIN_TUTORS(),
+                        data: { tutorId: savedUser._id, tutorName: name }
+                    });
+                }
             }
 
             const otp = await createOTP(normalizedEmail, 'email_verification');

@@ -4,9 +4,6 @@ const { HTTP_STATUS } = require('../config/constants');
 const salesReportService = require('../services/salesReportService');
 
 
-
-
-
 exports.getDashboardStats = asyncHandler(async (req, res) => {
     const data = await adminService.getDashboardStats();
     res.status(HTTP_STATUS.OK).json({ success: true, data });

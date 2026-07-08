@@ -6,13 +6,13 @@ import { tutorAPI } from '../../api/tutorAPI';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import ImageCropModal from '../../components/common/ImageCropModal';
 import toast from 'react-hot-toast';
-import { ROUTES } from '../../utils/constants';
+import { ROUTES, COURSE_STATUS } from '../../utils/constants';
 
 export default function EditCourse() {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [form, setForm] = useState({ title: '', category: '', price: '', offerPercentage: '', description: '', status: 'draft' });
+    const [form, setForm] = useState({ title: '', category: '', price: '', offerPercentage: '', description: '', status: COURSE_STATUS.DRAFT });
     const [thumbnail, setThumbnail] = useState(null);
     const [preview, setPreview] = useState(null);
     const [lessons, setLessons] = useState([]);
@@ -61,7 +61,7 @@ export default function EditCourse() {
                 price: course.price || '',
                 offerPercentage: course.offerPercentage || '',
                 description: course.description || '',
-                status: course.status || 'draft'
+                status: course.status || COURSE_STATUS.DRAFT
             });
             setPreview(course.thumbnailURL || null);
             setLessons(course.lessons || []);
@@ -223,8 +223,8 @@ export default function EditCourse() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                         <select name="status" value={form.status} onChange={handleChange}
                             className="w-full border border-purple-200 bg-purple-50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
-                            <option value="draft">Draft</option>
-                            <option value="published">Published</option>
+                            <option value={COURSE_STATUS.DRAFT}>Draft</option>
+                            <option value={COURSE_STATUS.PUBLISHED}>Published</option>
                         </select>
                     </div>
                 </div>

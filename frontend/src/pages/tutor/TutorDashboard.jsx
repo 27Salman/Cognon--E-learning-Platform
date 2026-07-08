@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { fetchDashboard } from '../../store/slices/courseSlice';
 import { tutorAPI } from '../../api/tutorAPI';
-import { TUTOR_APPROVAL_STATUS } from '../../utils/constants';
+import { TUTOR_APPROVAL_STATUS, COURSE_STATUS } from '../../utils/constants';
 
 const PERIODS = [
     { key: 'today', label: 'Today' },
@@ -209,11 +209,11 @@ export default function TutorDashboard() {
                                         <td className="px-4 py-3 text-gray-600 font-medium">₹{(course.revenue || 0).toLocaleString('en-IN')}</td>
                                         <td className="px-4 py-3">
                                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                                                course.status === 'published'
+                                                course.status === COURSE_STATUS.PUBLISHED
                                                     ? 'bg-green-100 text-green-700'
                                                     : 'bg-gray-100 text-gray-500'
                                             }`}>
-                                                {course.status === 'published' ? 'Published' : 'Draft'}
+                                                {course.status === COURSE_STATUS.PUBLISHED ? 'Published' : 'Draft'}
                                             </span>
                                         </td>
                                     </tr>

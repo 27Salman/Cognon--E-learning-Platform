@@ -24,13 +24,15 @@ const { progressRoutes } = require('./src/routes/progressRoutes');
 const { categoryRoutes } = require('./src/routes/categoryRoutes');
 const { couponRoutes } = require('./src/routes/couponRoutes');
 const checkoutController = require('./src/controllers/checkoutController');
+const { startHoldReleaseJob } = require('./src/jobs/holdReleaseJob');
+const { initSocket } = require('./src/socket/socketManager');
+const { notificationRoutes } = require('./src/routes/notificationRoutes');
 
 const PORT = process.env.PORT || 5000;
 
 const app = express();
 connectDB();
 
-const { startHoldReleaseJob } = require('./src/jobs/holdReleaseJob');
 startHoldReleaseJob();
 
 app.use(helmet({
@@ -38,7 +40,7 @@ app.use(helmet({
 }));
 
 const corsOptions = {
-  origin: [process.env.CLIENT_URL, 'http://localhost:3000', 'http://localhost:3001'].filter(Boolean),
+  origin: [process.env.CLIENT_URL, 'http://localhost:3000'].filter(Boolean),
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -83,6 +85,8 @@ app.use('/api/courses', progressRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/coupons', couponRoutes);
 
+app.use('/api/notifications', notificationRoutes);
+
 
 app.get('/api/health', (req, res) => {
   res.status(HTTP_STATUS.OK).json({
@@ -98,6 +102,7 @@ app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running at ${PORT}`);
+  initSocket(server);
 });
 
 process.on('SIGTERM', () => {
