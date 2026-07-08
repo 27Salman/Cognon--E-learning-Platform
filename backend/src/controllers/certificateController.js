@@ -25,7 +25,7 @@ exports.downloadCertificate = asyncHandler( async(req, res)=> {
     res.status(HTTP_STATUS.OK).end(pdfBuffer);
 });
 
-// Public — no auth required
+// Public 
 exports.verifyCertificate = asyncHandler( async(req, res)=> {
     const result = await certificateService.verifyCertificate(req.params.certificateNumber);
     res.status(HTTP_STATUS.OK).json({ success: true, data: result });

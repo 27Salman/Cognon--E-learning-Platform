@@ -14,6 +14,15 @@ const parseVideoUrl = (url) => {
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
     if (vimeoMatch) return { platform: 'vimeo', id: vimeoMatch[1] };
 
+    // Direct video file 
+    if (
+        url.includes('cloudinary.com') ||
+        url.includes('amazonaws.com') ||
+        /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url)
+    ) {
+        return { platform: 'direct', url };
+    }
+
     return null;
 };
 
@@ -32,10 +41,8 @@ export default function VideoPlayer({ videoUrl, onPlay }) {
     const [playing, setPlaying] = useState(false);
 
     const parsed = parseVideoUrl(videoUrl);
-    const embedUrl = parsed ? generateEmbedUrl(parsed.platform, parsed.id) : null;
-    const thumbnail = parsed ? getThumbnailUrl(parsed.platform, parsed.id) : null;
 
-    if (!embedUrl) {
+    if (!parsed) {
         return (
             <div className="w-full aspect-video bg-gray-900 rounded-xl flex items-center justify-center">
                 <p className="text-gray-400 text-sm">
@@ -49,6 +56,25 @@ export default function VideoPlayer({ videoUrl, onPlay }) {
         setPlaying(true);
         if (onPlay) onPlay();
     };
+
+    if (parsed.platform === 'direct') {
+        return (
+            <div className="w-full aspect-video rounded-xl overflow-hidden bg-black">
+                <video
+                    src={parsed.url}
+                    controls
+                    className="w-full h-full"
+                    onPlay={onPlay}
+                    controlsList="nodownload"
+                >
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        );
+    }
+
+    const embedUrl = generateEmbedUrl(parsed.platform, parsed.id);
+    const thumbnail = getThumbnailUrl(parsed.platform, parsed.id);
 
     return (
         <div className="w-full aspect-video rounded-xl overflow-hidden bg-black relative">

@@ -28,7 +28,6 @@ const quizService = {
                 isPublished: quizData.isPublished,
                 shuffleQuestions: quizData.shuffleQuestions,
                 shuffleOptions: quizData.shuffleOptions,
-                questionsToShow: null,
                 questions: quizData.questions.map(({ _id, __v, ...rest }) => rest),
             };
             if (quizData.maxAttempts !== undefined) updateSet.maxAttempts = quizData.maxAttempts;
@@ -54,7 +53,7 @@ const quizService = {
             throw new Error('Quiz not found');
         }
 
-        const updateSet = { questionsToShow: null };
+        const updateSet = { };
         const allowedUpdates = ['title', 'duration', 'passingMarks', 'maxAttempts', 'isPublished', 'shuffleQuestions', 'shuffleOptions', 'questions'];
         allowedUpdates.forEach(field => {
             if (updateData[field] !== undefined) updateSet[field] = updateData[field];

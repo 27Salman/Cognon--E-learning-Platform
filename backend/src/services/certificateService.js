@@ -129,17 +129,16 @@ const certificateService = {
             doc.on('end',  () => resolve(Buffer.concat(buffers)));
             doc.on('error', reject);
 
-            const W = doc.page.width;   // 841.89
-            const H = doc.page.height;  // 595.28
+            const W = doc.page.width;   
+            const H = doc.page.height;  
 
-            const LEFT_W   = W * 0.65;  // content panel
-            const RIGHT_W  = W - LEFT_W; // accent panel
+            const LEFT_W   = W * 0.65;  
+            const RIGHT_W  = W - LEFT_W; 
             const PAD      = 56;
 
-            // ── Right accent panel (Cognon brand color) ──────────────────
+            // Right accent panel (Cognon brand color)
             doc.rect(LEFT_W, 0, RIGHT_W, H).fill('#2d1b69');
 
-            // Diagonal ribbon strip inside right panel
             doc.save();
             doc.rect(LEFT_W, 0, RIGHT_W, H).clip();
             doc.rect(LEFT_W + 18, 0, 22, H).fillOpacity(0.18).fill('#ffffff');
@@ -162,11 +161,8 @@ const certificateService = {
             const sealCY = H * 0.52;
             const sealR  = 72;
 
-            // Outer ring
             doc.circle(sealCX, sealCY, sealR).lineWidth(2).stroke('#ffffff');
-            // Inner ring
             doc.circle(sealCX, sealCY, sealR - 10).lineWidth(0.8).stroke('#ffffff');
-            // Platform name in seal
             doc.font(FONT_BOLD)
                .fontSize(18)
                .fillColor('#ffffff')
@@ -196,22 +192,18 @@ const certificateService = {
                    width: RIGHT_W - 20, align: 'center'
                });
 
-            // ── Left content panel — white background ────────────────────
             doc.rect(0, 0, LEFT_W, H).fill('#ffffff');
 
-            // Thin top purple accent bar
             doc.rect(0, 0, LEFT_W, 6).fill('#2d1b69');
 
-            // Thin left purple accent bar
             doc.rect(0, 0, 6, H).fill('#2d1b69');
 
-            // Issue date (top left, like Coursera)
             doc.font(FONT_REGULAR)
                .fontSize(10)
                .fillColor('#64748b')
                .text(issuedDate, PAD, 32);
 
-            // ── Student name (large, bold — the centrepiece) ─────────────
+            // Student name
             doc.font(FONT_BOLD)
                .fontSize(34)
                .fillColor('#1e293b')
@@ -219,13 +211,11 @@ const certificateService = {
 
             const nameBottom = doc.y + 6;
 
-            // "has successfully completed" line
             doc.font(FONT_REGULAR)
                .fontSize(12)
                .fillColor('#475569')
                .text('has successfully completed', PAD, nameBottom + 4);
 
-            // Course name (medium bold)
             doc.font(FONT_BOLD)
                .fontSize(18)
                .fillColor('#1e293b')
@@ -233,7 +223,6 @@ const certificateService = {
 
             const courseBottom = doc.y + 6;
 
-            // Descriptor line (Coursera-style)
             doc.font(FONT_REGULAR)
                .fontSize(9.5)
                .fillColor('#64748b')
@@ -242,13 +231,11 @@ const certificateService = {
                    PAD, courseBottom + 6, { width: LEFT_W - PAD * 2 }
                );
 
-            // ── Footer separator ─────────────────────────────────────────
             const footerY = H - 100;
             doc.moveTo(PAD, footerY).lineTo(LEFT_W - PAD, footerY)
                .lineWidth(0.5).stroke('#e2e8f0');
 
-            // ── Instructor signature block ────────────────────────────────
-            // Simulate a signature with italic styled name
+            // Instructor signature block
             doc.font(FONT_BOLD)
                .fontSize(14)
                .fillColor('#334155')
@@ -264,7 +251,6 @@ const certificateService = {
                .fillColor('#64748b')
                .text('Cognon E-Learning Platform', PAD, footerY + 44);
 
-            // Certificate number (bottom left, subtle)
             doc.font(FONT_REGULAR)
                .fontSize(7.5)
                .fillColor('#94a3b8')

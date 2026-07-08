@@ -28,8 +28,8 @@ export default function QuizBuilder() {
         const fetchQuiz = async () => {
             try {
                 const res = await quizAPI.getQuizForTutor(courseId);
-                if (res.data.success && res.data.data) {
-                    const q = res.data.data;
+                if (res.success && res.data) {
+                    const q = res.data;
                     setQuizId(q._id);
                     setTitle(q.title);
                     setDuration(q.duration);
@@ -174,7 +174,7 @@ export default function QuizBuilder() {
             } else {
                 const create = await quizAPI.createQuiz(quizData);
                 toast.success('Quiz created successfully');
-                setQuizId(create.data.data._id);
+                setQuizId(create.data._id);
                 localStorage.removeItem(`quiz_draft_${courseId}`);
             }
         } catch (error) {
@@ -211,7 +211,7 @@ export default function QuizBuilder() {
                         <input 
                             type="text" 
                             placeholder="e.g. Final React Exam" 
-                            value={title} 
+                            value={title || ''} 
                             onChange={(e) => setTitle(e.target.value)}
                             className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-purple-500"
                         />
@@ -250,27 +250,29 @@ export default function QuizBuilder() {
                         />
                     </div>
 
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 col-span-2">
                         <input
                             type="checkbox"
                             checked={shuffleQuestions}
-                            onChange={setShuffleQuestions}
+                            onChange={(e) => setShuffleQuestions(e.target.checked)}
                         />
                         Shuffle Questions
                     </label>
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 col-span-2">
                         <input
                             type="checkbox"
                             checked={shuffleOptions}
-                            onChange={setShuffleOptions}
+                            onChange={(e) => setShuffleOptions(e.target.checked)}
                         />
                         Shuffle Options
                     </label>
+
+
                     <label className="flex items-center gap-2">
                         <input
                             type="checkbox"
                             checked={isPublished}
-                            onChange={setIsPublished}
+                            onChange={(e) => setIsPublished(e.target.checked)}
                         />
                         Published
                     </label>
@@ -294,30 +296,41 @@ export default function QuizBuilder() {
                         <input
                             type="text"
                             placeholder="Question Text"
-                            value={q.questionText}
+                            value={q.questionText || q.text || ''}
                             onChange={(e) => handleQuestionChange(qIndex, 'questionText', e.target.value)}
                             className="w-full border p-2 rounded mb-4"
                         />
 
                         {/* Options */}
-                        <div className="space-y-2">
-                            {q.options.map((opt, optIndex) => (
-                                <div key={optIndex} className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name={`correct_${qIndex}`}
-                                        checked={q.correctOptionIndex === optIndex}
-                                        onChange={() => handleQuestionChange(qIndex, 'correctOptionIndex', optIndex)}
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder={`Option ${optIndex + 1}`}
-                                        value={opt}
-                                        onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
-                                        className="w-full border p-2 rounded"
-                                    />
-                                </div>
-                            ))}
+                        <div className="space-y-3">
+                            {q.options.map((opt, optIndex) => {
+                                const isCorrect = q.correctOptionIndex === optIndex;
+                                return (
+                                    <div 
+                                        key={optIndex} 
+                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                                            isCorrect ? 'bg-green-50 border-green-400' : 'bg-gray-50 border-gray-200'
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name={`correct_${qIndex}`}
+                                            checked={isCorrect}
+                                            onChange={() => handleQuestionChange(qIndex, 'correctOptionIndex', optIndex)}
+                                            className="w-4 h-4 text-green-600 focus:ring-green-500"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder={`Option ${optIndex + 1}`}
+                                            value={opt}
+                                            onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
+                                            className={`w-full bg-transparent outline-none ${
+                                                isCorrect ? 'text-green-900 placeholder-green-700/50' : 'text-gray-900'
+                                            }`}
+                                        />
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         <div className="mt-4">

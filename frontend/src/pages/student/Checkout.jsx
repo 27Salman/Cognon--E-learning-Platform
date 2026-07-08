@@ -17,6 +17,8 @@ export default function Checkout() {
     const [paying, setPaying] = useState(false);
     const [walletBalance, setWalletBalance] = useState(0);
     const [walletPaying, setWalletPaying] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [paymentType, setPaymentType] = useState(null);
 
     const [couponCode, setCouponCode] = useState(location.state?.couponCode || '');
     const [couponInput, setCouponInput] = useState(location.state?.couponCode || '');
@@ -122,7 +124,23 @@ export default function Checkout() {
         await fetchPriceData('');
     };
 
-    const handleWalletPayment = async () => {
+    const handleWalletPayment = () => {
+        setPaymentType('wallet');
+        setShowConfirmModal(true);
+    };
+
+    const handlePayment = () => {
+        setPaymentType('razorpay');
+        setShowConfirmModal(true);
+    };
+
+    const confirmPayment = () => {
+        setShowConfirmModal(false);
+        if (paymentType === 'wallet') executeWalletPayment();
+        else if (paymentType === 'razorpay') executePayment();
+    };
+
+    const executeWalletPayment = async () => {
         if (walletPaying) return;
         setWalletPaying(true);
         try {
@@ -135,7 +153,7 @@ export default function Checkout() {
         }
     };
 
-    const handlePayment = async () => {
+    const executePayment = async () => {
         if (paying) return; 
         if (!window.Razorpay) {
             toast.error('Payment gateway not loaded. Please refresh the page.');
@@ -490,6 +508,30 @@ export default function Checkout() {
                     </div>
                 </div>
             </div>
+            {showConfirmModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6">
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">Confirm Payment</h2>
+                        <p className="text-sm text-gray-600 mb-6">
+                            Are you sure you want to proceed with this payment?
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowConfirmModal(false)}
+                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmPayment}
+                                className="flex-1 px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                            >
+                                Proceed
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

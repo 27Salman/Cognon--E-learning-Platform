@@ -50,11 +50,6 @@ const quizSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    questionsToShow: {
-        type: Number,
-        default: null, 
-        min: 1
-    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Quiz', quizSchema);

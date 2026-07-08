@@ -1,21 +1,33 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Award, Download, BookOpen, User, Calendar, Hash, Eye, X, Link2, Check } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Award, Download, BookOpen, User, Calendar, Eye, X, Link2, Check, Search } from 'lucide-react';
 import { studentAPI } from '../../api/studentAPI';
 import toast from 'react-hot-toast';
 
 const Certificates = () => {
-    const [certificates, setCertificates] = useState([]);
-    const [pagination, setPagination]     = useState(null);
-    const [loading, setLoading]           = useState(true);
-    const [page, setPage]                 = useState(1);
+    const [certificates, setCertificates]   = useState([]);
+    const [pagination, setPagination]       = useState(null);
+    const [loading, setLoading]             = useState(true);
+    const [page, setPage]                   = useState(1);
     const [downloadingId, setDownloadingId] = useState(null);
-    const [previewCert, setPreviewCert]   = useState(null); // cert object for modal
+    const [previewCert, setPreviewCert]     = useState(null);
 
-    const fetchCertificates = useCallback(async (pageNum = 1) => {
+    const [searchTerm, setSearchTerm]       = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [sortOption, setSortOption]       = useState('latest');
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+            setPage(1); 
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    const fetchCertificates = useCallback(async (pageNum = 1, search = '', sort = 'latest') => {
         setLoading(true);
         try {
-            const res = await studentAPI.getCertificates(pageNum, 9);
-            setCertificates(res.data.certificates);
+            const res = await studentAPI.getCertificates(pageNum, 9, search, sort);
+            setCertificates(res.data.certificates || []);
             setPagination(res.data.pagination);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to load certificates');
@@ -24,7 +36,9 @@ const Certificates = () => {
         }
     }, []);
 
-    useEffect(() => { fetchCertificates(page); }, [page, fetchCertificates]);
+    useEffect(() => { 
+        fetchCertificates(page, debouncedSearch, sortOption); 
+    }, [page, debouncedSearch, sortOption, fetchCertificates]);
 
     const handleDownload = async (cert) => {
         setDownloadingId(cert._id);
@@ -60,20 +74,59 @@ const Certificates = () => {
             <div className="max-w-6xl mx-auto">
 
                 {/* Header */}
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="p-2 bg-yellow-100 rounded-xl">
-                        <Award className="w-6 h-6 text-yellow-600" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-violet-100 rounded-xl">
+                            <Award className="w-6 h-6 text-violet-600" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">My Certificates</h1>
+                            <p className="text-sm text-gray-500">
+                                {pagination?.totalCertificates ?? 0} certificate
+                                {pagination?.totalCertificates !== 1 ? 's' : ''} found
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800">My Certificates</h1>
-                        <p className="text-sm text-gray-500">
-                            {pagination?.totalCertificates ?? 0} certificate
-                            {pagination?.totalCertificates !== 1 ? 's' : ''} earned
-                        </p>
+
+                    {/* Toolbar */}
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                        <div className="relative w-full sm:w-64">
+                            <input
+                                type="text"
+                                placeholder="Search by course..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
+                            />
+                            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        </div>
+                        <select
+                            value={sortOption}
+                            onChange={(e) => { setSortOption(e.target.value); setPage(1); }}
+                            className="w-full sm:w-auto px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer"
+                        >
+                            <option value="latest">Latest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="score_desc">Highest Score</option>
+                            <option value="score_asc">Lowest Score</option>
+                        </select>
+                        {(searchTerm || sortOption !== 'latest') && (
+                            <button
+                                onClick={() => {
+                                    setSearchTerm('');
+                                    setSortOption('latest');
+                                    setPage(1);
+                                }}
+                                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center justify-center gap-1"
+                            >
+                                <X className="w-4 h-4" /> Clear
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {/* Empty state */}
+
+
                 {certificates.length === 0 ? (
                     <div className="bg-white rounded-2xl shadow-sm p-16 text-center">
                         <Award className="w-20 h-20 text-gray-200 mx-auto mb-4" />
@@ -84,7 +137,6 @@ const Certificates = () => {
                     </div>
                 ) : (
                     <>
-                        {/* Certificate grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                             {certificates.map((cert) => (
                                 <CertificateCard
@@ -97,24 +149,15 @@ const Certificates = () => {
                             ))}
                         </div>
 
-                        {/* Pagination */}
                         {pagination && pagination.totalPages > 1 && (
                             <div className="flex items-center justify-center gap-2">
-                                <button
-                                    onClick={() => setPage(p => p - 1)}
-                                    disabled={!pagination.hasPrev}
-                                    className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                                >
+                                <button onClick={() => setPage(p => p - 1)} disabled={!pagination.hasPrev}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors">
                                     Previous
                                 </button>
-                                <span className="text-sm text-gray-600">
-                                    Page {pagination.currentPage} of {pagination.totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setPage(p => p + 1)}
-                                    disabled={!pagination.hasNext}
-                                    className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                                >
+                                <span className="text-sm text-gray-600">Page {pagination.currentPage} of {pagination.totalPages}</span>
+                                <button onClick={() => setPage(p => p + 1)} disabled={!pagination.hasNext}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors">
                                     Next
                                 </button>
                             </div>
@@ -123,7 +166,6 @@ const Certificates = () => {
                 )}
             </div>
 
-            {/* Preview modal */}
             {previewCert && (
                 <CertificatePreviewModal
                     cert={previewCert}
@@ -136,7 +178,7 @@ const Certificates = () => {
     );
 };
 
-/*Card */
+// Card
 const CertificateCard = ({ cert, onDownload, onPreview, isDownloading }) => {
     const issuedDate = new Date(cert.issuedAt).toLocaleDateString('en-IN', {
         day: 'numeric', month: 'short', year: 'numeric',
@@ -144,60 +186,34 @@ const CertificateCard = ({ cert, onDownload, onPreview, isDownloading }) => {
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-            <div className="h-2 bg-gradient-to-r from-yellow-400 to-yellow-600" />
-
+            <div className="h-2 bg-gradient-to-r from-yellow-300 to-yellow-600" />
             <div className="p-5">
-                {/* Course title */}
                 <div className="flex items-start gap-3 mb-4">
-                    <div className="p-2 bg-yellow-50 rounded-lg shrink-0">
-                        <BookOpen className="w-4 h-4 text-yellow-600" />
+                    <div className="p-2 bg-violet-50 rounded-lg shrink-0">
+                        <BookOpen className="w-4 h-4 text-violet-600" />
                     </div>
                     <h3 className="font-semibold text-gray-800 text-sm leading-snug line-clamp-2">
                         {cert.course?.title || 'Course'}
                     </h3>
                 </div>
 
-                {/* Meta rows */}
                 <div className="space-y-2 mb-5">
                     <MetaRow icon={<User className="w-3.5 h-3.5" />}     label="Instructor" value={cert.course?.tutor?.name || '—'} />
                     <MetaRow icon={<Calendar className="w-3.5 h-3.5" />} label="Issued"     value={issuedDate} />
-                    <MetaRow icon={<Award className="w-3.5 h-3.5" />}    label="Score"      value={cert.score} />
-                    <MetaRow
-                        icon={<Hash className="w-3.5 h-3.5" />}
-                        label="Cert No."
-                        value={
-                            <span className="font-mono text-xs truncate max-w-[150px] block" title={cert.certificateNumber}>
-                                {cert.certificateNumber}
-                            </span>
-                        }
-                    />
+                    <MetaRow icon={<Award className="w-3.5 h-3.5" />}    label="Course"     value={<span className="truncate max-w-[160px] block">{cert.course?.title || '—'}</span>} />
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-2">
-                    <button
-                        onClick={onPreview}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
-                    >
+                    <button onClick={onPreview}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">
                         <Eye className="w-4 h-4" />
                         View
                     </button>
-                    <button
-                        onClick={() => onDownload(cert)}
-                        disabled={isDownloading}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                    >
-                        {isDownloading ? (
-                            <>
-                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                PDF...
-                            </>
-                        ) : (
-                            <>
-                                <Download className="w-4 h-4" />
-                                Download
-                            </>
-                        )}
+                    <button onClick={() => onDownload(cert)} disabled={isDownloading}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-violet-700 text-white text-sm font-medium hover:bg-violet-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                        {isDownloading
+                            ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />PDF...</>
+                            : <><Download className="w-4 h-4" />Download</>}
                     </button>
                 </div>
             </div>
@@ -205,22 +221,21 @@ const CertificateCard = ({ cert, onDownload, onPreview, isDownloading }) => {
     );
 };
 
-/* Preview modal — HTML replica of the PDF design */
+/* Preview modal*/
 const CertificatePreviewModal = ({ cert, onClose, onDownload, isDownloading }) => {
-    const studentName = cert.student?.name  || 'Student';
-    const courseName  = cert.course?.title  || 'Course';
-    const tutorName   = cert.course?.tutor?.name || 'Cognon Instructor';
+    const studentName = cert.student?.name           || 'Student';
+    const courseName  = cert.course?.title           || 'Course';
+    const tutorName   = cert.course?.tutor?.name     || 'Cognon Instructor';
     const certNumber  = cert.certificateNumber;
     const issuedDate  = new Date(cert.issuedAt).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
     });
-    const score = cert.score;
 
     const [copied, setCopied] = useState(false);
 
     const handleCopyLink = () => {
-        const verifyUrl = `${window.location.origin}/verify/${cert.certificateNumber}`;
-        navigator.clipboard.writeText(verifyUrl).then(() => {
+        const url = `${window.location.origin}/verify/${certNumber}`;
+        navigator.clipboard.writeText(url).then(() => {
             setCopied(true);
             toast.success('Verification link copied!');
             setTimeout(() => setCopied(false), 2500);
@@ -235,172 +250,130 @@ const CertificatePreviewModal = ({ cert, onClose, onDownload, isDownloading }) =
     }, []);
 
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}
-            onClick={handleBackdrop}
-        >
-            <div className="w-full max-w-3xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+             style={{ backgroundColor: 'rgba(0,0,0,0.82)' }}
+             onClick={handleBackdrop}>
+            <div className="w-full max-w-4xl">
 
-                {/* Toolbar above the certificate */}
+                {/* Toolbar */}
                 <div className="flex items-center justify-between mb-3 px-1">
-                    <span className="text-white text-sm opacity-70">Certificate Preview</span>
+                    <span className="text-white/50 text-sm">Certificate Preview</span>
                     <div className="flex items-center gap-2">
-                        {/* Copy verification link */}
-                        <button
-                            onClick={handleCopyLink}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
-                        >
-                            {copied ? (
-                                <>
-                                    <Check className="w-4 h-4 text-green-400" />
-                                    Copied!
-                                </>
-                            ) : (
-                                <>
-                                    <Link2 className="w-4 h-4" />
-                                    Copy Link
-                                </>
-                            )}
+                        <button onClick={handleCopyLink}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors">
+                            {copied
+                                ? <><Check className="w-4 h-4 text-green-400" />Copied!</>
+                                : <><Link2 className="w-4 h-4" />Copy Link</>}
                         </button>
-                        <button
-                            onClick={() => onDownload(cert)}
-                            disabled={isDownloading}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-gray-900 text-sm font-semibold disabled:opacity-60 transition-colors"
-                        >
-                            {isDownloading ? (
-                                <>
-                                    <span className="w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
-                                    Generating...
-                                </>
-                            ) : (
-                                <>
-                                    <Download className="w-4 h-4" />
-                                    Download PDF
-                                </>
-                            )}
+                        <button onClick={() => onDownload(cert)} disabled={isDownloading}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold disabled:opacity-60 transition-colors">
+                            {isDownloading
+                                ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Generating...</>
+                                : <><Download className="w-4 h-4" />Download PDF</>}
                         </button>
-                        <button
-                            onClick={onClose}
-                            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                            aria-label="Close preview"
-                        >
+                        <button onClick={onClose} aria-label="Close"
+                            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors">
                             <X className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
 
-                {/* Certificate design */}
-                <div
-                    className="relative w-full rounded-lg overflow-hidden select-none"
-                    style={{
-                        background: '#0f172a',
-                        aspectRatio: '842 / 595',   // A4 landscape ratio
-                        fontFamily: "'Roboto', sans-serif",
-                    }}
-                >
-                    {/* Outer border */}
-                    <div className="absolute inset-3 rounded pointer-events-none"
-                         style={{ border: '2px solid #f59e0b' }} />
-                    {/* Inner border */}
-                    <div className="absolute inset-4 rounded pointer-events-none"
-                         style={{ border: '0.5px solid #f59e0b' }} />
+                {/* Two-panel certificate */}
+                <div className="w-full rounded-xl overflow-hidden shadow-2xl select-none flex"
+                     style={{ aspectRatio: '842 / 595', fontFamily: 'Georgia, "Times New Roman", serif' }}>
 
-                    {/* Header band */}
-                    <div className="absolute top-3 left-3 right-3 flex flex-col items-center justify-center py-3"
-                         style={{ background: '#1e293b', height: '14%' }}>
-                        <p className="font-bold tracking-widest" style={{ color: '#f59e0b', fontSize: 'clamp(14px, 3.5vw, 28px)' }}>
-                            COGNON
-                        </p>
-                        <p className="tracking-widest mt-0.5" style={{ color: '#94a3b8', fontSize: 'clamp(6px, 1.2vw, 10px)' }}>
-                            E-LEARNING PLATFORM
-                        </p>
-                    </div>
+                    {/* LEFT */}
+                    <div className="flex flex-col"
+                         style={{
+                             width: '65%',
+                             background: '#ffffff',
+                             borderTop: '7px solid #2d1b69',
+                             borderLeft: '7px solid #2d1b69',
+                             padding: 'clamp(14px,3.5%,36px) clamp(18px,5%,52px)',
+                         }}>
 
-                    {/* Body */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center"
-                         style={{ paddingTop: '18%', paddingBottom: '18%' }}>
-
-                        {/* Subtitle */}
-                        <p className="tracking-[0.25em] mb-2"
-                           style={{ color: '#94a3b8', fontSize: 'clamp(6px, 1.3vw, 11px)' }}>
-                            CERTIFICATE OF COMPLETION
+                        <p style={{ color: '#64748b', fontSize: 'clamp(7px,1.05vw,10px)', marginBottom: '3%' }}>
+                            {issuedDate}
                         </p>
 
-                        {/* Divider */}
-                        <div className="mb-3" style={{ width: '28%', height: '1px', background: '#f59e0b' }} />
-
-                        {/* This certifies */}
-                        <p className="mb-1" style={{ color: '#cbd5e1', fontSize: 'clamp(7px, 1.3vw, 11px)' }}>
-                            This certifies that
+                        <p style={{ color: '#1e293b', fontSize: 'clamp(15px,3.3vw,32px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '2%', letterSpacing: '0.04em' }}>
+                            {studentName.toUpperCase()}
                         </p>
 
-                        {/* Student name */}
-                        <p className="font-bold mb-1 text-center px-4"
-                           style={{ color: '#ffffff', fontSize: 'clamp(16px, 4vw, 32px)', lineHeight: 1.1 }}>
-                            {studentName}
+                        <p style={{ color: '#475569', fontSize: 'clamp(7px,1.05vw,10px)', marginBottom: '1.5%' }}>
+                            has successfully completed
                         </p>
 
-                        {/* Name underline */}
-                        <div className="mb-2" style={{ width: '40%', height: '1px', background: '#f59e0b' }} />
-
-                        {/* Body copy */}
-                        <p className="mb-2" style={{ color: '#cbd5e1', fontSize: 'clamp(7px, 1.3vw, 11px)' }}>
-                            has successfully completed the course
-                        </p>
-
-                        {/* Course name */}
-                        <p className="font-bold text-center px-8 mb-3"
-                           style={{ color: '#f59e0b', fontSize: 'clamp(10px, 2.2vw, 18px)', lineHeight: 1.2 }}>
+                        <p style={{ color: '#1e293b', fontSize: 'clamp(10px,1.85vw,18px)', fontWeight: 700, lineHeight: 1.3, marginBottom: '2%' }}>
                             {courseName}
                         </p>
 
-                        {/* Score pill */}
-                        <div className="px-5 py-1 rounded-full"
-                             style={{ background: '#1e293b', border: '1px solid #334155' }}>
-                            <span className="font-bold" style={{ color: '#f59e0b', fontSize: 'clamp(7px, 1.2vw, 10px)' }}>
-                                Score: {score}
-                            </span>
+                        <p style={{ color: '#64748b', fontSize: 'clamp(6px,0.9vw,9px)', lineHeight: 1.6, flexGrow: 1 }}>
+                            an online course authorised by{' '}
+                            <strong style={{ color: '#334155' }}>{tutorName}</strong>{' '}
+                            and offered through Cognon
+                        </p>
+
+                        <div style={{ borderTop: '1px solid #e2e8f0', margin: '2% 0', paddingTop: '2%' }}>
+                            <p style={{ color: '#334155', fontSize: 'clamp(8px,1.15vw,11px)', fontWeight: 700, marginBottom: '0.5%' }}>
+                                {tutorName}
+                            </p>
+                            <p style={{ color: '#64748b', fontSize: 'clamp(6px,0.85vw,8.5px)' }}>
+                                Course Instructor
+                            </p>
+                            <p style={{ color: '#64748b', fontSize: 'clamp(6px,0.85vw,8.5px)' }}>
+                                Cognon E-Learning Platform
+                            </p>
                         </div>
+
+                        <p style={{ color: '#94a3b8', fontSize: 'clamp(5px,0.7vw,7px)', marginTop: '1%' }}>
+                            Certificate ID: {certNumber}
+                        </p>
                     </div>
 
-                    {/* Footer */}
-                    <div className="absolute bottom-3 left-3 right-3"
-                         style={{ borderTop: '0.5px solid #334155', paddingTop: '1.5%', height: '18%' }}>
-                        <div className="flex items-start justify-between h-full px-6">
+                    {/* RIGHT — purple accent panel */}
+                    <div className="relative flex flex-col items-center justify-between"
+                         style={{ width: '35%', background: '#2d1b69', padding: '5% 4%', overflow: 'hidden' }}>
 
-                            {/* Instructor */}
-                            <div className="flex flex-col items-center" style={{ width: '30%' }}>
-                                <div className="w-full mb-1" style={{ height: '0.5px', background: '#475569' }} />
-                                <p className="font-semibold text-center" style={{ color: '#ffffff', fontSize: 'clamp(6px, 1.1vw, 10px)' }}>
-                                    {tutorName}
-                                </p>
-                                <p style={{ color: '#94a3b8', fontSize: 'clamp(5px, 0.9vw, 8px)' }}>Course Instructor</p>
-                            </div>
+                        <div className="absolute inset-y-0" style={{ left: '10%', width: '3%', background: 'rgba(255,255,255,0.10)' }} />
+                        <div className="absolute inset-y-0" style={{ left: '18%', width: '1.5%', background: 'rgba(255,255,255,0.06)' }} />
 
-                            {/* Seal */}
-                            <div className="flex flex-col items-center justify-start">
-                                <p className="font-bold" style={{ color: '#f59e0b', fontSize: 'clamp(7px, 1.2vw, 11px)' }}>
-                                    COGNON
-                                </p>
-                                <p style={{ color: '#94a3b8', fontSize: 'clamp(5px, 0.9vw, 8px)' }}>Authorized Seal</p>
-                            </div>
-
-                            {/* Date */}
-                            <div className="flex flex-col items-center" style={{ width: '30%' }}>
-                                <div className="w-full mb-1" style={{ height: '0.5px', background: '#475569' }} />
-                                <p className="font-semibold text-center" style={{ color: '#ffffff', fontSize: 'clamp(6px, 1.1vw, 10px)' }}>
-                                    {issuedDate}
-                                </p>
-                                <p style={{ color: '#94a3b8', fontSize: 'clamp(5px, 0.9vw, 8px)' }}>Date of Issue</p>
-                            </div>
+                        <div className="text-center" style={{ zIndex: 1 }}>
+                            <p style={{ color: '#ffffff', fontSize: 'clamp(8px,1.4vw,13px)', fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1.4 }}>
+                                COURSE
+                            </p>
+                            <p style={{ color: '#ffffff', fontSize: 'clamp(8px,1.4vw,13px)', fontWeight: 700, letterSpacing: '0.14em', lineHeight: 1.4 }}>
+                                CERTIFICATE
+                            </p>
                         </div>
-                    </div>
 
-                    {/* Certificate number */}
-                    <div className="absolute bottom-1 left-0 right-0 text-center"
-                         style={{ color: '#475569', fontSize: 'clamp(5px, 0.8vw, 7px)' }}>
-                        Certificate No: {certNumber}
+                        <div className="flex flex-col items-center justify-center rounded-full"
+                             style={{
+                                 width: 'clamp(72px,13.5vw,122px)',
+                                 height: 'clamp(72px,13.5vw,122px)',
+                                 border: '2px solid rgba(255,255,255,0.65)',
+                                 boxShadow: 'inset 0 0 0 7px rgba(255,255,255,0.12)',
+                                 zIndex: 1,
+                             }}>
+                            <p style={{ color: '#ffffff', fontSize: 'clamp(11px,1.9vw,18px)', fontWeight: 700, letterSpacing: '0.04em' }}>
+                                Cognon
+                            </p>
+                            <p style={{ color: '#c4b5fd', fontSize: 'clamp(5px,0.68vw,6.5px)', letterSpacing: '0.1em', textAlign: 'center', marginTop: 3 }}>
+                                E-LEARNING<br />PLATFORM
+                            </p>
+                        </div>
+
+                        <div className="text-center" style={{ zIndex: 1 }}>
+                            <p style={{ color: '#c4b5fd', fontSize: 'clamp(5px,0.68vw,6.5px)', lineHeight: 1.7 }}>
+                                Verify at cognon.com/verify/
+                            </p>
+                            <p style={{ color: '#a78bfa', fontSize: 'clamp(4px,0.6vw,6px)', wordBreak: 'break-all', lineHeight: 1.5 }}>
+                                {certNumber}
+                            </p>
+                            <p style={{ color: '#a78bfa', fontSize: 'clamp(4.5px,0.62vw,6px)', marginTop: 5, lineHeight: 1.5 }}>
+                                Cognon has confirmed the identity of<br />this learner and their completion of<br />this course.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -408,7 +381,6 @@ const CertificatePreviewModal = ({ cert, onClose, onDownload, isDownloading }) =
     );
 };
 
-/* Shared helpers */
 const MetaRow = ({ icon, label, value }) => (
     <div className="flex items-center gap-2 text-xs text-gray-500">
         <span className="text-gray-400">{icon}</span>

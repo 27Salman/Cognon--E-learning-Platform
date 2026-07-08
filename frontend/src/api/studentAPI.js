@@ -111,8 +111,8 @@ export const studentAPI = {
         api.post('/student/checkout/wallet', { couponCode }),
 
     // Certificates
-    getCertificates: (page = 1, limit = 10) =>
-        api.get(`/certificates?page=${page}&limit=${limit}`),
+    getCertificates: (page = 1, limit = 10, search = '', sort = '') =>
+        api.get(`/certificates`, { params: { page, limit, search, sort } }),
 
     getCertificateById: (id) =>
         api.get(`/certificates/${id}`),
@@ -120,7 +120,7 @@ export const studentAPI = {
     downloadCertificate: (id) =>
         api.get(`/certificates/${id}/download`, { responseType: 'blob' }),
 
-    // Public — no auth needed
+    // Public 
     verifyCertificate: (certificateNumber) =>
         api.get(`/verify/${certificateNumber}`),
 };

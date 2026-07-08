@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { AlertCircle, Clock, ShieldAlert } from 'lucide-react';
+import { AlertCircle, Clock, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { quizAPI } from '../../api/quizAPI';
 
 export default function QuizAttempt() {
@@ -17,6 +17,7 @@ export default function QuizAttempt() {
     const [showWarning, setShowWarning] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [result, setResult] = useState(null);
 
     const maxViolations = 3;
     const timerRef = useRef(null);
@@ -27,11 +28,11 @@ export default function QuizAttempt() {
         const initQuiz = async () => {
             try {
                 const status = await quizAPI.getStudentQuizStatus(courseId);
-                const statusData = status.data.data;
+                const statusData = status.data;
                 setQuizDetails(statusData.quiz);
 
                 const attempt = await quizAPI.startAttempt(quizId);
-                const currentAttempt = attempt.data.data;
+                const currentAttempt = attempt.data;
 
                 if (currentAttempt.status !== 'started') {
                     toast.error('This attempt is already finished.');
@@ -146,14 +147,14 @@ export default function QuizAttempt() {
 
         try {
             await quizAPI.autosaveAttempt(attempt._id, answers);
-            await quizAPI.submitAttempt(attempt._id, reason);
+            const res = await quizAPI.submitAttempt(attempt._id, reason);
 
             if (document.fullscreenElement) {
                 document.exitFullscreen().catch(err => console.log(err));
             }
 
             toast.success('Exam submitted successfully!');
-            navigate(`/student/courses/${courseId}`);
+            setResult(res.data);
         } catch (error) {
             toast.error('Error submitting exam.');
             setSubmitting(false);
@@ -254,6 +255,69 @@ export default function QuizAttempt() {
                     })}
                 </div>
             </div>
+
+            {/* Result Modal */}
+            {result && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/90 backdrop-blur-sm">
+                    <div className="bg-white p-8 rounded-2xl max-w-md w-full text-center shadow-2xl relative overflow-hidden">
+                        <div className={`absolute top-0 left-0 w-full h-2 ${result.passed ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        
+                        {result.passed ? (
+                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <CheckCircle2 className="w-10 h-10 text-green-600" />
+                            </div>
+                        ) : (
+                            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <AlertCircle className="w-10 h-10 text-red-600" />
+                            </div>
+                        )}
+                        
+                        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                            {result.passed ? 'Congratulations!' : 'Almost There!'}
+                        </h2>
+                        
+                        <p className="text-gray-600 mb-6 text-lg">
+                            {result.passed ? 'You have successfully passed the exam.' : 'You did not pass this time. Better luck next time!'}
+                        </p>
+
+                        <div className="bg-gray-50 rounded-xl p-4 mb-8">
+                            <div className="text-sm text-gray-500 mb-1">Your Score</div>
+                            <div className={`text-4xl font-black ${result.passed ? 'text-green-600' : 'text-red-600'}`}>
+                                {result.score}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                                Passing marks required: {quizDetails?.passingMarks}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            {result.passed ? (
+                                <button
+                                    onClick={() => navigate('/student/certificates')}
+                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-purple-200"
+                                >
+                                    View Certificate
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => navigate(`/student/courses/${courseId}`)}
+                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-purple-200"
+                                >
+                                    Return to Course
+                                </button>
+                            )}
+                            {result.passed && (
+                                <button
+                                    onClick={() => navigate(`/student/courses/${courseId}`)}
+                                    className="w-full bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 font-bold py-3 px-4 rounded-xl transition-colors"
+                                >
+                                    Return to Course
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

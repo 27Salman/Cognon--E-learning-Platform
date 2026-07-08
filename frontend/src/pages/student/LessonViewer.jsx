@@ -62,7 +62,6 @@ export default function LessonViewer() {
         }
     }, [chapters.length]);
 
-    // Restore persisted elapsed time when lesson changes, reset timer-active state
     useEffect(() => {
         if (!currentLesson?._id) return;
         clearInterval(timerRef.current);
@@ -72,7 +71,6 @@ export default function LessonViewer() {
         setElapsed(isCompleted ? Infinity : saved);
     }, [currentLesson?._id, isCompleted]);
 
-    // Tick only while timerActive and lesson not complete
     useEffect(() => {
         clearInterval(timerRef.current);
         if (timerActive && !isCompleted) {
@@ -113,7 +111,6 @@ export default function LessonViewer() {
         setMarking(true);
         try {
             await dispatch(markLessonComplete({ courseId, lessonId: currentLesson._id })).unwrap();
-            // Clear persisted timer for this lesson — it's done
             localStorage.removeItem(`lesson_elapsed_${currentLesson._id}`);
             setTimerActive(false);
             clearInterval(timerRef.current);
@@ -126,12 +123,48 @@ export default function LessonViewer() {
         }
     };
 
-    const handleDownloadPdf = () => {
-        if (currentLesson?.pdfNotes || currentLesson?.pdfNotesURL) {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            window.open(`${API_URL}/lessons/${currentLesson._id}/pdf`, '_blank');
-        } else {
+    const handleDownloadPdf = async () => {
+        const pdfUrl = currentLesson?.pdfNotesURL || currentLesson?.pdfNotes;
+        if (!pdfUrl) {
             toast.error('No PDF available for this lesson');
+            return;
+        }
+
+        try {
+            if (pdfUrl.includes('cloudinary.com')) {
+                const parts = pdfUrl.split('/upload/');
+                if (parts.length === 2) {
+                    const downloadUrl = `${parts[0]}/upload/fl_attachment/${parts[1]}`;
+                    window.open(downloadUrl, '_blank');
+                    return;
+                }
+            }
+            
+            if (pdfUrl.startsWith('http')) {
+                window.open(pdfUrl, '_blank');
+                return;
+            }
+
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/lessons/${currentLesson._id}/pdf`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) throw new Error('Failed to download PDF');
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentLesson.title}-Notes.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Download error:', error);
+            toast.error('Could not download the PDF');
         }
     };
 
@@ -184,7 +217,6 @@ export default function LessonViewer() {
 
             {/* Main layout */}
             <div className="flex flex-1 overflow-hidden">
-                {/* Left sidebar — lesson list grouped by chapter */}
                 <aside className="w-64 flex-shrink-0 bg-white border-r border-gray-200 overflow-y-auto">
                     <div className="px-3 pt-3 pb-4">
                         {chapters.map(chapter => {
