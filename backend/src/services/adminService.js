@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { USER_ROLES, USER_STATUS, TUTOR_APPROVAL_STATUS, COURSE_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
-const { deleteOldProfileImage } = require('./fileService');
+const { deleteOldProfileImage, deleteCloudinaryAsset } = require('./fileService');
+const cloudinary = require('../config/cloudinary');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
 const Lesson = require('../models/Lesson');
@@ -90,7 +91,7 @@ const adminService = {
                 price: c.price,
                 revenue: c.revenue || 0,
                 enrolledCount: c.studentsEnrolled?.length || 0,
-                thumbnail: buildImageURL(c.thumbnail),
+                thumbnail: c.thumbnail,
                 category: c.category,
                 tutor: c.tutor
             }))
@@ -146,7 +147,7 @@ const adminService = {
             email: admin.email,
             phone: admin.phone,
             profileImage: admin.profileImage,
-            profileImageURL: buildImageURL(admin.profileImage),
+            profileImageURL: admin.profileImage,
             role: admin.role,
         };
     },
@@ -163,10 +164,15 @@ const adminService = {
         if (phone !== undefined) admin.phone = phone.trim() || null;
 
         if (file) {
-            if (admin.profileImage && !admin.profileImage.startsWith('http')) {
-                await deleteOldProfileImage(admin.profileImage);
+            if (admin.profileImage && admin.profileImage.startsWith('http') && admin.profileImage.includes('cloudinary')) {
+                try {
+                    const publicId = admin.profileImage.split('/').slice(-2).join('/').replace(/\.[^/.]+$/, '');
+                    await cloudinary.uploader.destroy(publicId);
+                } catch (e) {
+                    console.warn('Could not delete old Cloudinary profile image:', e.message);
+                }
             }
-            admin.profileImage = file.filename;
+            admin.profileImage = file.path; 
         }
 
         await admin.save();
@@ -177,7 +183,7 @@ const adminService = {
             email: admin.email,
             phone: admin.phone,
             profileImage: admin.profileImage,
-            profileImageURL: buildImageURL(admin.profileImage),
+            profileImageURL: admin.profileImage,
             role: admin.role,
         };
     },
@@ -503,8 +509,15 @@ const adminService = {
             throw new Error('Cannot delete course with enrolled students. Archive it instead.');
         }
 
-        if (course.thumbnail && !course.thumbnail.startsWith('http')) {
-            await deleteOldProfileImage(course.thumbnail);
+        if (course.thumbnail) {
+            await deleteCloudinaryAsset(course.thumbnail);
+        }
+
+        const lessons = await Lesson.find({ course: courseId });
+        for (const lesson of lessons) {
+            if (lesson.thumbnail) await deleteCloudinaryAsset(lesson.thumbnail);
+            if (lesson.videoUrl) await deleteCloudinaryAsset(lesson.videoUrl);
+            if (lesson.pdfNotes) await deleteCloudinaryAsset(lesson.pdfNotes);
         }
 
         await Lesson.deleteMany({ course: courseId });

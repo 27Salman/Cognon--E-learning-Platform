@@ -56,6 +56,10 @@ import TutorWallet from './pages/tutor/TutorWallet';
 import AdminWallet from './pages/admin/AdminWallet';
 import StudentWallet from './pages/student/StudentWallet';
 import Loader from './components/common/Loader';
+import QuizBuilder from './pages/tutor/QuizBuilder';
+import QuizAttempt from './pages/student/QuizAttempt';
+import Certificates from './pages/student/Certificates';
+import VerifyCertificate from './pages/VerifyCertificate';
 
 
 function App() {
@@ -76,139 +80,143 @@ function App() {
     <>
       <Loader onComplete={handleLoaderComplete} />
       {!showLoader && (
-    <Routes>
-      {/* Public Routes */}
-      <Route path={ROUTES.HOME} element={<Home />} />
-      <Route path={ROUTES.LOGIN} element={<Login />} />      
-      <Route path={ROUTES.SIGNUP} element={<Signup />} />
-      <Route path={ROUTES.LOGIN_TUTOR} element={<Login />} />
-      <Route path={ROUTES.TUTOR_SIGNUP} element={<Signup />} />
-      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
-      <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
-      <Route path={ROUTES.LOGIN_ADMIN} element={<AdminLogin />} />
-      <Route path={ROUTES.ADMIN_FORGOT_PASSWORD} element={<AdminForgotPassword />} />
-      <Route path={ROUTES.ADMIN_RESET_PASSWORD} element={<AdminResetPassword />} />
-      <Route path={ROUTES.VERIFY_OTP} element={<VerifyOTP />} />
-      <Route path={ROUTES.GOOGLE_AUTH_SUCCESS} element={<GoogleAuthSuccess />} />
+        <Routes>
+          {/* Public Routes */}
+          <Route path={ROUTES.HOME} element={<Home />} />
+          <Route path={ROUTES.LOGIN} element={<Login />} />
+          <Route path={ROUTES.SIGNUP} element={<Signup />} />
+          <Route path={ROUTES.LOGIN_TUTOR} element={<Login />} />
+          <Route path={ROUTES.TUTOR_SIGNUP} element={<Signup />} />
+          <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
+          <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
+          <Route path={ROUTES.LOGIN_ADMIN} element={<AdminLogin />} />
+          <Route path={ROUTES.ADMIN_FORGOT_PASSWORD} element={<AdminForgotPassword />} />
+          <Route path={ROUTES.ADMIN_RESET_PASSWORD} element={<AdminResetPassword />} />
+          <Route path={ROUTES.VERIFY_OTP} element={<VerifyOTP />} />
+          <Route path={ROUTES.GOOGLE_AUTH_SUCCESS} element={<GoogleAuthSuccess />} />
 
-      {/* Protected Student Routes */}
-      <Route
-        path="/student"
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <StudentLayout />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to={ROUTES.STUDENT_DASHBOARD} replace />} />
-        <Route path="dashboard" element={<StudentDashboard />} />
-        <Route path="profile" element={<StudentProfile />} />
-        <Route path="my-courses" element={<MyCourses />} />
-        <Route path="courses/:courseId/lessons" element={<CourseLessons />} />
-        <Route path="wishlist" element={<Wishlist />} />
-        <Route path="wallet" element={<StudentWallet />} />
-        <Route path="orders" element={<StudentOrderList />} />
-        <Route path="orders/:id" element={<StudentOrderDetail />} />
-      </Route>
+          {/* Protected Student Routes */}
+          <Route
+            path="/student"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+                  <StudentLayout />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to={ROUTES.STUDENT_DASHBOARD} replace />} />
+            <Route path="dashboard" element={<StudentDashboard />} />
+            <Route path="profile" element={<StudentProfile />} />
+            <Route path="my-courses" element={<MyCourses />} />
+            <Route path="courses/:courseId/lessons" element={<CourseLessons />} />
+            <Route path="courses/:courseId/quiz/:quizId" element={<QuizAttempt />} />
+            <Route path="wishlist" element={<Wishlist />} />
+            <Route path="wallet" element={<StudentWallet />} />
+            <Route path="orders" element={<StudentOrderList />} />
+            <Route path="orders/:id" element={<StudentOrderDetail />} />
+            <Route path="certificates" element={<Certificates />} />
+          </Route>
 
-      {/* Public student-facing pages — no login required */}
-      <Route path={ROUTES.STUDENT_COURSE_CATALOG} element={<CourseCatalog />} />
-      <Route path={ROUTES.STUDENT_CATEGORIES} element={<CategoryPage />} />
-      <Route path={ROUTES.STUDENT_COURSE_DETAIL} element={<CourseDetails />} />
-      <Route
-        path={ROUTES.STUDENT_LESSON_VIEWER}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <LessonViewer />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
+          {/* Public student-facing pages — no login required */}
+          <Route path={ROUTES.STUDENT_COURSE_CATALOG} element={<CourseCatalog />} />
+          <Route path={ROUTES.STUDENT_CATEGORIES} element={<CategoryPage />} />
+          <Route path={ROUTES.STUDENT_COURSE_DETAIL} element={<CourseDetails />} />
+          <Route
+            path={ROUTES.STUDENT_LESSON_VIEWER}
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+                  <LessonViewer />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
 
-      <Route
-        path={ROUTES.STUDENT_CART}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <Cart />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.STUDENT_CHECKOUT}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-              <Checkout />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.STUDENT_ORDER_SUCCESS}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-                <OrderSuccess />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
+          <Route
+            path={ROUTES.STUDENT_CART}
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+                  <Cart />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.STUDENT_CHECKOUT}
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+                  <Checkout />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.STUDENT_ORDER_SUCCESS}
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={[ROLES.STUDENT]}>
+                  <OrderSuccess />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Protected Tutor Routes */}
-      <Route
-        path="/tutor"
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.TUTOR]}>
-              <TutorLayout />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to={ROUTES.TUTOR_DASHBOARD} replace />} />
-        <Route path="dashboard" element={<TutorDashboard />} />
-        <Route path="profile" element={<TutorProfile />} />
-        <Route path="courses" element={<TutorCourses />} />
-        <Route path="courses/new" element={<CreateCourse />} />
-        <Route path="courses/:id" element={<TutorCourseDetail />} />
-        <Route path="courses/:id/edit" element={<EditCourse />} />
-        <Route path="revenue" element={<TutorRevenue />} />
-        <Route path="wallet" element={<TutorWallet />} />
-        <Route path="chat" element={<TutorChat />} />
+          {/* Protected Tutor Routes */}
+          <Route
+            path="/tutor"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={[ROLES.TUTOR]}>
+                  <TutorLayout />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to={ROUTES.TUTOR_DASHBOARD} replace />} />
+            <Route path="dashboard" element={<TutorDashboard />} />
+            <Route path="profile" element={<TutorProfile />} />
+            <Route path="courses" element={<TutorCourses />} />
+            <Route path="courses/new" element={<CreateCourse />} />
+            <Route path="courses/:id" element={<TutorCourseDetail />} />
+            <Route path="courses/:id/edit" element={<EditCourse />} />
+            <Route path="revenue" element={<TutorRevenue />} />
+            <Route path="wallet" element={<TutorWallet />} />
+            <Route path="chat" element={<TutorChat />} />
+            <Route path="courses/:id/quiz" element={<QuizBuilder />} />
 
-      </Route>
+          </Route>
 
-      {/* Protected Admin Routes */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <AdminLayout />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
-        <Route path="dashboard" element={<AdminDashboard/>} />
-        <Route path="profile" element={<AdminProfile />} />
-        <Route path="tutors" element={<TutorManagement />} />
-        <Route path="students" element={<StudentManagement />} />
-        <Route path="categories" element={<CategoryManagement />} />
-        <Route path="courses" element={<CourseManagement />} />
-        <Route path="orders" element={<OrderList />} />
-        <Route path="orders/:id" element={<OrderDetail />} />
-        <Route path="coupons" element={<AdminCoupons />} />
-        <Route path="wallet" element={<AdminWallet />} />
+          {/* Protected Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={[ROLES.ADMIN]}>
+                  <AdminLayout />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="profile" element={<AdminProfile />} />
+            <Route path="tutors" element={<TutorManagement />} />
+            <Route path="students" element={<StudentManagement />} />
+            <Route path="categories" element={<CategoryManagement />} />
+            <Route path="courses" element={<CourseManagement />} />
+            <Route path="orders" element={<OrderList />} />
+            <Route path="orders/:id" element={<OrderDetail />} />
+            <Route path="coupons" element={<AdminCoupons />} />
+            <Route path="wallet" element={<AdminWallet />} />
 
-      </Route>
+          </Route>
 
           {/* Fallback */}
+          <Route path="/verify/:certificateNumber" element={<VerifyCertificate />} />
           <Route path={ROUTES.UNAUTHORIZED} element={<Unauthorized />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

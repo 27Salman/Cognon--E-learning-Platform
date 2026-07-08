@@ -1,23 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Lock, Pencil, BookOpen, CheckCircle, User, Clock, Award } from 'lucide-react';
-import { useOutletContext } from 'react-router-dom';
+import { Camera, Lock, Pencil, BookOpen, CheckCircle, User, Clock, Award, Eye } from 'lucide-react';
+import { useOutletContext, Link } from 'react-router-dom';
 import ChangePasswordModal from '../../components/common/ChangePasswordModal';
 import { studentAPI } from '../../api/studentAPI';
 import { ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 import { validatePhone, validateImageFile } from '../../utils/helpers';
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
-
-const getFullImageUrl = (src) => {
-  if (!src) return null;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
-  return `${API_BASE}${src}`;
-};
-
-const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/'));
+const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:') || src.startsWith('blob:') || src.startsWith('/'));
 
 const getAvatarColors = (name) => {
     const palettes = [
@@ -44,6 +34,7 @@ export default function StudentProfile() {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [formErrors, setFormErrors] = useState({});
     const [stats, setStats] = useState({ enrolled: 0, completed: 0, pending: 0, certificates: 0 });
+    const [recentCertificates, setRecentCertificates] = useState([]);
 
     const [formData, setFormData] = useState({
         name: studentInfo?.name || '',
@@ -61,7 +52,7 @@ export default function StudentProfile() {
                 profileImage: studentInfo?.profileImageURL || studentInfo?.profileImage || null,
             });
         }
-    }, [studentInfo]);
+    }, [studentInfo, isEditing]);
 
     useEffect(() => {
         if (!studentInfo || !studentInfo.name) {
@@ -75,17 +66,20 @@ export default function StudentProfile() {
                 });
             }).catch(() => {});
         }
-    }, []);
+    }, [studentInfo]);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await studentAPI.fetchEnrolledCourses(1, 100);
-                const data = res.data || {};
+                const [enrolledRes, certsRes] = await Promise.all([
+                    studentAPI.fetchEnrolledCourses(1, 100),
+                    studentAPI.getCertificates(1, 3) 
+                ]);
+
+                const data = enrolledRes.data || {};
                 const courses = data.courses || [];
                 const enrolledCount = data.pagination?.totalCourses ?? courses.length;
 
-      
                 let completedCount = 0;
                 let inProgressCount = 0;
 
@@ -99,12 +93,18 @@ export default function StudentProfile() {
                 });
 
                 const pendingCount = enrolledCount - completedCount;
+                
+                const certData = certsRes.data || {};
+                const certsList = certData.certificates || [];
+                const certCount = certData.pagination?.totalCertificates ?? certsList.length;
+
+                setRecentCertificates(certsList);
 
                 setStats({
                     enrolled: enrolledCount,
                     completed: completedCount,
                     pending: pendingCount,
-                    certificates: completedCount
+                    certificates: certCount
                 });
             } catch (error) {
                 console.error('Failed to fetch stats:', error);
@@ -133,9 +133,8 @@ export default function StudentProfile() {
         }
 
         selectedFileRef.current = file;
-        const reader = new FileReader();
-        reader.onloadend = () => setFormData(prev => ({ ...prev, profileImage: reader.result }));
-        reader.readAsDataURL(file);
+        setFormData(prev => ({ ...prev, profileImage: URL.createObjectURL(file) }));
+        e.target.value = '';
     };
 
     const validate = () => {
@@ -272,7 +271,7 @@ export default function StudentProfile() {
                         <div className="relative flex-shrink-0 mb-4">
                             {isValidImageSrc(formData.profileImage) ? (
                                 <img
-                                    src={getFullImageUrl(formData.profileImage)}
+                                    src={formData.profileImage}
                                     alt="Profile"
                                     className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
                                 />
@@ -389,13 +388,34 @@ export default function StudentProfile() {
                         <Award className="w-5 h-5 text-blue-600" />
                         Completed Certificates
                     </h3>
-                    <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Award className="w-8 h-8 text-gray-400" />
+                    {recentCertificates.length === 0 ? (
+                        <div className="text-center py-8">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Award className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <p className="text-gray-500 text-sm">No certificates earned yet</p>
+                            <p className="text-gray-400 text-xs mt-1">Complete courses to earn certificates</p>
                         </div>
-                        <p className="text-gray-500 text-sm">No certificates earned yet</p>
-                        <p className="text-gray-400 text-xs mt-1">Complete courses to earn certificates</p>
-                    </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {recentCertificates.map(cert => (
+                                <div key={cert._id} className="border border-gray-100 rounded-lg p-3 hover:bg-gray-50 transition-colors flex items-center justify-between">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-800 line-clamp-1">{cert.course?.title || 'Course'}</h4>
+                                        <p className="text-xs text-gray-500 mt-0.5">Issued: {new Date(cert.issuedAt).toLocaleDateString()}</p>
+                                    </div>
+                                    <Link to="/student/certificates" className="p-2 text-violet-600 hover:bg-violet-50 rounded-lg transition-colors">
+                                        <Eye className="w-4 h-4" />
+                                    </Link>
+                                </div>
+                            ))}
+                            {stats.certificates > 3 && (
+                                <Link to="/student/certificates" className="block text-center text-sm text-violet-600 font-medium hover:text-violet-700 mt-2">
+                                    View all {stats.certificates} certificates
+                                </Link>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

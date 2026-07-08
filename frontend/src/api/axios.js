@@ -5,7 +5,7 @@ import { getToken, clearAuthData } from '../utils/helpers';
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 300000, 
   headers: { 'Content-Type': 'application/json' },
 });
 

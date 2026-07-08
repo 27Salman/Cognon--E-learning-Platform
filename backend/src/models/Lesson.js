@@ -77,12 +77,10 @@ lessonSchema.methods.toJSON = function() {
     const lesson = this.toObject();
     delete lesson.__v;
     if (lesson.thumbnail) {
-        const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-        lesson.thumbnailURL = `${BASE_URL}/uploads/lessons/${lesson.thumbnail}`;
+        lesson.thumbnailURL = lesson.thumbnail;
     }
     if (lesson.pdfNotes) {
-        const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-        lesson.pdfNotesURL = `${BASE_URL}/uploads/pdfs/${lesson.pdfNotes}`;
+        lesson.pdfNotesURL = lesson.pdfNotes;
     }
     return lesson;
 };

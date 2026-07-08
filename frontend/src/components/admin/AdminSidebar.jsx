@@ -7,6 +7,8 @@ import {
   ShoppingCart, LogOut, Users, Ticket, Wallet
 } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
+import ConfirmModal from '../common/ConfirmModal';
+import { useState } from 'react';
 
 const menuItems = [
   { name: 'Dashboard',  path: ROUTES.ADMIN_DASHBOARD,  icon: LayoutDashboard },
@@ -25,10 +27,12 @@ export default function AdminSidebar({ adminInfo }) {
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const isActive = (path) => location.pathname.startsWith(path);
 
   const handleLogout = async () => {
+    setShowLogoutModal(false);
     await dispatch(logoutUser());
     toast.success('Logged out successfully');
     navigate(ROUTES.LOGIN_ADMIN, { replace: true });
@@ -67,13 +71,22 @@ export default function AdminSidebar({ adminInfo }) {
         ))}
 
         <button
-          onClick={handleLogout}
+          onClick={() => setShowLogoutModal(true)}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
           Logout
         </button>
       </nav>
+
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        title="Log Out"
+        message="Are you sure you want to log out?"
+        confirmText="Log Out"
+        onConfirm={handleLogout}
+        onClose={() => setShowLogoutModal(false)}
+      />
     </aside>
   );
 }

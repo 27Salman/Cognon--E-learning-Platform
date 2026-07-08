@@ -18,6 +18,7 @@ const {
 const lessonFields = uploadLessonFields.fields([
     { name: 'thumbnail', maxCount: 1 },
     { name: 'pdfNotes', maxCount: 1 },
+    { name: 'video', maxCount: 1 },
 ]);
 
 router.get('/course/:courseId', protect, getLessonsByCourse);
