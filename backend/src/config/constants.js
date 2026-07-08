@@ -147,6 +147,9 @@ const NOTIFICATION_ACTIONS = {
     WALLET_STUDENT:     () => '/student/wallet',
     STUDENT_MY_COURSES: () => '/student/my-courses',
     STUDENT_CART:       () => '/student/cart',
+    QUIZ_AVAILABLE:     (courseId) => `/student/my-courses/${courseId}`,
+    QUIZ_RESULT:        (courseId) => `/student/my-courses/${courseId}`,
+    CERTIFICATE_GENERATED: () => '/student/certificates',
 
     // Tutor
     TUTOR_DASHBOARD:    () => '/tutor/dashboard',

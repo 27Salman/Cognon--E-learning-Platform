@@ -4,9 +4,10 @@ const QuizAttempt = require('../models/QuizAttempt');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const User = require('../models/User');
-const { QUIZ_STATUS, HTTP_STATUS, USER_ROLES } = require('../config/constants');
+const { QUIZ_STATUS, HTTP_STATUS, USER_ROLES, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
 const { validateQuizData } = require('../validators/quizValidator');
 const Certificate = require("../models/Certificate");
+const notificationService = require('./notificationService');
 
 
 const quizService = {
@@ -21,6 +22,7 @@ const quizService = {
         const existingQuiz = await Quiz.findOne({ courseId: quizData.courseId });
 
         if (existingQuiz) {
+            const wasPublished = existingQuiz.isPublished;
             const updateSet = {
                 title: quizData.title,
                 duration: quizData.duration,
@@ -32,16 +34,43 @@ const quizService = {
             };
             if (quizData.maxAttempts !== undefined) updateSet.maxAttempts = quizData.maxAttempts;
 
-            return await Quiz.findByIdAndUpdate(
+            const updatedQuiz = await Quiz.findByIdAndUpdate(
                 existingQuiz._id,
                 { $set: updateSet },
                 { new: true, runValidators: false }
             );
+
+            if (!wasPublished && updatedQuiz.isPublished) {
+                if (course && course.studentsEnrolled && course.studentsEnrolled.length > 0) {
+                    await notificationService.createBulk(course.studentsEnrolled, {
+                        type: NOTIFICATION_TYPES.QUIZ_AVAILABLE,
+                        title: 'New Quiz Available!',
+                        message: `A new quiz has been added to the course you're enrolled in.`,
+                        priority: 'high',
+                        actionUrl: NOTIFICATION_ACTIONS.QUIZ_AVAILABLE(course._id),
+                        data: { courseId: course._id, quizId: updatedQuiz._id }
+                    });
+                }
+            }
+            return updatedQuiz;
         }
 
         const cleanQuestions = quizData.questions.map(({ _id, __v, ...rest }) => rest);
         const quiz = new Quiz({ ...quizData, questions: cleanQuestions, tutorId });
         await quiz.save();
+
+        if (quiz.isPublished) {
+            if (course && course.studentsEnrolled && course.studentsEnrolled.length > 0) {
+                await notificationService.createBulk(course.studentsEnrolled, {
+                    type: NOTIFICATION_TYPES.QUIZ_AVAILABLE,
+                    title: 'New Quiz Available!',
+                    message: `A new quiz has been added to the course you're enrolled in.`,
+                    priority: 'high',
+                    actionUrl: NOTIFICATION_ACTIONS.QUIZ_AVAILABLE(course._id),
+                    data: { courseId: course._id, quizId: quiz._id }
+                });
+            }
+        }
         return quiz;
     },
 
@@ -63,11 +92,29 @@ const quizService = {
             updateSet.questions = updateSet.questions.map(({ _id, __v, ...rest }) => rest);
         }
 
-        return await Quiz.findByIdAndUpdate(
+        const wasPublished = quiz.isPublished;
+
+        const updatedQuiz = await Quiz.findByIdAndUpdate(
             quizId,
             { $set: updateSet },
             { new: true, runValidators: false }
         );
+
+        if (!wasPublished && updatedQuiz.isPublished) {
+            const course = await Course.findById(updatedQuiz.courseId);
+            if (course && course.studentsEnrolled && course.studentsEnrolled.length > 0) {
+                await notificationService.createBulk(course.studentsEnrolled, {
+                    type: NOTIFICATION_TYPES.QUIZ_AVAILABLE,
+                    title: 'New Quiz Available!',
+                    message: `A new quiz has been added to the course you're enrolled in.`,
+                    priority: 'high',
+                    actionUrl: NOTIFICATION_ACTIONS.QUIZ_AVAILABLE(course._id),
+                    data: { courseId: course._id, quizId: updatedQuiz._id }
+                });
+            }
+        }
+
+        return updatedQuiz;
     },
 
     async getQuizByCourse(courseId) {
@@ -294,6 +341,16 @@ const quizService = {
                     });
                     student.studentProfile.certificates.push(newCertificate._id);
                     studentNeedsSave = true;
+
+                    await notificationService.create({
+                        recipient: studentId,
+                        type: NOTIFICATION_TYPES.CERTIFICATE_GENERATED,
+                        title: 'Certificate Earned!',
+                        message: `Congratulations! You have earned a certificate for completing the course.`,
+                        priority: 'high',
+                        actionUrl: NOTIFICATION_ACTIONS.CERTIFICATE_GENERATED(),
+                        data: { certificateId: newCertificate._id }
+                    });
                 }
             }
 
@@ -313,6 +370,16 @@ const quizService = {
 
         attempt.submittedAt = new Date();
         await attempt.save();
+
+        await notificationService.create({
+            recipient: studentId,
+            type: NOTIFICATION_TYPES.QUIZ_RESULT,
+            title: 'Quiz Result',
+            message: `You scored ${attempt.score} in the quiz. You have ${attempt.passed ? 'passed' : 'failed'}.`,
+            priority: 'medium',
+            actionUrl: NOTIFICATION_ACTIONS.QUIZ_RESULT(quiz.courseId),
+            data: { attemptId: attempt._id }
+        });
 
         return attempt;
     }
