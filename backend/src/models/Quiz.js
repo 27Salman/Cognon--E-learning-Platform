@@ -36,7 +36,7 @@ const quizSchema = new mongoose.Schema({
         default: false
     },
     questions: [{
-        text: { type: String, required: true },
+        questionText: { type: String, required: true },
         options: [{ type: String, required: true }],
         correctOptionIndex: { type: Number, required: true },
         marks: { type: Number, required: true, default: 1, min: 1 },
@@ -49,6 +49,11 @@ const quizSchema = new mongoose.Schema({
     shuffleOptions: {
         type: Boolean,
         default: false
+    },
+    questionsToShow: {
+        type: Number,
+        default: null, 
+        min: 1
     },
 }, { timestamps: true });
 

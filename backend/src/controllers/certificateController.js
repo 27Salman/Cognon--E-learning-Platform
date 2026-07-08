@@ -8,7 +8,8 @@ exports.getCertificateById = asyncHandler( async(req, res)=> {
 });
 
 exports.getUserCertificates = asyncHandler( async(req, res)=> {
-    const result = await certificateService.getUserCertificates(req.user.id, req.query.page, req.query.limit);
+    const { page, limit, search, sort } = req.query;
+    const result = await certificateService.getUserCertificates(req.user.id, page, limit, search, sort);
     res.status(HTTP_STATUS.OK).json({ success: true, data: result})
 });
 

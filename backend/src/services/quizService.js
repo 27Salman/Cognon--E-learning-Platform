@@ -26,6 +26,9 @@ const quizService = {
                 duration: quizData.duration,
                 passingMarks: quizData.passingMarks,
                 isPublished: quizData.isPublished,
+                shuffleQuestions: quizData.shuffleQuestions,
+                shuffleOptions: quizData.shuffleOptions,
+                questionsToShow: null,
                 questions: quizData.questions.map(({ _id, __v, ...rest }) => rest),
             };
             if (quizData.maxAttempts !== undefined) updateSet.maxAttempts = quizData.maxAttempts;
@@ -51,8 +54,8 @@ const quizService = {
             throw new Error('Quiz not found');
         }
 
-        const updateSet = {};
-        const allowedUpdates = ['title', 'duration', 'passingMarks', 'maxAttempts', 'isPublished', 'questions'];
+        const updateSet = { questionsToShow: null };
+        const allowedUpdates = ['title', 'duration', 'passingMarks', 'maxAttempts', 'isPublished', 'shuffleQuestions', 'shuffleOptions', 'questions'];
         allowedUpdates.forEach(field => {
             if (updateData[field] !== undefined) updateSet[field] = updateData[field];
         });
@@ -102,19 +105,35 @@ const quizService = {
         const attempts = await QuizAttempt.find({ studentId, quizId: quiz._id }).sort({ createdAt: -1 });
         let cooldownActive = false;
         let cooldownEndsAt = null;
+        let attemptsTodayCount = 0;
 
         if (attempts.length > 0) {
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+            
+            const attemptsToday = attempts.filter(a => new Date(a.createdAt) >= startOfDay);
+            attemptsTodayCount = attemptsToday.length;
+
             const lastAttempt = attempts[0];
             if (!lastAttempt.passed && lastAttempt.submittedAt) {
-                const cooldownPeriod = 24 * 60 * 60 * 1000;
                 const timeSinceLastAttempt = Date.now() - new Date(lastAttempt.submittedAt).getTime();
-
-                if (timeSinceLastAttempt < cooldownPeriod) {
-                    cooldownActive = true;
-                    cooldownEndsAt = new Date(new Date(lastAttempt.submittedAt).getTime() + cooldownPeriod);
+                
+                if (attemptsTodayCount >= quiz.maxAttempts) {
+                    const lockPeriod = 24 * 60 * 60 * 1000; // 24 hours lock
+                    if (timeSinceLastAttempt < lockPeriod) {
+                        cooldownActive = true;
+                        cooldownEndsAt = new Date(new Date(lastAttempt.submittedAt).getTime() + lockPeriod);
+                    }
+                } else {
+                    const cooldownPeriod = 5 * 60 * 1000; // 5 minutes cool-down between attempts
+                    if (timeSinceLastAttempt < cooldownPeriod) {
+                        cooldownActive = true;
+                        cooldownEndsAt = new Date(new Date(lastAttempt.submittedAt).getTime() + cooldownPeriod);
+                    }
                 }
             }
         }
+        
         return {
             quiz: {
                 _id: quiz._id,
@@ -126,6 +145,7 @@ const quizService = {
             },
             isCourseCompleted,
             attempts,
+            attemptsTodayCount,
             cooldownActive,
             cooldownEndsAt
         };
@@ -137,8 +157,8 @@ const quizService = {
         const status = await this.getStudentQuizStatus(studentId, quiz.courseId.toString());
 
         if (!status.isCourseCompleted) throw new Error('You must complete all lessons before starting the quiz.');
-        if (status.cooldownActive) throw new Error('You are currently in a cool-down period. Please wait 24 hours.');
-        if (status.attempts.length >= quiz.maxAttempts) throw new Error('Maximum attempts reached.');
+        if (status.cooldownActive) throw new Error('You are currently in a cool-down period. Please wait.');
+        if (status.attemptsTodayCount >= quiz.maxAttempts) throw new Error('Maximum attempts reached for today.');
 
         const ongoingAttempt = status.attempts.find(a => a.status === QUIZ_STATUS.STARTED);
         if (ongoingAttempt) {
@@ -150,12 +170,50 @@ const quizService = {
             await ongoingAttempt.save();
         }
 
-        const questionsSnapshot = quiz.questions.map(q => ({
-            questionId: q._id,
-            questionText: q.questionText,
-            options: q.options,
-            marks: q.marks
-        }));
+        // Fisher-Yates shuffle helper 
+        const shuffleArray = (arr) => {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = crypto.randomInt(0, i + 1);
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        };
+
+        let pool = [...quiz.questions];
+
+        if (quiz.shuffleQuestions) {
+            pool = shuffleArray(pool);
+        }
+
+
+        //  Build snapshot
+        const questionsSnapshot = pool.map(q => {
+            if (quiz.shuffleOptions) {
+                const indexed = q.options.map((text, i) => ({ text, originalIndex: i }));
+                const shuffledIndexed = shuffleArray(indexed);
+
+                const newCorrectIndex = shuffledIndexed.findIndex(
+                    o => o.originalIndex === q.correctOptionIndex
+                );
+
+                return {
+                    questionId: q._id,
+                    questionText: q.questionText,
+                    options: shuffledIndexed.map(o => o.text),
+                    correctOptionIndex: newCorrectIndex,
+                    marks: q.marks,
+                };
+            }
+
+            return {
+                questionId: q._id,
+                questionText: q.questionText,
+                options: q.options,
+                correctOptionIndex: q.correctOptionIndex,
+                marks: q.marks,
+            };
+        });
 
         const newAttempt = new QuizAttempt({
             quizId,
@@ -194,7 +252,7 @@ const quizService = {
             const originalQuestion = quiz.questions.find(q => q._id.toString() === answer.questionId.toString());
             const snapshotQuestion = attempt.questionsSnapshot.find(q => q.questionId.toString() === answer.questionId.toString());
             if (originalQuestion && snapshotQuestion) {
-                if (answer.selectedOptionIndex === originalQuestion.correctOptionIndex) {
+                if (answer.selectedOptionIndex === snapshotQuestion.correctOptionIndex) {
                     totalScore += snapshotQuestion.marks;
                 }
             }

@@ -33,22 +33,39 @@ const certificateService = {
         return certificate;
     },
 
-    async getUserCertificates(studentId, page = 1, limit = 10) {
+    async getUserCertificates(studentId, page = 1, limit = 10, search = '', sort = 'latest') {
         const pageNum = parseInt(page) || 1;
         const limitNum = parseInt(limit) || 10;
         const skip = (pageNum - 1) * limitNum;
 
-        const certificates = await Certificate.find({ student: studentId })
+        const query = { student: studentId };
+
+        if (search) {
+            const Course = require('../models/Course');
+            const matchingCourses = await Course.find({
+                title: { $regex: search, $options: 'i' }
+            }).select('_id');
+            const courseIds = matchingCourses.map(c => c._id);
+            query.course = { $in: courseIds };
+        }
+
+        let sortOption = { issuedAt: -1 };
+        if (sort === 'oldest') sortOption = { issuedAt: 1 };
+        if (sort === 'score_desc') sortOption = { score: -1 };
+        if (sort === 'score_asc') sortOption = { score: 1 };
+
+        const certificates = await Certificate.find(query)
+            .populate({ path: 'student', select: 'name' })
             .populate({
                 path: 'course',
                 select: 'title tutor',
                 populate: { path: 'tutor', select: 'name' }
             })
-            .sort({ issuedAt: -1 }) 
+            .sort(sortOption)
             .skip(skip)
             .limit(limitNum);
 
-        const total = await Certificate.countDocuments({ student: studentId });
+        const total = await Certificate.countDocuments(query);
 
         return {
             certificates,
@@ -99,148 +116,159 @@ const certificateService = {
         const issuedDate  = new Date(certificate.issuedAt).toLocaleDateString('en-US', {
             year: 'numeric', month: 'long', day: 'numeric'
         });
-        const score       = certificate.score;
 
         return new Promise((resolve, reject) => {
             const doc = new PDFDocument({
                 size: 'A4',
                 layout: 'landscape',
-                margins: { top: 40, bottom: 40, left: 60, right: 60 }
+                margins: { top: 0, bottom: 0, left: 0, right: 0 }
             });
 
             const buffers = [];
             doc.on('data', chunk => buffers.push(chunk));
-            doc.on('end', () => resolve(Buffer.concat(buffers)));
+            doc.on('end',  () => resolve(Buffer.concat(buffers)));
             doc.on('error', reject);
 
             const W = doc.page.width;   // 841.89
             const H = doc.page.height;  // 595.28
 
-            // ── Background ──────────────────────────────────────────────
-            doc.rect(0, 0, W, H).fill('#0f172a');
+            const LEFT_W   = W * 0.65;  // content panel
+            const RIGHT_W  = W - LEFT_W; // accent panel
+            const PAD      = 56;
 
-            // Outer decorative border
-            doc.rect(20, 20, W - 40, H - 40)
-               .lineWidth(2)
-               .stroke('#f59e0b');
+            // ── Right accent panel (Cognon brand color) ──────────────────
+            doc.rect(LEFT_W, 0, RIGHT_W, H).fill('#2d1b69');
 
-            // Inner border
-            doc.rect(28, 28, W - 56, H - 56)
-               .lineWidth(0.5)
-               .stroke('#f59e0b');
+            // Diagonal ribbon strip inside right panel
+            doc.save();
+            doc.rect(LEFT_W, 0, RIGHT_W, H).clip();
+            doc.rect(LEFT_W + 18, 0, 22, H).fillOpacity(0.18).fill('#ffffff');
+            doc.rect(LEFT_W + 50, 0, 10, H).fillOpacity(0.10).fill('#ffffff');
+            doc.restore();
+            doc.fillOpacity(1);
 
-            // ── Header band ─────────────────────────────────────────────
-            doc.rect(20, 20, W - 40, 70).fill('#1e293b');
-
-            // Platform name
+            // Right panel — "COURSE CERTIFICATE" vertical header
             doc.font(FONT_BOLD)
-               .fontSize(28)
-               .fillColor('#f59e0b')
-               .text('COGNON', 0, 32, { align: 'center' });
+               .fontSize(13)
+               .fillColor('#ffffff')
+               .text('COURSE', LEFT_W + 28, 48, { width: RIGHT_W - 40, align: 'center', characterSpacing: 3 });
+            doc.font(FONT_BOLD)
+               .fontSize(13)
+               .fillColor('#ffffff')
+               .text('CERTIFICATE', LEFT_W + 28, 68, { width: RIGHT_W - 40, align: 'center', characterSpacing: 2 });
 
+            // Cognon circular seal on right panel
+            const sealCX = LEFT_W + RIGHT_W / 2;
+            const sealCY = H * 0.52;
+            const sealR  = 72;
+
+            // Outer ring
+            doc.circle(sealCX, sealCY, sealR).lineWidth(2).stroke('#ffffff');
+            // Inner ring
+            doc.circle(sealCX, sealCY, sealR - 10).lineWidth(0.8).stroke('#ffffff');
+            // Platform name in seal
+            doc.font(FONT_BOLD)
+               .fontSize(18)
+               .fillColor('#ffffff')
+               .text('Cognon', sealCX - 38, sealCY - 12, { width: 76, align: 'center' });
+            doc.font(FONT_REGULAR)
+               .fontSize(7)
+               .fillColor('#c4b5fd')
+               .text('E-LEARNING PLATFORM', sealCX - 44, sealCY + 10, { width: 88, align: 'center', characterSpacing: 1 });
+
+            // Verify URL below seal
+            doc.font(FONT_REGULAR)
+               .fontSize(7)
+               .fillColor('#c4b5fd')
+               .text(`Verify at cognon.com/verify/${certNumber}`, LEFT_W + 10, H - 52, {
+                   width: RIGHT_W - 20, align: 'center'
+               });
+            doc.font(FONT_REGULAR)
+               .fontSize(6.5)
+               .fillColor('#a78bfa')
+               .text('Cognon has confirmed the identity of this learner', LEFT_W + 10, H - 40, {
+                   width: RIGHT_W - 20, align: 'center'
+               });
+            doc.font(FONT_REGULAR)
+               .fontSize(6.5)
+               .fillColor('#a78bfa')
+               .text('and their successful completion of this course.', LEFT_W + 10, H - 30, {
+                   width: RIGHT_W - 20, align: 'center'
+               });
+
+            // ── Left content panel — white background ────────────────────
+            doc.rect(0, 0, LEFT_W, H).fill('#ffffff');
+
+            // Thin top purple accent bar
+            doc.rect(0, 0, LEFT_W, 6).fill('#2d1b69');
+
+            // Thin left purple accent bar
+            doc.rect(0, 0, 6, H).fill('#2d1b69');
+
+            // Issue date (top left, like Coursera)
             doc.font(FONT_REGULAR)
                .fontSize(10)
-               .fillColor('#94a3b8')
-               .text('E-LEARNING PLATFORM', 0, 64, { align: 'center' });
+               .fillColor('#64748b')
+               .text(issuedDate, PAD, 32);
 
-            // ── Certificate of Completion heading ───────────────────────
-            doc.font(FONT_REGULAR)
-               .fontSize(13)
-               .fillColor('#94a3b8')
-               .text('CERTIFICATE OF COMPLETION', 0, 115, { align: 'center', characterSpacing: 4 });
+            // ── Student name (large, bold — the centrepiece) ─────────────
+            doc.font(FONT_BOLD)
+               .fontSize(34)
+               .fillColor('#1e293b')
+               .text(studentName.toUpperCase(), PAD, 65, { width: LEFT_W - PAD * 2 });
 
-            // Decorative line under heading
-            const lineY = 135;
-            doc.moveTo(W / 2 - 120, lineY).lineTo(W / 2 + 120, lineY)
-               .lineWidth(1).stroke('#f59e0b');
+            const nameBottom = doc.y + 6;
 
-            // ── "This certifies that" ────────────────────────────────────
+            // "has successfully completed" line
             doc.font(FONT_REGULAR)
                .fontSize(12)
-               .fillColor('#cbd5e1')
-               .text('This certifies that', 0, 155, { align: 'center' });
-
-            // ── Student name ─────────────────────────────────────────────
-            doc.font(FONT_BOLD)
-               .fontSize(36)
-               .fillColor('#ffffff')
-               .text(studentName, 0, 175, { align: 'center' });
-
-            // Underline the name
-            const nameWidth = doc.widthOfString(studentName, { fontSize: 36 });
-            const nameX = (W - nameWidth) / 2;
-            const nameUnderlineY = 175 + 36 + 4;
-            doc.moveTo(nameX, nameUnderlineY)
-               .lineTo(nameX + nameWidth, nameUnderlineY)
-               .lineWidth(1)
-               .stroke('#f59e0b');
-
-            // ── Body text ────────────────────────────────────────────────
-            doc.font(FONT_REGULAR)
-               .fontSize(12)
-               .fillColor('#cbd5e1')
-               .text('has successfully completed the course', 0, nameUnderlineY + 14, { align: 'center' });
-
-            // ── Course name ──────────────────────────────────────────────
-            doc.font(FONT_BOLD)
-               .fontSize(22)
-               .fillColor('#f59e0b')
-               .text(courseName, 60, nameUnderlineY + 38, { align: 'center', width: W - 120 });
-
-            // ── Score pill ───────────────────────────────────────────────
-            const scoreText = `Score: ${score}`;
-            const pillW = 120, pillH = 26, pillX = (W - pillW) / 2, pillY = nameUnderlineY + 80;
-            doc.roundedRect(pillX, pillY, pillW, pillH, 13)
-               .fill('#1e293b');
-            doc.font(FONT_BOLD)
-               .fontSize(11)
-               .fillColor('#f59e0b')
-               .text(scoreText, pillX, pillY + 7, { width: pillW, align: 'center' });
-
-            // ── Footer section ───────────────────────────────────────────
-            const footerY = H - 110;
-            doc.moveTo(60, footerY).lineTo(W - 60, footerY)
-               .lineWidth(0.5).stroke('#334155');
-
-            // Left: tutor signature block
-            doc.font(FONT_BOLD)
-               .fontSize(11)
-               .fillColor('#ffffff')
-               .text(tutorName, 60, footerY + 14, { width: 200, align: 'center' });
-            doc.font(FONT_REGULAR)
-               .fontSize(9)
-               .fillColor('#94a3b8')
-               .text('Course Instructor', 60, footerY + 30, { width: 200, align: 'center' });
-            doc.moveTo(60, footerY + 12).lineTo(260, footerY + 12)
-               .lineWidth(0.5).stroke('#475569');
-
-            // Center: Cognon seal text
-            doc.font(FONT_BOLD)
-               .fontSize(11)
-               .fillColor('#f59e0b')
-               .text('COGNON', (W / 2) - 40, footerY + 14, { width: 80, align: 'center' });
-            doc.font(FONT_REGULAR)
-               .fontSize(8)
-               .fillColor('#94a3b8')
-               .text('Authorized Seal', (W / 2) - 40, footerY + 30, { width: 80, align: 'center' });
-
-            // Right: date block
-            doc.font(FONT_BOLD)
-               .fontSize(11)
-               .fillColor('#ffffff')
-               .text(issuedDate, W - 260, footerY + 14, { width: 200, align: 'center' });
-            doc.font(FONT_REGULAR)
-               .fontSize(9)
-               .fillColor('#94a3b8')
-               .text('Date of Issue', W - 260, footerY + 30, { width: 200, align: 'center' });
-            doc.moveTo(W - 260, footerY + 12).lineTo(W - 60, footerY + 12)
-               .lineWidth(0.5).stroke('#475569');
-
-            // ── Certificate number (bottom) ──────────────────────────────
-            doc.font(FONT_REGULAR)
-               .fontSize(8)
                .fillColor('#475569')
-               .text(`Certificate No: ${certNumber}`, 0, H - 36, { align: 'center' });
+               .text('has successfully completed', PAD, nameBottom + 4);
+
+            // Course name (medium bold)
+            doc.font(FONT_BOLD)
+               .fontSize(18)
+               .fillColor('#1e293b')
+               .text(courseName, PAD, doc.y + 8, { width: LEFT_W - PAD * 2 });
+
+            const courseBottom = doc.y + 6;
+
+            // Descriptor line (Coursera-style)
+            doc.font(FONT_REGULAR)
+               .fontSize(9.5)
+               .fillColor('#64748b')
+               .text(
+                   `an online course authorised by ${tutorName} and offered through Cognon`,
+                   PAD, courseBottom + 6, { width: LEFT_W - PAD * 2 }
+               );
+
+            // ── Footer separator ─────────────────────────────────────────
+            const footerY = H - 100;
+            doc.moveTo(PAD, footerY).lineTo(LEFT_W - PAD, footerY)
+               .lineWidth(0.5).stroke('#e2e8f0');
+
+            // ── Instructor signature block ────────────────────────────────
+            // Simulate a signature with italic styled name
+            doc.font(FONT_BOLD)
+               .fontSize(14)
+               .fillColor('#334155')
+               .text(tutorName, PAD, footerY + 12, { width: 200 });
+
+            doc.font(FONT_REGULAR)
+               .fontSize(8.5)
+               .fillColor('#64748b')
+               .text('Course Instructor', PAD, footerY + 32);
+
+            doc.font(FONT_REGULAR)
+               .fontSize(8.5)
+               .fillColor('#64748b')
+               .text('Cognon E-Learning Platform', PAD, footerY + 44);
+
+            // Certificate number (bottom left, subtle)
+            doc.font(FONT_REGULAR)
+               .fontSize(7.5)
+               .fillColor('#94a3b8')
+               .text(`Certificate ID: ${certNumber}`, PAD, H - 22, { width: LEFT_W - PAD * 2 });
 
             doc.end();
         });

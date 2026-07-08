@@ -29,6 +29,7 @@ const quizAttemptSchema = new mongoose.Schema({
         questionId: { type: mongoose.Schema.Types.ObjectId },
         questionText: { type: String, required: true },
         options: [{ type: String, required: true }],
+        correctOptionIndex: { type: Number, required: true },
         marks: { type: Number, required: true }
     }],
     answers: [{
