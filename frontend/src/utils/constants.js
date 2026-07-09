@@ -134,6 +134,33 @@ export const NOTIFICATION_TYPES = {
     CERTIFICATE_GENERATED:  'certificate_generated',
 };
 
+export const SOCKET_EVENTS = {
+    JOIN: 'join',
+    DISCONNECT: 'disconnect',
+    USER_ONLINE: 'user-online',
+    USER_OFFLINE: 'user-offline',
+    SEND_MESSAGE: 'send-message',
+    MESSAGE_SAVED: 'message-saved',
+    NEW_MESSAGE: 'new-message',
+    MESSAGE_ERROR: 'message-error',
+    MESSAGE_DELIVERED: 'message-delivered',
+    MESSAGE_STATUS_UPDATE: 'message-status-update',
+    MESSAGES_READ: 'messages-read',
+    MESSAGES_READ_ACK: 'messages-read-ack',
+    TYPING_START: 'typing-start',
+    USER_TYPING: 'user-typing',
+    TYPING_STOP: 'typing-stop',
+    USER_STOPPED_TYPING: 'user-stopped-typing',
+    INITIATE_CALL: 'initiate-call',
+    INCOMING_CALL: 'incoming-call',
+    REQUEST_CALL: 'request-call',
+    CALL_REQUESTED: 'call-requested',
+    REJECT_CALL: 'reject-call',
+    CALL_REJECTED: 'call-rejected',
+    END_CALL: 'end-call',
+    CALL_ENDED: 'call-ended'
+};
+
 export const ROUTES = {
     // Public
     HOME: '/',

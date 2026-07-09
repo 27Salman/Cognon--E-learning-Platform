@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthFromStorage } from './store/slices/authSlice';
-import { useSocket } from './hooks/useSocket';
+// Socket is now managed globally by SocketProvider in main.jsx
 import ProtectedRoute from './routes/ProtectedRoute';
 import RoleRoute from './routes/RoleRoute';
 import Home from './pages/Home';
@@ -62,6 +62,7 @@ import Certificates from './pages/student/Certificates';
 import VerifyCertificate from './pages/VerifyCertificate';
 import TutorList from './pages/student/TutorList';
 import TutorProfileView from './pages/student/TutorProfileView';
+import StudentChat from './pages/student/StudentChat';
 
 
 function App() {
@@ -71,8 +72,6 @@ function App() {
   useEffect(() => {
     dispatch(setAuthFromStorage());
   }, [dispatch]);
-
-  useSocket();
 
   const handleLoaderComplete = () => {
     setShowLoader(false);
@@ -119,6 +118,7 @@ function App() {
             <Route path="orders" element={<StudentOrderList />} />
             <Route path="orders/:id" element={<StudentOrderDetail />} />
             <Route path="certificates" element={<Certificates />} />
+            <Route path="chat" element={<StudentChat />} />
           </Route>
 
           {/* Public student-facing pages — no login required */}

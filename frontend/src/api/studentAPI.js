@@ -28,7 +28,7 @@ export const studentAPI = {
     enrollInCourse: (courseId) => 
         api.post(`/courses/${courseId}/enroll`),
 
-    fetchEnrolledCourses: (page = 1, limit = 5) =>
+    fetchEnrolledCourses: (page = 1, limit = 100) =>
         api.get(`/courses/student/enrolled?page=${page}&limit=${limit}`),
 
     fetchCourseLessons: (courseId) => api.get(`/lessons/course/${courseId}`),

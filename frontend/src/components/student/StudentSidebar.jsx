@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useState } from 'react';
 import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
-import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard, Wallet } from 'lucide-react';
+import { User, ShoppingBag, ShoppingCart, Heart, Award, LogOut, LayoutDashboard, Wallet, MessageSquare } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
 import ConfirmModal from '../common/ConfirmModal';
 
@@ -30,9 +30,10 @@ const menuItems = [
     { name: 'Profile',      path: ROUTES.STUDENT_PROFILE,         icon: User },
     { name: 'My Courses',   path: ROUTES.STUDENT_MY_COURSES,      icon: ShoppingBag },
     { name: 'My Orders',    path: ROUTES.STUDENT_ORDERS,          icon: ShoppingCart },
+    { name: 'Chat & Video', path: ROUTES.STUDENT_CHAT,            icon: MessageSquare },
     { name: 'Wallet',       path: ROUTES.STUDENT_WALLET,          icon: Wallet },
     { name: 'Wishlist',     path: ROUTES.STUDENT_WISHLIST,        icon: Heart },
-    { name: 'Certificates', path: '/student/certificates',        icon: Award },
+    { name: 'Certificates', path: ROUTES.STUDENT_CERTIFICATES,    icon: Award },
 ];
 
 export default function StudentSidebar({ studentInfo }) {

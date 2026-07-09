@@ -1,5 +1,5 @@
 const Notification = require("../models/Notification");
-const { isUserOnline, emitToUser } = require("../socket/socketManager");
+const socketManager = require("../socket/socketManager");
 
 
 const notificationService = {
@@ -15,9 +15,9 @@ const notificationService = {
             actionUrl
         });
 
-        if (isUserOnline(recipient.toString())) {
+        if (socketManager.isUserOnline(recipient.toString())) {
             const unreadCount = await notificationService.getUnreadCount(recipient);
-            emitToUser(recipient.toString(), 'notification:new', {
+            socketManager.emitToUser(recipient.toString(), 'notification:new', {
                 notification,
                 unreadCount
             });
@@ -43,9 +43,9 @@ const notificationService = {
         const saved = await Notification.insertMany(notifications, { ordered: false });
 
         for (const notify of saved) {
-            if (isUserOnline(notify.recipient.toString())) {
+            if (socketManager.isUserOnline(notify.recipient.toString())) {
                 const unreadCount = await notificationService.getUnreadCount(notify.recipient);
-                emitToUser(notify.recipient.toString(), 'notification:new', {
+                socketManager.emitToUser(notify.recipient.toString(), 'notification:new', {
                     notification: notify,
                     unreadCount
                 });
