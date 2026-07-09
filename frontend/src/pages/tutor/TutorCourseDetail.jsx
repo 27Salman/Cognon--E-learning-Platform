@@ -20,7 +20,7 @@ export default function TutorCourseDetail() {
     const [deletingLesson, setDeletingLesson] = useState(false);
 
     // Reviews 
-    const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' or 'reviews'
+    const [activeTab, setActiveTab] = useState('lessons'); 
     const [reviews, setReviews] = useState([]);
     const [reviewsPage, setReviewsPage] = useState(1);
     const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
@@ -149,6 +149,10 @@ export default function TutorCourseDetail() {
                 <div className="flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg text-sm font-medium">
                     <Users className="w-4 h-4" />
                     Total Students: {course.enrolledCount || 0}
+                </div>
+                <div className="flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium">
+                    <Users className="w-4 h-4" />
+                    Certificate Earned: {course.certificateCount || 0}
                 </div>
                 <span className={`px-3 py-2 rounded-lg text-xs font-semibold ${
                     isPublished ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'

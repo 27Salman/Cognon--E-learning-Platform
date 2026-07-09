@@ -18,6 +18,7 @@ const checkoutController = require('../controllers/checkoutController');
 const orderController = require('../controllers/orderController');
 const couponController = require('../controllers/couponController');
 const catalogController = require('../controllers/catalogController');
+const tutorController = require('../controllers/tutorController');
 const { optionalAuth } = require('../middleware/authMiddleware');
 const reviewController = require('../controllers/reviewController');
 
@@ -26,6 +27,8 @@ const publicRouter = express.Router();
 publicRouter.get('/courses', catalogController.getCourses);
 publicRouter.get('/courses/filters', catalogController.getFilterOptions);
 publicRouter.get('/courses/:id', optionalAuth, catalogController.getCourseDetails);
+publicRouter.get('/tutors', tutorController.getPublicTutors);
+publicRouter.get('/tutors/:id', tutorController.getPublicTutorDetails);
 
 router.use(protect);
 router.use(restrictTo('student'));

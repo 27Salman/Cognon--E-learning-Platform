@@ -2,7 +2,8 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
 const Wallet = require('../models/Wallet');
-const { COURSE_STATUS } = require('../config/constants');
+const Review = require('../models/Review');
+const { COURSE_STATUS, HTTP_STATUS } = require('../config/constants');
 const cloudinary = require('../config/cloudinary');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
@@ -561,6 +562,96 @@ const tutorService = {
         return { summary, courseBreakdown, transactions, dateFrom, dateTo };
 
     },
+
+    async getPublicTutors({ search, page, limit, sortBy } = {}) {
+        const query = {
+            role: 'tutor',
+            status: 'active',
+            'tutorProfile.approvalStatus': 'approved'
+        };
+
+        if (search && search.trim()) {
+            query.$or = [
+                { name: { $regex: search.trim(), $options: 'i' } },
+                { 'tutorProfile.subject': { $regex: search.trim(), $options: 'i' } }
+            ];
+        }
+
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 8));
+        const skip = (pageNum - 1) * limitNum;
+
+        let sortOption = { name: 1 };
+        if (sortBy === 'name_desc') {
+            sortOption = { name: -1 };
+        } else if (sortBy === 'relevance') {
+            sortOption = { createdAt: -1 };
+        }
+
+        const [tutors, totalFiltered] = await Promise.all([
+            User.find(query)
+                .select('name email profileImage tutorProfile totalCourses totalStudents')
+                .sort(sortOption)
+                .skip(skip)
+                .limit(limitNum),
+            User.countDocuments(query)
+        ]);
+
+        return {
+            tutors: tutors.map(t => {
+                const tObj = t.toJSON();
+                tObj.profileImageURL = t.getProfileImageURL();
+                return tObj;
+            }),
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(totalFiltered / limitNum),
+                totalTutors: totalFiltered,
+                hasNext: pageNum < Math.ceil(totalFiltered / limitNum),
+                hasPrev: pageNum > 1
+            }
+        };
+    },
+
+    async getPublicTutorDetails(tutorId) {
+        const tutor = await User.findById(tutorId).select('-password');
+
+        if (!tutor || tutor.role !== 'tutor') {
+            const err = new Error('Tutor not found');
+            err.statusCode = HTTP_STATUS.NOT_FOUND;
+            throw err;
+        }
+
+        const courses = await Course.find({ tutor: tutorId, status: 'published' });
+        const totalCourses = courses.length;
+
+        const uniqueStudents = new Set();
+        courses.forEach(course => {
+            if (course.studentsEnrolled) {
+                course.studentsEnrolled.forEach(s => uniqueStudents.add(s.toString()));
+            }
+        });
+        const totalStudents = uniqueStudents.size;
+
+        const courseIds = courses.map(c => c._id);
+        const totalReviews = await Review.countDocuments({ course: { $in: courseIds } });
+
+        tutor.totalCourses = totalCourses;
+        tutor.totalStudents = totalStudents;
+        await tutor.save({ validateModifiedOnly: true });
+
+        const tutorObj = tutor.toJSON();
+        tutorObj.profileImageURL = tutor.getProfileImageURL();
+
+        return {
+            tutor: tutorObj,
+            stats: {
+                totalCourses,
+                totalStudents,
+                totalReviews
+            }
+        };
+    }
 
 };
 

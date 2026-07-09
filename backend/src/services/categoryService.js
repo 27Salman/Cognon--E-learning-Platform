@@ -60,15 +60,11 @@ const categoryService = {
     },
 
     async getCategoryById(categoryId) {
-
-        
-
         const category = await Category.findById(categoryId);
 
         if (!category) {
             throw new Error('Category not found');
         }
-
         return category.toJSON();
     },
 

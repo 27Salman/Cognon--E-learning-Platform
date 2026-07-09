@@ -8,14 +8,8 @@ const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
 const notificationService = require('./notificationService');
+const Certificate = require('../models/Certificate');
 
-const buildImageURL = (profileImage) => {
-    if(!profileImage) return null;
-    if(profileImage.startsWith('http')) return profileImage;
-    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const subfolder = profileImage.startsWith('user-') ? 'profiles/' : '';
-    return `${BASE_URL}/uploads/${subfolder}${profileImage}`;
-}
 
 const adminService = {
 
@@ -451,9 +445,11 @@ const adminService = {
         }
 
         const lessons = await Lesson.find({ course: courseId }).sort({ order: 1, createdAt: 1 });
+        const certificateCount = await Certificate.countDocuments({ course: courseId });
 
         const courseObj = course.toJSON();
         courseObj.lessons = lessons;
+        courseObj.certificateCount = certificateCount;
 
         return courseObj;
     },

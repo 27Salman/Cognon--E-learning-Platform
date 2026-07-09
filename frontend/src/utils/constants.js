@@ -176,6 +176,8 @@ export const ROUTES = {
     STUDENT_ORDER_DETAIL: '/student/orders/:orderId',
     STUDENT_ORDER_SUCCESS: '/student/order-success',
     STUDENT_CERTIFICATES: '/student/certificates',
+    STUDENT_TUTORS: '/tutors',
+    STUDENT_TUTOR_DETAIL: '/tutors/:tutorId',
 
     // Tutor
     TUTOR_DASHBOARD: '/tutor/dashboard',

@@ -60,6 +60,8 @@ import QuizBuilder from './pages/tutor/QuizBuilder';
 import QuizAttempt from './pages/student/QuizAttempt';
 import Certificates from './pages/student/Certificates';
 import VerifyCertificate from './pages/VerifyCertificate';
+import TutorList from './pages/student/TutorList';
+import TutorProfileView from './pages/student/TutorProfileView';
 
 
 function App() {
@@ -123,6 +125,8 @@ function App() {
           <Route path={ROUTES.STUDENT_COURSE_CATALOG} element={<CourseCatalog />} />
           <Route path={ROUTES.STUDENT_CATEGORIES} element={<CategoryPage />} />
           <Route path={ROUTES.STUDENT_COURSE_DETAIL} element={<CourseDetails />} />
+          <Route path={ROUTES.STUDENT_TUTORS} element={<TutorList />} />
+          <Route path={ROUTES.STUDENT_TUTOR_DETAIL} element={<TutorProfileView />} />
           <Route
             path={ROUTES.STUDENT_LESSON_VIEWER}
             element={

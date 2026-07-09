@@ -101,6 +101,7 @@ export default function StudentNavbar() {
                     <button onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)} className="text-gray-700 hover:text-purple-600 transition">About Us</button>
                     <button onClick={() => navigate(ROUTES.STUDENT_CATEGORIES)} className="text-gray-700 hover:text-purple-600 transition">Categories</button>
                     <button onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)} className="text-gray-700 hover:text-purple-600 transition">Courses</button>
+                    <button onClick={() => navigate(ROUTES.STUDENT_TUTORS)} className="text-gray-700 hover:text-purple-600 transition">Tutors</button>
                     <button onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)} className="text-gray-700 hover:text-purple-600 transition">Contact</button>
                 </nav>
 

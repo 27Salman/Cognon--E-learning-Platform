@@ -318,6 +318,9 @@ export default function AdminCourseManagement() {
               <div className="bg-purple-600 text-white text-xs font-bold px-4 py-2 rounded-full">
                 TOTAL STUDENTS: {selectedCourse.studentsEnrolled?.length || 0}
               </div>
+              <div className="bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-full">
+                CERTIFICATE EARNED: {selectedCourse.certificateCount || 0}
+              </div>
             </div>            
             {/* Tab Navigation */}
             <div className="flex border-b border-gray-200 mb-6 gap-6">

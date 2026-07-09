@@ -133,6 +133,13 @@ export const studentAPI = {
 
     getMyReview: (courseId) =>
         api.get(`/student/reviews/${courseId}/mine`),
+
+    // Tutors
+    fetchTutors: (params = {}) =>
+        api.get('/catalog/tutors', { params }),
+
+    fetchTutorDetails: (tutorId) =>
+        api.get(`/catalog/tutors/${tutorId}`),
 };
 
 

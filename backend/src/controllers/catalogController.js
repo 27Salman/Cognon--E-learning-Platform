@@ -4,11 +4,11 @@ const Category = require('../models/Category');
 const { HTTP_STATUS } = require('../config/constants');
 
 exports.getCourses = asyncHandler(async (req, res) => {
-    const { category, search, page, limit } = req.query;
+    const { category, search, page, limit, tutor } = req.query;
     const data = await courseService.getAllPublishedCourses(
-        { category, search },
+        { category, search, tutor },
         Number(page) || 1,
-        Number(limit) || 10
+        Number(limit) || 12
     );
     res.status(HTTP_STATUS.OK).json({ success: true, data });
 });
@@ -27,3 +27,4 @@ exports.getCourseDetails = asyncHandler(async (req, res) => {
     const data = await courseService.getCourseById(req.params.id, userId, userRole);
     res.status(HTTP_STATUS.OK).json({ success: true, data });
 });
+

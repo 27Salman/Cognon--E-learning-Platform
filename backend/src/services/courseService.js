@@ -7,6 +7,8 @@ const Wishlist = require('../models/Wishlist');
 const { COURSE_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
 const { deleteCloudinaryAsset } = require('./fileService');
 const notificationService = require('./notificationService');
+const Certificate = require('../models/Certificate');
+
 
 function groupByChapter(lessons) {
     const map = {};
@@ -169,23 +171,48 @@ const courseService = {
     },
 
     async getAllPublishedCourses(filters = {}, page = 1, limit = 5){
-        const skip = (page -1) * limit;
+        const skip = (page - 1) * limit;
         const query = { status: COURSE_STATUS.PUBLISHED };
 
         if(filters.category){
             query.category = new RegExp(filters.category, 'i');
         }
 
+        if(filters.search && filters.search.trim()){
+            query.$or = [
+                { title: { $regex: filters.search.trim(), $options: 'i' } },
+                { description: { $regex: filters.search.trim(), $options: 'i' } }
+            ];
+        }
+
+        if(filters.tutor){
+            query.tutor = filters.tutor;
+        }
+
         const courses = await Course.find(query)
-            .populate('tutor', 'name email')
+            .populate('tutor', 'name email profileImage')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
 
         const total = await Course.countDocuments(query);
 
+        const coursesWithOffers = courses.map((course) => {
+            const courseObj = course.toJSON();
+            if (course.offerPercentage > 0) {
+                const discountedPrice = Math.round(
+                    course.price - (course.price * course.offerPercentage) / 100
+                );
+                courseObj.offer = {
+                    discountPercentage: course.offerPercentage,
+                    discountedPrice
+                };
+            }
+            return courseObj;
+        });
+
         return {
-            courses,
+            courses: coursesWithOffers,
             pagination: {
                 currentPage: page,
                 totalPages: Math.ceil(total / limit),
@@ -223,13 +250,16 @@ const courseService = {
             return lesson;
         });
         
+        const certificateCount = await Certificate.countDocuments({ course: courseId });
+        
         const courseObj = course.toJSON();
         delete courseObj.studentsEnrolled;
         return {
             ...courseObj,
             lessons: sanitizedLessons,
             chapters: groupByChapter(sanitizedLessons),
-            isEnrolled
+            isEnrolled,
+            certificateCount
         };
     },
 
