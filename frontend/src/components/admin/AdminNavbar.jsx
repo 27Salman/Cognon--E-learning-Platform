@@ -4,23 +4,12 @@ import Logo from '../common/Logo';
 import NotificationBell from '../common/NotificationBell';
 import { ROUTES } from '../../utils/constants';
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
-
-const getFullImageUrl = (src) => {
-  if (!src) return null;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
-  const subfolder = src.startsWith('user-') ? 'profiles/' : '';
-  return `${API_BASE}/uploads/${subfolder}${src}`;
-};
-
 export default function AdminNavbar({ adminInfo }) {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
   const displayName = user?.name || adminInfo?.name || 'Admin';
-  const profileImageSrc = getFullImageUrl(adminInfo?.profileImageURL || adminInfo?.profileImage);
+  const profileImageSrc = adminInfo?.profileImageURL || adminInfo?.profileImage;
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">

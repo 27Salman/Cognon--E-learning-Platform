@@ -72,6 +72,17 @@ exports.downloadSalesReportExcel = asyncHandler( async (req, res) =>{
     const tutor = await tutorService.getProfile(req.user.id);
     const reportData = await tutorService.getTutorSalesReport(req.user.id, { dateFrom, dateTo });
     salesReportService.generateTutorExcel(reportData, tutor.name, res);
-})
+});
+
+exports.getPublicTutors = asyncHandler(async (req, res) => {
+    const { search, page, limit, sortBy } = req.query;
+    const data = await tutorService.getPublicTutors({ search, page, limit, sortBy });
+    res.status(HTTP_STATUS.OK).json({ success: true, data });
+});
+
+exports.getPublicTutorDetails = asyncHandler(async (req, res) => {
+    const data = await tutorService.getPublicTutorDetails(req.params.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data });
+});
 
 

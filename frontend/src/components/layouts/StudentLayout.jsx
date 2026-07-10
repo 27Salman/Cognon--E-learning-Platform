@@ -11,6 +11,7 @@ export default function StudentLayout() {
     const { user } = useSelector((state) => state.auth);
     const location = useLocation();
 
+    const isQuizPage = /^\/student\/courses\/[^/]+\/quiz\/[^/]+/.test(location.pathname);
     const hideSidebar = location.pathname === ROUTES.STUDENT_DASHBOARD; 
 
     const [studentInfo, setStudentInfo] = useState(() => {
@@ -70,11 +71,11 @@ export default function StudentLayout() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <StudentNavbar />
+            {!isQuizPage && <StudentNavbar />}
 
             <div className='flex flex-1'>
 
-                { !hideSidebar && <StudentSidebar studentInfo={studentInfo} />}
+                {!hideSidebar && !isQuizPage && <StudentSidebar studentInfo={studentInfo} />}
 
                 <main className="flex-1 overflow-y-auto min-h-0">
                     <div className="min-h-full">
@@ -84,7 +85,7 @@ export default function StudentLayout() {
 
             </div>
 
-            <Footer />
+            {!isQuizPage && <Footer />}
         </div>
     );
 }

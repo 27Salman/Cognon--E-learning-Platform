@@ -17,8 +17,8 @@ export const courseAPI = {
         api.put(`/courses/${id}`, JSON.stringify({ status }), { headers: { 'Content-Type': 'application/json' } }),
 
     // Lessons
-    addLesson: (courseId, data) => api.post(`/lessons/course/${courseId}`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
-    updateLesson: (lessonId, data) => api.put(`/lessons/${lessonId}`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    createLesson: (courseId, data, config = {}) => api.post(`/lessons/course/${courseId}`, data, { headers: { 'Content-Type': 'multipart/form-data' }, ...config }),
+    updateLesson: (lessonId, data, config = {}) => api.put(`/lessons/${lessonId}`, data, { headers: { 'Content-Type': 'multipart/form-data' }, ...config }),
     deleteLesson: (lessonId) => api.delete(`/lessons/${lessonId}`),
     getLessons: (courseId) => api.get(`/lessons/course/${courseId}`),
 
@@ -33,4 +33,11 @@ export const courseAPI = {
     // Student
     enrollCourse: (id) => api.post(`/courses/${id}/enroll`),
     getEnrolledCourses: () => api.get('/courses/student/enrolled'),
+
+    // Reviews
+    getCourseReviews: (courseId, params = {}) =>
+        api.get(`/courses/${courseId}/reviews`, { params }),
+
+    getCourseReviewSummary: (courseId) =>
+        api.get(`/courses/${courseId}/reviews/summary`),
 };

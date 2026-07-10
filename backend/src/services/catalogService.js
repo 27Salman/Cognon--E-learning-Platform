@@ -111,11 +111,9 @@ const catalogService = {
 
         const courseObj = course.toJSON();
 
-        // Capture count before deleting the array
         courseObj.enrolledCount = course.studentsEnrolled?.length || 0;
         delete courseObj.studentsEnrolled;
 
-        // Compute unique students across all tutor's courses (fresh, not stale DB value)
         const tutorCourses = await Course.find({ tutor: course.tutor._id }).select('studentsEnrolled');
         const uniqueStudentIds = new Set();
         tutorCourses.forEach(c => {
@@ -137,7 +135,6 @@ const catalogService = {
             return lesson;
         });
 
-        // Compute totalDuration from lessons
         courseObj.totalDuration = lessons.reduce((sum, l) => sum + (l.duration || 0), 0);
 
         if (course.offerPercentage > 0) {

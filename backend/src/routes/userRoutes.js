@@ -18,13 +18,17 @@ const checkoutController = require('../controllers/checkoutController');
 const orderController = require('../controllers/orderController');
 const couponController = require('../controllers/couponController');
 const catalogController = require('../controllers/catalogController');
+const tutorController = require('../controllers/tutorController');
 const { optionalAuth } = require('../middleware/authMiddleware');
+const reviewController = require('../controllers/reviewController');
 
 
 const publicRouter = express.Router();
 publicRouter.get('/courses', catalogController.getCourses);
 publicRouter.get('/courses/filters', catalogController.getFilterOptions);
 publicRouter.get('/courses/:id', optionalAuth, catalogController.getCourseDetails);
+publicRouter.get('/tutors', tutorController.getPublicTutors);
+publicRouter.get('/tutors/:id', tutorController.getPublicTutorDetails);
 
 router.use(protect);
 router.use(restrictTo('student'));
@@ -60,6 +64,11 @@ router.get('/orders/:id/invoice', orderController.downloadInvoice);
 router.get('/wallet', getMyWallet);
 router.post('/orders/:orderId/cancel', cancelOrder);
 router.post('/checkout/wallet', payWithWallet);
+
+// Reviews 
+router.post('/reviews/:courseId', reviewController.submitReview);
+router.delete('/reviews/:courseId', reviewController.deleteReview);
+router.get('/reviews/:courseId/mine', reviewController.getMyReview);
 
 module.exports = { userRoutes: router, publicCatalogRoutes: publicRouter };
 

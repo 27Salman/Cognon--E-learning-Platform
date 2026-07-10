@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../../api/adminAPI';
+import { courseAPI } from '../../api/courseAPI';
+import StarRating from '../../components/common/StarRating';
+import AvatarInitial from '../../components/common/AvatarInitial';
 import { Search, Filter, ArrowLeft, BookOpen, Users, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { COURSE_STATUS } from '../../utils/constants';
@@ -134,6 +137,14 @@ export default function AdminCourseManagement() {
   const [lessonPage, setLessonPage] = useState(1);
   const LESSONS_PER_PAGE = 6;
 
+  // Reviews 
+  const [reviews, setReviews] = useState([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
+  const [summary, setSummary] = useState(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' or 'reviews'
+
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -146,7 +157,7 @@ export default function AdminCourseManagement() {
     loadCategories();
   }, []);
 
-  // Load courses per category 
+  // Load courses 
   const loadCategoryPage = useCallback(async (categoryName, page = 1) => {
     setCatLoading(true);
     try {
@@ -196,13 +207,51 @@ export default function AdminCourseManagement() {
     if (view === 'search') fetchSearchCourses();
   }, [view, search, sort, listingFilter, searchPage]);
 
+  // Reviews
+  const loadCourseReviews = async (courseId, page = 1, replace = false) => {
+    setReviewsLoading(true);
+    try {
+      const res = await courseAPI.getCourseReviews(courseId, { page, limit: 5 });
+      const data = res?.data || {};
+      const fetched = data.reviews || [];
+      setReviews(prev => replace ? fetched : [...prev, ...fetched]);
+      setReviewsTotalPages(data.pagination?.totalPages || 1);
+    } catch {
+      toast.error('Failed to load reviews');
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const loadCourseReviewSummary = async (courseId) => {
+    try {
+      const res = await courseAPI.getCourseReviewSummary(courseId);
+      setSummary(res?.data || null);
+    } catch {
+      console.error('Failed to load review summary');
+    }
+  };
+
+  const handleLoadMoreReviews = () => {
+    const nextPage = reviewsPage + 1;
+    setReviewsPage(nextPage);
+    if (selectedCourse) {
+      loadCourseReviews(selectedCourse._id, nextPage, false);
+    }
+  };
+
   const openDetail = async (course) => {
     setDetailLoading(true);
     setView('detail');
     setLessonPage(1);
+    setReviewsPage(1);
+    setReviews([]);
+    setActiveTab('lessons');
     try {
       const res = await adminAPI.getAdminCourseById(course._id);
       setSelectedCourse(res.data);
+      loadCourseReviews(course._id, 1, true);
+      loadCourseReviewSummary(course._id);
     } catch {
       toast.error('Failed to load course details', { id: 'course-detail-error' });
       setView('categories');
@@ -269,187 +318,335 @@ export default function AdminCourseManagement() {
               <div className="bg-purple-600 text-white text-xs font-bold px-4 py-2 rounded-full">
                 TOTAL STUDENTS: {selectedCourse.studentsEnrolled?.length || 0}
               </div>
-            </div>
-
-            {/* Course Structure — chapter-wise */}
-              <h2 className="text-lg font-bold text-gray-800 mb-3">Course Structure</h2>
-              <div className="space-y-3 mb-6">
-                {lessons.length === 0 ? (
-                  <p className="text-gray-400 text-sm">No lessons added yet.</p>
-                ) : (() => {
-                  const chapMap = {};
-                  lessons.forEach(l => {
-                    const key = l.chapter?.order ?? 1;
-                    if (!chapMap[key]) chapMap[key] = { order: key, title: l.chapter?.title ?? 'Chapter 1', lessons: [] };
-                    chapMap[key].lessons.push(l);
-                  });
-                  return Object.values(chapMap)
-                    .sort((a, b) => a.order - b.order)
-                    .map(ch => ({ ...ch, lessons: ch.lessons.slice().sort((a, b) => a.order - b.order) }))
-                    .map(chapter => (
-                      <div key={chapter.order} className="border border-gray-200 rounded-xl overflow-hidden">
-                        {/* Chapter header */}
-                        <div className="flex items-center gap-3 px-4 py-3 bg-purple-50">
-                          <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-xs font-bold">{chapter.order}</span>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-800 text-sm">
-                              Chapter {chapter.order}: {chapter.title}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {chapter.lessons.length} lesson{chapter.lessons.length !== 1 ? 's' : ''}
-                            </p>
-                          </div>
-                        </div>
-                        {/* Lessons */}
-                        <div className="divide-y divide-gray-100">
-                          {chapter.lessons.map((lesson, idx) => (
-                            <div key={lesson._id || idx} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition text-sm">
-                              <div className="flex items-center gap-3">
-                                <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center flex-shrink-0">
-                                  <BookOpen className="w-3 h-3 text-purple-600" />
-                                </div>
-                                <span className="font-medium text-gray-700">{idx + 1}. {lesson.title}</span>
-                              </div>
-                              <span className="text-gray-400 text-xs flex-shrink-0">
-                                {lesson.duration ? `${lesson.duration} mins` : '—'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ));
-                })()}
+              <div className="bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-full">
+                CERTIFICATE EARNED: {selectedCourse.certificateCount || 0}
               </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-3">
+            </div>            
+            {/* Tab Navigation */}
+            <div className="flex border-b border-gray-200 mb-6 gap-6">
               <button
-                onClick={() => handleToggleListing(selectedCourse._id, selectedCourse.status)}
-                className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                  isListed
-                    ? 'bg-red-500 text-white hover:bg-red-600'
-                    : 'bg-green-500 text-white hover:bg-green-600'
+                onClick={() => setActiveTab('lessons')}
+                className={`pb-3 font-semibold text-sm transition-all relative ${
+                  activeTab === 'lessons'
+                    ? 'text-purple-650 font-bold border-b-2 border-purple-600'
+                    : 'text-gray-450 hover:text-gray-700'
                 }`}
               >
-                {isListed ? 'Unlist Course' : 'List Course'}
+                Lessons & Structure
+              </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`pb-3 font-semibold text-sm transition-all relative ${
+                  activeTab === 'reviews'
+                    ? 'text-purple-650 font-bold border-b-2 border-purple-600'
+                    : 'text-gray-450 hover:text-gray-700'
+                }`}
+              >
+                Student Reviews ({selectedCourse.reviewCount || 0})
               </button>
             </div>
 
-            {/* Lessons grid */}
-            {lessons.length > 0 && (
-              <div className="mt-8">
-                <h2 className="text-lg font-bold text-gray-800 mb-4">Lessons ({lessons.length})</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {visibleLessons.map((lesson, i) => (
-                    <div
-                      key={lesson._id || i}
-                      onClick={() => setSelectedLesson(lesson)}
-                      className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm cursor-pointer hover:shadow-md hover:border-purple-300 transition-all group"
-                    >
-                      {lesson.thumbnailURL ? (
-                        <img src={lesson.thumbnailURL} alt={lesson.title} className="w-full h-24 object-cover group-hover:opacity-90 transition-opacity" />
-                      ) : (
-                        <div className="w-full h-24 bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center">
-                          <BookOpen className="w-8 h-8 text-purple-300" />
+            {activeTab === 'lessons' && (
+              <>
+                {/* Course Structure — chapter-wise */}
+                <h2 className="text-lg font-bold text-gray-800 mb-3">Course Structure</h2>
+                <div className="space-y-3 mb-6">
+                  {lessons.length === 0 ? (
+                    <p className="text-gray-400 text-sm">No lessons added yet.</p>
+                  ) : (() => {
+                    const chapMap = {};
+                    lessons.forEach(l => {
+                      const key = l.chapter?.order ?? 1;
+                      if (!chapMap[key]) chapMap[key] = { order: key, title: l.chapter?.title ?? 'Chapter 1', lessons: [] };
+                      chapMap[key].lessons.push(l);
+                    });
+                    return Object.values(chapMap)
+                      .sort((a, b) => a.order - b.order)
+                      .map(ch => ({ ...ch, lessons: ch.lessons.slice().sort((a, b) => a.order - b.order) }))
+                      .map(chapter => (
+                        <div key={chapter.order} className="border border-gray-200 rounded-xl overflow-hidden">
+                          {/* Chapter header */}
+                          <div className="flex items-center gap-3 px-4 py-3 bg-purple-50">
+                            <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                              <span className="text-white text-xs font-bold">{chapter.order}</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-gray-800 text-sm">
+                                Chapter {chapter.order}: {chapter.title}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {chapter.lessons.length} lesson{chapter.lessons.length !== 1 ? 's' : ''}
+                              </p>
+                            </div>
+                          </div>
+                          {/* Lessons */}
+                          <div className="divide-y divide-gray-100">
+                            {chapter.lessons.map((lesson, idx) => (
+                              <div key={lesson._id || idx} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition text-sm">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                    <BookOpen className="w-3 h-3 text-purple-600" />
+                                  </div>
+                                  <span className="font-medium text-gray-700">{idx + 1}. {lesson.title}</span>
+                                </div>
+                                <span className="text-gray-400 text-xs flex-shrink-0">
+                                  {lesson.duration ? `${lesson.duration} mins` : '—'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      )}
-                      <div className="p-3">
-                        <p className="text-xs font-semibold text-gray-700 line-clamp-2 mb-1">{lesson.title}</p>
-                        <div className="flex items-center justify-between">
-                          {lesson.duration && (
-                            <span className="text-xs text-gray-400">{lesson.duration} mins</span>
+                      ));
+                  })()}
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleToggleListing(selectedCourse._id, selectedCourse.status)}
+                    className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                      isListed
+                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        : 'bg-green-500 text-white hover:bg-green-600'
+                    }`}
+                  >
+                    {isListed ? 'Unlist Course' : 'List Course'}
+                  </button>
+                </div>
+
+                {/* Lessons grid */}
+                {lessons.length > 0 && (
+                  <div className="mt-8">
+                    <h2 className="text-lg font-bold text-gray-800 mb-4">Lessons ({lessons.length})</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {visibleLessons.map((lesson, i) => (
+                        <div
+                          key={lesson._id || i}
+                          onClick={() => setSelectedLesson(lesson)}
+                          className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm cursor-pointer hover:shadow-md hover:border-purple-300 transition-all group"
+                        >
+                          {lesson.thumbnailURL ? (
+                            <img src={lesson.thumbnailURL} alt={lesson.title} className="w-full h-24 object-cover group-hover:opacity-90 transition-opacity" />
+                          ) : (
+                            <div className="w-full h-24 bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center">
+                              <BookOpen className="w-8 h-8 text-purple-300" />
+                            </div>
                           )}
-                          <span className="text-xs text-purple-600 font-medium group-hover:underline">View →</span>
+                          <div className="p-3">
+                            <p className="text-xs font-semibold text-gray-700 line-clamp-2 mb-1">{lesson.title}</p>
+                            <div className="flex items-center justify-between">
+                              {lesson.duration && (
+                                <span className="text-xs text-gray-400">{lesson.duration} mins</span>
+                              )}
+                              <span className="text-xs text-purple-600 font-medium group-hover:underline">View →</span>
+                            </div>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                    <Pagination current={lessonPage} total={totalLessonPages} onChange={setLessonPage} />
+                  </div>
+                )}
+
+                {/* Lesson Detail Modal */}
+                {selectedLesson && (
+                  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <div className="p-5">
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <h2 className="text-lg font-bold text-gray-800 pr-4">{selectedLesson.title}</h2>
+                          <button
+                            onClick={() => setSelectedLesson(null)}
+                            className="text-gray-400 hover:text-gray-600 text-2xl leading-none flex-shrink-0"
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        {/* Thumbnail */}
+                        {selectedLesson.thumbnailURL ? (
+                          <img src={selectedLesson.thumbnailURL} alt={selectedLesson.title} className="w-full h-48 object-cover rounded-xl mb-4" />
+                        ) : (
+                          <div className="w-full h-48 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl mb-4 flex items-center justify-center">
+                            <BookOpen className="w-12 h-12 text-purple-300" />
+                          </div>
+                        )}
+
+                        {/* Details */}
+                        <div className="space-y-3 text-sm">
+                          {selectedLesson.description && (
+                            <div>
+                              <p className="font-semibold text-gray-700">Description</p>
+                              <p className="text-gray-600 mt-1">{selectedLesson.description}</p>
+                            </div>
+                          )}
+                          
+                          {selectedLesson.duration > 0 && (
+                            <div>
+                              <p className="font-semibold text-gray-700">Duration</p>
+                              <p className="text-gray-600 mt-1">{selectedLesson.duration} minutes</p>
+                            </div>
+                          )}
+
+                          {selectedLesson.pdfNotesURL && (
+                            <div>
+                              <p className="font-semibold text-gray-700 mb-2">Study Materials</p>
+                              <a
+                                href={selectedLesson.pdfNotesURL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 text-purple-600 hover:underline font-semibold bg-purple-50 px-3 py-2 rounded-lg"
+                              >
+                                View PDF Notes
+                              </a>
+                            </div>
+                          )}
+
+                          {selectedLesson.videoUrl && (
+                            <div>
+                              <p className="font-semibold text-gray-700 mb-2">Video</p>
+                              {selectedLesson.videoUrl.includes('youtube.com') || selectedLesson.videoUrl.includes('youtu.be') ? (
+                                <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                                  <iframe
+                                    src={selectedLesson.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                                    className="w-full h-full"
+                                    allowFullScreen
+                                    title={selectedLesson.title}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                                  <video
+                                    src={selectedLesson.videoUrl}
+                                    controls
+                                    className="w-full h-full"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {!selectedLesson.videoUrl && (
+                            <div className="bg-gray-50 rounded-xl p-4 text-center text-gray-400 text-sm">
+                              No video available for this lesson
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => setSelectedLesson(null)}
+                          className="mt-5 w-full bg-purple-600 text-white py-2.5 rounded-xl font-medium hover:bg-purple-700"
+                        >
+                          Close
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-                <Pagination current={lessonPage} total={totalLessonPages} onChange={setLessonPage} />
-              </div>
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Lesson Detail Modal */}
-            {selectedLesson && (
-              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <div className="p-5">
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <h2 className="text-lg font-bold text-gray-800 pr-4">{selectedLesson.title}</h2>
+            {activeTab === 'reviews' && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-bold text-gray-800 mb-4">Student Reviews ({selectedCourse.reviewCount || 0})</h2>
+                
+                {summary && (
+                  <div className="flex flex-col md:flex-row gap-6 items-center bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mb-6">
+                    {/* Avg score block */}
+                    <div className="flex flex-col items-center justify-center text-center px-4">
+                      <span className="text-4xl font-black text-purple-700 leading-none mb-1">
+                        {summary.averageRating?.toFixed(1) || '0.0'}
+                      </span>
+                      <StarRating rating={summary.averageRating || 0} size={16} className="mb-1" />
+                      <span className="text-[10px] font-semibold text-gray-400">
+                        Average Rating
+                      </span>
+                    </div>
+
+                    {/* Progress Bars */}
+                    <div className="flex-1 w-full space-y-2 text-xs">
+                      {[5, 4, 3, 2, 1].map(stars => {
+                        const count = summary.distribution?.[stars] || 0;
+                        const percent = summary.totalReviews > 0 ? (count / summary.totalReviews) * 100 : 0;
+                        return (
+                          <div key={stars} className="flex items-center gap-2">
+                            <span className="font-semibold text-purple-650 min-w-[28px]">
+                              {stars} ★
+                            </span>
+                            <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden bg-gray-250">
+                              <div 
+                                className="bg-yellow-400 h-full rounded-full transition-all duration-500" 
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                            <span className="text-gray-550 min-w-[28px] text-right">
+                              {Math.round(percent)}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Reviews List */}
+                <div className="space-y-3">
+                  {reviews.length > 0 ? (
+                    reviews.map(review => (
+                      <div key={review._id} className="p-4 bg-white rounded-xl border border-gray-150 shadow-sm space-y-2">
+                        <div className="flex items-center gap-3">
+                          {review.student?.profileImageURL || review.student?.profileImage ? (
+                            <img
+                              src={review.student.profileImageURL || review.student.profileImage}
+                              alt={review.student.name}
+                              className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <AvatarInitial name={review.student?.name || '?'} size="sm" color="purple" />
+                          )}
+                          <div>
+                            <h4 className="text-xs font-bold text-gray-800">{review.student?.name || 'Anonymous Student'}</h4>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <StarRating rating={review.rating} size={10} />
+                              <span className="text-[10px] text-gray-400">
+                                {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {review.comment && (
+                          <p className="text-xs text-gray-600 leading-relaxed pl-1">
+                            {review.comment}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 bg-white rounded-xl border border-dashed border-gray-200">
+                      <p className="text-gray-400 text-xs font-medium">No reviews yet for this course</p>
+                    </div>
+                  )}
+
+                  {/* Load More reviews */}
+                  {reviewsPage < reviewsTotalPages && (
+                    <div className="flex justify-center pt-2">
                       <button
-                        onClick={() => setSelectedLesson(null)}
-                        className="text-gray-400 hover:text-gray-600 text-2xl leading-none flex-shrink-0"
+                        onClick={handleLoadMoreReviews}
+                        disabled={reviewsLoading}
+                        className="px-4 py-2 border border-purple-650 text-purple-650 rounded-xl text-xs font-semibold hover:bg-purple-50 transition disabled:opacity-50 text-purple-600"
                       >
-                        ×
+                        {reviewsLoading ? 'Loading...' : 'View more Reviews'}
                       </button>
                     </div>
-
-                    {/* Thumbnail */}
-                    {selectedLesson.thumbnailURL ? (
-                      <img src={selectedLesson.thumbnailURL} alt={selectedLesson.title} className="w-full h-48 object-cover rounded-xl mb-4" />
-                    ) : (
-                      <div className="w-full h-48 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl mb-4 flex items-center justify-center">
-                        <BookOpen className="w-12 h-12 text-purple-300" />
-                      </div>
-                    )}
-
-                    {/* Details */}
-                    <div className="space-y-3 text-sm">
-                      {selectedLesson.duration && (
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <span className="font-medium text-gray-700">Duration:</span>
-                          <span>{selectedLesson.duration} minutes</span>
-                        </div>
-                      )}
-
-                      {selectedLesson.description && (
-                        <div>
-                          <p className="font-medium text-gray-700 mb-1">Description</p>
-                          <p className="text-gray-600 leading-relaxed">{selectedLesson.description}</p>
-                        </div>
-                      )}
-
-                      {selectedLesson.videoUrl && (
-                        <div>
-                          <p className="font-medium text-gray-700 mb-2">Video</p>
-                          {selectedLesson.videoUrl.includes('youtube.com') || selectedLesson.videoUrl.includes('youtu.be') ? (
-                            <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                              <iframe
-                                src={selectedLesson.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                                className="w-full h-full"
-                                allowFullScreen
-                                title={selectedLesson.title}
-                              />
-                            </div>
-                          ) : (
-                            <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                              <video
-                                src={selectedLesson.videoUrl}
-                                controls
-                                className="w-full h-full"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {!selectedLesson.videoUrl && (
-                        <div className="bg-gray-50 rounded-xl p-4 text-center text-gray-400 text-sm">
-                          No video available for this lesson
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => setSelectedLesson(null)}
-                      className="mt-5 w-full bg-purple-600 text-white py-2.5 rounded-xl font-medium hover:bg-purple-700"
-                    >
-                      Close
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
             )}

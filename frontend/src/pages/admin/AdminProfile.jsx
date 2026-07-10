@@ -8,15 +8,6 @@ import toast from 'react-hot-toast';
 import ChangePasswordModal from '../../components/common/ChangePasswordModal';
 import { ROUTES } from '../../utils/constants';
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
-
-const getFullImageUrl = (src) => {
-  if (!src) return null;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
-  return `${API_BASE}${src}`;
-};
 
 const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/'));
 
@@ -150,7 +141,7 @@ export default function AdminProfile() {
             <div className="relative">
               {isValidImageSrc(formData.profileImage) ? (
                 <img
-                  src={getFullImageUrl(formData.profileImage)}
+                  src={formData.profileImage}
                   alt="Profile"
                   className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md"
                 />

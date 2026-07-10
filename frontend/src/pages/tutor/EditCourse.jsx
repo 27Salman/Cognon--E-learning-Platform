@@ -8,6 +8,7 @@ import ImageCropModal from '../../components/common/ImageCropModal';
 import toast from 'react-hot-toast';
 import { ROUTES, COURSE_STATUS } from '../../utils/constants';
 
+
 export default function EditCourse() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -27,6 +28,7 @@ export default function EditCourse() {
     const [lessonThumbnail, setLessonThumbnail] = useState(null);
     const [lessonThumbnailPreview, setLessonThumbnailPreview] = useState(null);
     const [lessonPdf, setLessonPdf] = useState(null);
+    const [lessonVideo, setLessonVideo] = useState(null);
     const [addingLesson, setAddingLesson] = useState(false);
     const [editingLesson, setEditingLesson] = useState(null);
     const [confirmCourse, setConfirmCourse] = useState(false);
@@ -34,12 +36,14 @@ export default function EditCourse() {
     const [deletingLesson, setDeletingLesson] = useState(false);
     const [cropSrc, setCropSrc] = useState(null);         // course thumbnail crop
     const [lessonCropSrc, setLessonCropSrc] = useState(null); // lesson thumbnail crop
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const resetLessonForm = () => {
         setLessonForm({ title: '', duration: '', videoUrl: '', description: '', chapterTitle: 'Chapter 1', chapterOrder: 1 });
         setLessonThumbnail(null);
         setLessonThumbnailPreview(null);
         setLessonPdf(null);
+        setLessonVideo(null);
         setEditingLesson(null);
     };
 
@@ -111,25 +115,35 @@ export default function EditCourse() {
         if (!lessonForm.title) return toast.error('Lesson title required');
         if (!lessonForm.chapterTitle?.trim()) return toast.error('Chapter title required');
         setAddingLesson(true);
+        setUploadProgress(0);
         try {
             const formData = new FormData();
             formData.append('title', lessonForm.title);
             if (lessonForm.description) formData.append('description', lessonForm.description);
-            if (lessonForm.videoUrl?.trim()) formData.append('videoUrl', lessonForm.videoUrl.trim());
             formData.append('duration', lessonForm.duration || 0);
             formData.append('chapterTitle', lessonForm.chapterTitle.trim());
             formData.append('chapterOrder', lessonForm.chapterOrder || 1);
             if (lessonThumbnail) formData.append('thumbnail', lessonThumbnail);
             if (lessonPdf) formData.append('pdfNotes', lessonPdf);
+            if (lessonVideo) formData.append('video', lessonVideo);
+
+            const config = {
+                onUploadProgress: (progressEvent) => {
+                    if (progressEvent.total) {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        setUploadProgress(percentCompleted);
+                    }
+                }
+            };
 
             if (editingLesson) {
-                const res = await courseAPI.updateLesson(editingLesson._id, formData);
+                const res = await courseAPI.updateLesson(editingLesson._id, formData, config);
                 const updated = res?.data || res;
                 setLessons(prev => prev.map(l => l._id === editingLesson._id ? updated : l));
                 toast.success('Lesson updated');
             } else {
                 formData.append('order', lessons.length + 1);
-                const res = await courseAPI.addLesson(id, formData);
+                const res = await courseAPI.createLesson(id, formData, config);
                 const newLesson = res?.data || res;
                 setLessons(prev => [...prev, newLesson]);
                 toast.success('Lesson added');
@@ -141,6 +155,7 @@ export default function EditCourse() {
             toast.error(errorMsg);
         } finally {
             setAddingLesson(false);
+            setUploadProgress(0);
         }
     };
 
@@ -156,6 +171,7 @@ export default function EditCourse() {
         });
         setLessonThumbnailPreview(lesson.thumbnailURL || null);
         setLessonPdf(null);
+        setLessonVideo(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -179,14 +195,21 @@ export default function EditCourse() {
         <div className="p-6 max-w-5xl">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Edit Course</h1>
-                <button
-                    onClick={() => setConfirmCourse(true)}
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
-                >
-                    Delete Course
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate(`/tutor/courses/${id}/quiz`)}
+                        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                    >
+                        Manage Quiz
+                    </button>
+                    <button
+                        onClick={() => setConfirmCourse(true)}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+                    >
+                        Delete Course
+                    </button>
+                </div>
             </div>
-
             <div className="grid grid-cols-2 gap-6 mb-6">
                 {/* Left */}
                 <div className="space-y-4">
@@ -260,8 +283,8 @@ export default function EditCourse() {
                         {editingLesson ? `Editing: ${editingLesson.title}` : 'Add New Lesson'}
                     </h2>
                     {editingLesson && (
-                        <button onClick={resetLessonForm} className="text-xs text-gray-500 hover:text-gray-700 underline">
-                            Cancel Edit
+                        <button onClick={resetLessonForm} className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700">
+                            Cancel
                         </button>
                     )}
                 </div>
@@ -280,10 +303,19 @@ export default function EditCourse() {
                     <input placeholder="Duration (minutes)" type="number" value={lessonForm.duration}
                         onChange={e => setLessonForm(p => ({ ...p, duration: e.target.value }))}
                         className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
-    
-                    <input placeholder="Video URL (YouTube or Vimeo)" value={lessonForm.videoUrl}
-                        onChange={e => setLessonForm(p => ({ ...p, videoUrl: e.target.value }))}
-                        className="border border-purple-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 col-span-2" />
+
+                    <div className="col-span-2">
+                        <label className="flex items-center justify-between cursor-pointer bg-white border border-purple-200 px-3 py-2 rounded-lg hover:bg-purple-50 transition-colors w-full text-sm text-gray-500">
+                            <span className="flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-purple-600" />
+                                {lessonVideo ? lessonVideo.name : (lessonForm.videoUrl ? 'Replace existing video (MP4, MOV)' : 'Upload Video (MP4, MOV)')}
+                            </span>
+                            <input type="file" accept="video/*" className="hidden" onChange={e => {
+                                const file = e.target.files[0];
+                                if (file) setLessonVideo(file);
+                            }} />
+                        </label>
+                    </div>
                     <textarea
                         placeholder="Lesson description (optional)"
                         value={lessonForm.description}
@@ -331,8 +363,16 @@ export default function EditCourse() {
                 </div>
 
                 <button onClick={handleAddLesson} disabled={addingLesson}
-                    className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-60">
-                    {addingLesson ? 'Saving...' : editingLesson ? 'Update Lesson' : 'Add Lesson'}
+                    className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-60 flex items-center gap-2"
+                >
+                    {addingLesson ? (
+                        <>
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            {uploadProgress > 0 ? `Uploading (${uploadProgress}%)` : 'Saving...'}
+                        </>
+                    ) : (
+                        editingLesson ? 'Update Lesson' : 'Add Lesson'
+                    )}
                 </button>
             </div>
 

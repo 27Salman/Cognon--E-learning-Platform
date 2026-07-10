@@ -28,7 +28,7 @@ export const studentAPI = {
     enrollInCourse: (courseId) => 
         api.post(`/courses/${courseId}/enroll`),
 
-    fetchEnrolledCourses: (page = 1, limit = 5) =>
+    fetchEnrolledCourses: (page = 1, limit = 100) =>
         api.get(`/courses/student/enrolled?page=${page}&limit=${limit}`),
 
     fetchCourseLessons: (courseId) => api.get(`/lessons/course/${courseId}`),
@@ -109,7 +109,37 @@ export const studentAPI = {
     // wallet payment
     payWithWallet: (couponCode) =>
         api.post('/student/checkout/wallet', { couponCode }),
-    
+
+    // Certificates
+    getCertificates: (page = 1, limit = 10, search = '', sort = '') =>
+        api.get(`/certificates`, { params: { page, limit, search, sort } }),
+
+    getCertificateById: (id) =>
+        api.get(`/certificates/${id}`),
+
+    downloadCertificate: (id) =>
+        api.get(`/certificates/${id}/download`, { responseType: 'blob' }),
+
+    // Public 
+    verifyCertificate: (certificateNumber) =>
+        api.get(`/verify/${certificateNumber}`),
+
+    // Reviews
+    submitReview: (courseId, rating, comment) =>
+        api.post(`/student/reviews/${courseId}`, { rating, comment }),
+
+    deleteReview: (courseId) =>
+        api.delete(`/student/reviews/${courseId}`),
+
+    getMyReview: (courseId) =>
+        api.get(`/student/reviews/${courseId}/mine`),
+
+    // Tutors
+    fetchTutors: (params = {}) =>
+        api.get('/catalog/tutors', { params }),
+
+    fetchTutorDetails: (tutorId) =>
+        api.get(`/catalog/tutors/${tutorId}`),
 };
 
 

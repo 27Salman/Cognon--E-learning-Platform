@@ -189,9 +189,9 @@ userSchema.methods.comparePassword = async function(candidatePassword){
 
 userSchema.methods.getProfileImageURL = function() {
     if (!this.profileImage) return null;
+    // Cloudinary URL or other full URLs
     if (this.profileImage.startsWith('http')) return this.profileImage;
-    const subfolder = this.profileImage.startsWith('user-') ? 'profiles/' : '';
-    return `${process.env.API_URL || 'http://localhost:5000'}/uploads/${subfolder}${this.profileImage}`;
+    return this.profileImage;
 };
 
 userSchema.methods.toJSON = function() {

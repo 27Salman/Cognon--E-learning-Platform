@@ -1,20 +1,15 @@
 const User = require('../models/User');
 const { USER_ROLES, USER_STATUS, TUTOR_APPROVAL_STATUS, COURSE_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
-const { deleteOldProfileImage } = require('./fileService');
+const { deleteOldProfileImage, deleteCloudinaryAsset } = require('./fileService');
+const cloudinary = require('../config/cloudinary');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
 const notificationService = require('./notificationService');
+const Certificate = require('../models/Certificate');
 
-const buildImageURL = (profileImage) => {
-    if(!profileImage) return null;
-    if(profileImage.startsWith('http')) return profileImage;
-    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const subfolder = profileImage.startsWith('user-') ? 'profiles/' : '';
-    return `${BASE_URL}/uploads/${subfolder}${profileImage}`;
-}
 
 const adminService = {
 
@@ -56,7 +51,7 @@ const adminService = {
                 .limit(5),
             Course.find({ status: COURSE_STATUS.PUBLISHED })
                 .sort({ revenue: -1 })
-                .limit(5)
+                .limit(10)
                 .select('title price revenue studentsEnrolled thumbnail category')
                 .populate('tutor', 'name')
         ]);
@@ -70,6 +65,40 @@ const adminService = {
             : 100;
 
         const monthlyChart = await this.getMonthlyRevenueChart();
+
+        const topCategories = await Order.aggregate([
+            { $match: { paymentStatus: 'completed' } },
+            { $unwind: '$courses' },
+            { $group: {
+                _id: '$courses.courseCategory',
+                revenue: { $sum: '$courses.discountedPrice' },
+                salesCount: { $sum: 1 }
+            }},
+            { $lookup: {
+                from: 'categories',
+                localField: '_id',
+                foreignField: 'name',
+                as: 'categoryInfo'
+            }},
+            { $unwind: { path: '$categoryInfo', preserveNullAndEmptyArrays: true } },
+            { $project: {
+                name: '$_id',
+                revenue: 1,
+                salesCount: 1,
+                description: '$categoryInfo.description'
+            }},
+            { $sort: { revenue: -1 } },
+            { $limit: 10 }
+        ]);
+
+        const formattedCategories = topCategories.map(cat => {
+            return {
+                name: cat.name || 'Uncategorized',
+                revenue: Math.round(cat.revenue),
+                salesCount: cat.salesCount,
+                description: cat.description || ''
+            };
+        });
 
         return {
             summary: {
@@ -90,10 +119,11 @@ const adminService = {
                 price: c.price,
                 revenue: c.revenue || 0,
                 enrolledCount: c.studentsEnrolled?.length || 0,
-                thumbnail: buildImageURL(c.thumbnail),
+                thumbnail: c.thumbnail,
                 category: c.category,
                 tutor: c.tutor
-            }))
+            })),
+            topCategories: formattedCategories
         };
     },
 
@@ -146,7 +176,7 @@ const adminService = {
             email: admin.email,
             phone: admin.phone,
             profileImage: admin.profileImage,
-            profileImageURL: buildImageURL(admin.profileImage),
+            profileImageURL: admin.profileImage,
             role: admin.role,
         };
     },
@@ -163,10 +193,15 @@ const adminService = {
         if (phone !== undefined) admin.phone = phone.trim() || null;
 
         if (file) {
-            if (admin.profileImage && !admin.profileImage.startsWith('http')) {
-                await deleteOldProfileImage(admin.profileImage);
+            if (admin.profileImage && admin.profileImage.startsWith('http') && admin.profileImage.includes('cloudinary')) {
+                try {
+                    const publicId = admin.profileImage.split('/').slice(-2).join('/').replace(/\.[^/.]+$/, '');
+                    await cloudinary.uploader.destroy(publicId);
+                } catch (e) {
+                    console.warn('Could not delete old Cloudinary profile image:', e.message);
+                }
             }
-            admin.profileImage = file.filename;
+            admin.profileImage = file.path; 
         }
 
         await admin.save();
@@ -177,7 +212,7 @@ const adminService = {
             email: admin.email,
             phone: admin.phone,
             profileImage: admin.profileImage,
-            profileImageURL: buildImageURL(admin.profileImage),
+            profileImageURL: admin.profileImage,
             role: admin.role,
         };
     },
@@ -445,9 +480,11 @@ const adminService = {
         }
 
         const lessons = await Lesson.find({ course: courseId }).sort({ order: 1, createdAt: 1 });
+        const certificateCount = await Certificate.countDocuments({ course: courseId });
 
         const courseObj = course.toJSON();
         courseObj.lessons = lessons;
+        courseObj.certificateCount = certificateCount;
 
         return courseObj;
     },
@@ -503,8 +540,15 @@ const adminService = {
             throw new Error('Cannot delete course with enrolled students. Archive it instead.');
         }
 
-        if (course.thumbnail && !course.thumbnail.startsWith('http')) {
-            await deleteOldProfileImage(course.thumbnail);
+        if (course.thumbnail) {
+            await deleteCloudinaryAsset(course.thumbnail);
+        }
+
+        const lessons = await Lesson.find({ course: courseId });
+        for (const lesson of lessons) {
+            if (lesson.thumbnail) await deleteCloudinaryAsset(lesson.thumbnail);
+            if (lesson.videoUrl) await deleteCloudinaryAsset(lesson.videoUrl);
+            if (lesson.pdfNotes) await deleteCloudinaryAsset(lesson.pdfNotes);
         }
 
         await Lesson.deleteMany({ course: courseId });
@@ -552,6 +596,23 @@ const adminService = {
                 groupMap[key] = { period: key, orders: 0, revenue: 0, platformRevenue: 0, tutorRevenue: 0 };
                 cur.setDate(cur.getDate() + 1);
             }
+        } else if (groupBy === 'weekly') {
+            const cur = new Date(rangeStart); cur.setHours(0, 0, 0, 0);
+            const end = new Date(rangeEnd);   end.setHours(0, 0, 0, 0);
+            while (cur <= end) {
+                const startOfYear = new Date(cur.getFullYear(), 0, 1);
+                const week = Math.ceil(((cur - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+                const key = `${cur.getFullYear()}-W${String(week).padStart(2, '0')}`;
+                groupMap[key] = { period: key, orders: 0, revenue: 0, platformRevenue: 0, tutorRevenue: 0 };
+                cur.setDate(cur.getDate() + 7);
+            }
+        } else if (groupBy === 'yearly') {
+            const curYear = rangeStart.getFullYear();
+            const endYear = rangeEnd.getFullYear();
+            for (let y = curYear; y <= endYear; y++) {
+                const key = `${y}`;
+                groupMap[key] = { period: key, orders: 0, revenue: 0, platformRevenue: 0, tutorRevenue: 0 };
+            }
         }
 
         for (const order of orders) {
@@ -563,6 +624,8 @@ const adminService = {
                 const startOfYear = new Date(d.getFullYear(), 0, 1);
                 const week = Math.ceil(((d - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
                 key = `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+            } else if (groupBy === 'yearly') {
+                key = `${d.getFullYear()}`;
             } else {
                 key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
             }

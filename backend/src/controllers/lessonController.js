@@ -37,6 +37,6 @@ exports.reorderLessons = asyncHandler(async (req, res) => {
 });
 
 exports.getLessonPdf = asyncHandler(async (req, res) => {
-    const filePath = await lessonService.getPdfFilePath(req.params.id, req.user.id);
-    res.sendFile(filePath);
+    const fileUrl = await lessonService.getPdfFilePath(req.params.id, req.user.id);
+    res.redirect(fileUrl);
 });

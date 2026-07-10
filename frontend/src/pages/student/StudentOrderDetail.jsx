@@ -36,7 +36,7 @@ function RetryPaymentButton({ order, user, onOrderUpdated }) {
 
             const options = {
                 key: keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
-                amount: amount * 100,
+                amount: Math.round(amount * 100),
                 currency: 'INR',
                 name: 'Cognon',
                 description: 'Course Enrollment - Retry',

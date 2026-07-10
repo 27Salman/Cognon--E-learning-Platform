@@ -4,22 +4,12 @@ import Logo from "../common/Logo";
 import NotificationBell from "../common/NotificationBell";
 import { ROUTES } from "../../utils/constants";
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
-
-const getFullImageUrl = (src) => {
-  if (!src) return null;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
-  const subfolder = src.startsWith('user-') ? 'profiles/' : '';
-  return `${API_BASE}/uploads/${subfolder}${src}`;
-};
 
 export default function TutorNavbar({ tutorInfo }) {
     const navigate = useNavigate();
     const [imgError, setImgError] = useState(false);
 
-    const imageSrc = getFullImageUrl(tutorInfo?.profileImageURL || tutorInfo?.profileImage);
+    const imageSrc = tutorInfo?.profileImageURL || tutorInfo?.profileImage;
     const showImage = imageSrc && !imgError;
 
     return (

@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { Play } from 'lucide-react';
+
 const parseVideoUrl = (url) => {
     if (!url) return null;
 
@@ -11,20 +14,35 @@ const parseVideoUrl = (url) => {
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
     if (vimeoMatch) return { platform: 'vimeo', id: vimeoMatch[1] };
 
+    // Direct video file 
+    if (
+        url.includes('cloudinary.com') ||
+        url.includes('amazonaws.com') ||
+        /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url)
+    ) {
+        return { platform: 'direct', url };
+    }
+
     return null;
 };
 
 const generateEmbedUrl = (platform, id) => {
-    if (platform === 'youtube') return `https://www.youtube.com/embed/${id}`;
-    if (platform === 'vimeo') return `https://player.vimeo.com/video/${id}`;
+    if (platform === 'youtube') return `https://www.youtube.com/embed/${id}?autoplay=1`;
+    if (platform === 'vimeo') return `https://player.vimeo.com/video/${id}?autoplay=1`;
     return null;
 };
 
-export default function VideoPlayer({ videoUrl }) {
-    const parsed = parseVideoUrl(videoUrl);
-    const embedUrl = parsed ? generateEmbedUrl(parsed.platform, parsed.id) : null;
+const getThumbnailUrl = (platform, id) => {
+    if (platform === 'youtube') return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+    return null;
+};
 
-    if (!embedUrl) {
+export default function VideoPlayer({ videoUrl, onPlay }) {
+    const [playing, setPlaying] = useState(false);
+
+    const parsed = parseVideoUrl(videoUrl);
+
+    if (!parsed) {
         return (
             <div className="w-full aspect-video bg-gray-900 rounded-xl flex items-center justify-center">
                 <p className="text-gray-400 text-sm">
@@ -34,15 +52,60 @@ export default function VideoPlayer({ videoUrl }) {
         );
     }
 
+    const handlePlay = () => {
+        setPlaying(true);
+        if (onPlay) onPlay();
+    };
+
+    if (parsed.platform === 'direct') {
+        return (
+            <div className="w-full aspect-video rounded-xl overflow-hidden bg-black">
+                <video
+                    src={parsed.url}
+                    controls
+                    className="w-full h-full"
+                    onPlay={onPlay}
+                    controlsList="nodownload"
+                >
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        );
+    }
+
+    const embedUrl = generateEmbedUrl(parsed.platform, parsed.id);
+    const thumbnail = getThumbnailUrl(parsed.platform, parsed.id);
+
     return (
-        <div className="w-full aspect-video rounded-xl overflow-hidden bg-black">
-            <iframe
-                src={embedUrl}
-                title="Lesson Video"
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-            />
+        <div className="w-full aspect-video rounded-xl overflow-hidden bg-black relative">
+            {playing ? (
+                <iframe
+                    src={embedUrl}
+                    title="Lesson Video"
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                />
+            ) : (
+                <button
+                    onClick={handlePlay}
+                    className="w-full h-full flex items-center justify-center bg-black group"
+                    aria-label="Play video"
+                >
+                    {thumbnail ? (
+                        <img
+                            src={thumbnail}
+                            alt="Video thumbnail"
+                            className="absolute inset-0 w-full h-full object-cover opacity-70"
+                        />
+                    ) : (
+                        <div className="absolute inset-0 bg-gray-900" />
+                    )}
+                    <div className="relative z-10 w-16 h-16 rounded-full bg-white/90 group-hover:bg-white flex items-center justify-center shadow-lg transition-all group-hover:scale-110">
+                        <Play className="w-7 h-7 text-purple-700 ml-1" fill="currentColor" />
+                    </div>
+                </button>
+            )}
         </div>
     );
 }

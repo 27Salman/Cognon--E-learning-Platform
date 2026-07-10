@@ -53,10 +53,15 @@ function CourseCard({ course }) {
                     </div>
                         <div className="flex items-center gap-1.5">
                             {course.offer && course.offer.discountedPrice < course.price ? (
-                                <>
-                                    <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
-                                    <span className="text-purple-600 font-bold text-sm">₹{course.offer.discountedPrice}</span>
-                                </>
+                                <div className="flex flex-col items-end">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
+                                        <span className="text-purple-600 font-bold text-sm">₹{course.offer.discountedPrice}</span>
+                                    </div>
+                                    <span className="text-[9px] font-bold text-green-600 bg-green-50 px-1 py-0.5 rounded leading-none mt-0.5">
+                                        {course.offer.discountPercentage}% OFF
+                                    </span>
+                                </div>
                             ) : (
                                 <span className="text-purple-600 font-bold text-sm">
                                     {course.price === 0 ? "Free" : `₹${course.price}`}

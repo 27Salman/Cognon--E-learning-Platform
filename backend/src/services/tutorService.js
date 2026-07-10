@@ -2,21 +2,13 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
 const Wallet = require('../models/Wallet');
-const { COURSE_STATUS } = require('../config/constants');
-const { deleteOldProfileImage } = require('./fileService');
+const Review = require('../models/Review');
+const { COURSE_STATUS, HTTP_STATUS } = require('../config/constants');
+const cloudinary = require('../config/cloudinary');
 const { createOTP, verifyOTP } = require('./otpService');
 const { sendOTPEmail } = require('./emailService');
 const mongoose = require('mongoose');
-
-
-
-const buildImageURL = (profileImage) => {
-    if (!profileImage) return null;
-    if (profileImage.startsWith('http')) return profileImage;
-    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const subfolder = profileImage.startsWith('user-') ? 'profiles/' : '';
-    return `${BASE_URL}/uploads/${subfolder}${profileImage}`;
-};
+const { deleteCloudinaryAsset } = require('./fileService');
 
 const tutorService = {
 
@@ -49,10 +41,10 @@ const tutorService = {
         if (bio !== undefined) tutor.tutorProfile.bio = bio;
 
         if (file) {
-            if (tutor.profileImage && !tutor.profileImage.startsWith('http')) {
-                await deleteOldProfileImage(tutor.profileImage);
+            if (tutor.profileImage) {
+                await deleteCloudinaryAsset(tutor.profileImage);
             }
-            tutor.profileImage = file.filename;
+            tutor.profileImage = file.path; 
         }
 
         await tutor.save({ validateModifiedOnly: true });
@@ -63,7 +55,7 @@ const tutorService = {
             email: tutor.email,
             phone: tutor.phone,
             profileImage: tutor.profileImage,
-            profileImageURL: buildImageURL(tutor.profileImage),
+            profileImageURL: tutor.profileImage,
             tutorProfile: tutor.tutorProfile,
             role: tutor.role,
             status: tutor.status,
@@ -570,6 +562,115 @@ const tutorService = {
         return { summary, courseBreakdown, transactions, dateFrom, dateTo };
 
     },
+
+    async getPublicTutors({ search, page, limit, sortBy } = {}) {
+        const query = {
+            role: 'tutor',
+            status: 'active',
+            'tutorProfile.approvalStatus': 'approved'
+        };
+
+        if (search && search.trim()) {
+            query.$or = [
+                { name: { $regex: search.trim(), $options: 'i' } },
+                { 'tutorProfile.subject': { $regex: search.trim(), $options: 'i' } }
+            ];
+        }
+
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 8));
+        const skip = (pageNum - 1) * limitNum;
+
+        let sortOption = { name: 1 };
+        if (sortBy === 'name_desc') {
+            sortOption = { name: -1 };
+        } else if (sortBy === 'relevance') {
+            sortOption = { createdAt: -1 };
+        }
+
+        const [tutors, totalFiltered] = await Promise.all([
+            User.find(query)
+                .select('name email profileImage tutorProfile totalCourses totalStudents')
+                .sort(sortOption)
+                .skip(skip)
+                .limit(limitNum),
+            User.countDocuments(query)
+        ]);
+
+        const tutorsWithStats = await Promise.all(tutors.map(async t => {
+            const courses = await Course.find({ tutor: t._id, status: 'published' });
+            let totalStudents = 0;
+            let ratingSum = 0;
+            let coursesWithRating = 0;
+            courses.forEach(c => {
+                if (c.studentsEnrolled) {
+                    totalStudents += c.studentsEnrolled.length;
+                }
+                if (c.rating > 0) {
+                    ratingSum += c.rating;
+                    coursesWithRating++;
+                }
+            });
+            const averageRating = coursesWithRating > 0 ? Number((ratingSum / coursesWithRating).toFixed(1)) : 0;
+            const tObj = t.toJSON();
+            tObj.profileImageURL = t.getProfileImageURL();
+            tObj.averageRating = averageRating;
+            tObj.totalCourses = courses.length;
+            tObj.totalStudents = totalStudents;
+            return tObj;
+        }));
+
+        return {
+            tutors: tutorsWithStats,
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(totalFiltered / limitNum),
+                totalTutors: totalFiltered,
+                hasNext: pageNum < Math.ceil(totalFiltered / limitNum),
+                hasPrev: pageNum > 1
+            }
+        };
+    },
+
+    async getPublicTutorDetails(tutorId) {
+        const tutor = await User.findById(tutorId).select('-password');
+
+        if (!tutor || tutor.role !== 'tutor') {
+            const err = new Error('Tutor not found');
+            err.statusCode = HTTP_STATUS.NOT_FOUND;
+            throw err;
+        }
+
+        const courses = await Course.find({ tutor: tutorId, status: 'published' });
+        const totalCourses = courses.length;
+
+        const uniqueStudents = new Set();
+        courses.forEach(course => {
+            if (course.studentsEnrolled) {
+                course.studentsEnrolled.forEach(s => uniqueStudents.add(s.toString()));
+            }
+        });
+        const totalStudents = uniqueStudents.size;
+
+        const courseIds = courses.map(c => c._id);
+        const totalReviews = await Review.countDocuments({ course: { $in: courseIds } });
+
+        tutor.totalCourses = totalCourses;
+        tutor.totalStudents = totalStudents;
+        await tutor.save({ validateModifiedOnly: true });
+
+        const tutorObj = tutor.toJSON();
+        tutorObj.profileImageURL = tutor.getProfileImageURL();
+
+        return {
+            tutor: tutorObj,
+            stats: {
+                totalCourses,
+                totalStudents,
+                totalReviews
+            }
+        };
+    }
 
 };
 

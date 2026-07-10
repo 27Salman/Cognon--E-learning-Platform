@@ -9,6 +9,7 @@ import {
     Clock, Heart, Tag
 } from "lucide-react";
 import { ROUTES } from "../../utils/constants";
+import StarRating from "../../components/common/StarRating";
 
 function formatDuration(minutes) {
     if (!minutes || minutes === 0) return null;
@@ -36,9 +37,10 @@ function CourseCardLarge({ course }) {
             <div className="p-3">
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
                     <span className="text-purple-500 font-medium">{course.category || "Design"}</span>
-                    {formatDuration(course.totalDuration) && (
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatDuration(course.totalDuration)}</span>
-                    )}
+                    <div className="flex items-center gap-1">
+                        <StarRating rating={course.rating || 0} size={11} />
+                        <span className="text-[10px] text-gray-500">({course.reviewCount || 0})</span>
+                    </div>
                 </div>
                 <h3 className="font-semibold text-gray-800 text-sm leading-snug mb-1 line-clamp-2">{course.title}</h3>
                 {course.description && <p className="text-xs text-gray-500 line-clamp-2 mb-2">{course.description}</p>}
@@ -51,10 +53,15 @@ function CourseCardLarge({ course }) {
                     </div>
                     <div className="flex items-center gap-1.5">
                         {course.offer && course.offer.discountedPrice < course.price ? (
-                            <>
-                                <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
-                                <span className="text-purple-600 font-bold text-sm">₹{course.offer.discountedPrice}</span>
-                            </>
+                            <div className="flex flex-col items-end">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
+                                    <span className="text-purple-600 font-bold text-sm">₹{course.offer.discountedPrice}</span>
+                                </div>
+                                <span className="text-[9px] font-bold text-green-600 bg-green-50 px-1 py-0.5 rounded leading-none mt-0.5">
+                                    {course.offer.discountPercentage}% OFF
+                                </span>
+                            </div>
                         ) : (
                             <span className="text-purple-600 font-bold text-sm">
                                 {course.price === 0 ? 'Free' : `₹${course.price}`}
@@ -92,9 +99,10 @@ function CourseCardCompact({ course }) {
             <div className="p-3">
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
                     <span className="text-purple-500 font-medium">{course.category || "Design"}</span>
-                    {formatDuration(course.totalDuration) && (
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatDuration(course.totalDuration)}</span>
-                    )}
+                    <div className="flex items-center gap-1">
+                        <StarRating rating={course.rating || 0} size={11} />
+                        <span className="text-[10px] text-gray-500">({course.reviewCount || 0})</span>
+                    </div>
                 </div>
                 <h3 className="font-semibold text-gray-800 text-sm leading-snug line-clamp-2 mb-2">{course.title}</h3>
                 <div className="flex items-center justify-between">
@@ -105,12 +113,21 @@ function CourseCardCompact({ course }) {
                         <span className="text-xs text-gray-600">{course.tutor?.name || "Tutor"}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                        {course.originalPrice && course.originalPrice > course.price && (
-                            <span className="text-xs text-gray-400 line-through">₹{course.originalPrice}</span>
+                        {course.offer && course.offer.discountedPrice < course.price ? (
+                            <div className="flex flex-col items-end">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
+                                    <span className="text-purple-600 font-bold text-sm">₹{course.offer.discountedPrice}</span>
+                                </div>
+                                <span className="text-[9px] font-bold text-green-600 bg-green-50 px-1 py-0.5 rounded leading-none mt-0.5">
+                                    {course.offer.discountPercentage}% OFF
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="text-purple-600 font-bold text-sm">
+                                {course.price === 0 ? "Free" : `₹${course.price}`}
+                            </span>
                         )}
-                        <span className="text-purple-600 font-bold text-sm">
-                            {course.price === 0 ? "Free" : `₹${course.price}`}
-                        </span>
                     </div>
                 </div>
             </div>

@@ -11,23 +11,23 @@ const TUTOR_APPROVAL_STATUS = {
 }
 
 const USER_STATUS = {
-    ACTIVE: 'active',                
-    BLOCKED: 'blocked',         
-    INACTIVE: 'inactive',     
+    ACTIVE: 'active',
+    BLOCKED: 'blocked',
+    INACTIVE: 'inactive',
 };
 
 const COURSE_STATUS = {
-    DRAFT: 'draft',           
-    PUBLISHED: 'published',   
-    ARCHIVED: 'archived',      
+    DRAFT: 'draft',
+    PUBLISHED: 'published',
+    ARCHIVED: 'archived',
     PENDING_REVIEW: 'pending_review'
 };
 
 const ENROLLMENT_STATUS = {
-    ENROLLED: 'enrolled',       
-    IN_PROGRESS: 'in_progress', 
-    COMPLETED: 'completed',      
-    DROPPED: 'dropped'          
+    ENROLLED: 'enrolled',
+    IN_PROGRESS: 'in_progress',
+    COMPLETED: 'completed',
+    DROPPED: 'dropped'
 };
 
 const PAGINATION = {
@@ -57,7 +57,7 @@ const MESSAGES = {
         DELETED: 'Resource deleted successfully',
         FETCHED: 'Resource fetched successfully'
     },
-  
+
 
     ERROR: {
         INVALID_CREDENTIALS: 'Invalid email or password',
@@ -112,8 +112,8 @@ const OFFER_TYPE = {
 };
 
 const PLATFORM_COMMISSION = {
-    RATE: 0.10, 
-    TUTOR_SHARE: 0.90 
+    RATE: 0.10,
+    TUTOR_SHARE: 0.90
 };
 
 
@@ -147,6 +147,9 @@ const NOTIFICATION_ACTIONS = {
     WALLET_STUDENT:     () => '/student/wallet',
     STUDENT_MY_COURSES: () => '/student/my-courses',
     STUDENT_CART:       () => '/student/cart',
+    QUIZ_AVAILABLE:     (courseId) => `/student/my-courses/${courseId}`,
+    QUIZ_RESULT:        (courseId) => `/student/my-courses/${courseId}`,
+    CERTIFICATE_GENERATED: () => '/student/certificates',
 
     // Tutor
     TUTOR_DASHBOARD:    () => '/tutor/dashboard',
@@ -162,6 +165,39 @@ const NOTIFICATION_ACTIONS = {
     ADMIN_COURSES:      () => '/admin/courses',
 };
 
+const QUIZ_STATUS = {
+    STARTED: 'started',
+    SUBMITTED: 'submitted',
+    TIMEOUT: 'time_out',
+    AUTO_SUBMISSION_VIOLATION: 'auto_submitted_violation',
+};
+
+const SOCKET_EVENTS = {
+    JOIN: 'join',
+    DISCONNECT: 'disconnect',
+    USER_ONLINE: 'user-online',
+    USER_OFFLINE: 'user-offline',
+    SEND_MESSAGE: 'send-message',
+    MESSAGE_SAVED: 'message-saved',
+    NEW_MESSAGE: 'new-message',
+    MESSAGE_ERROR: 'message-error',
+    MESSAGE_DELIVERED: 'message-delivered',
+    MESSAGE_STATUS_UPDATE: 'message-status-update',
+    MESSAGES_READ: 'messages-read',
+    MESSAGES_READ_ACK: 'messages-read-ack',
+    TYPING_START: 'typing-start',
+    USER_TYPING: 'user-typing',
+    TYPING_STOP: 'typing-stop',
+    USER_STOPPED_TYPING: 'user-stopped-typing',
+    INITIATE_CALL: 'initiate-call',
+    INCOMING_CALL: 'incoming-call',
+    REQUEST_CALL: 'request-call',
+    CALL_REQUESTED: 'call-requested',
+    REJECT_CALL: 'reject-call',
+    CALL_REJECTED: 'call-rejected',
+    END_CALL: 'end-call',
+    CALL_ENDED: 'call-ended'
+};
 
 module.exports = {
     USER_ROLES,
@@ -181,5 +217,7 @@ module.exports = {
     PLATFORM_COMMISSION,
     TUTOR_HOLD_DAYS,
     NOTIFICATION_TYPES,
-    NOTIFICATION_ACTIONS
+    NOTIFICATION_ACTIONS,
+    QUIZ_STATUS,
+    SOCKET_EVENTS,
 };

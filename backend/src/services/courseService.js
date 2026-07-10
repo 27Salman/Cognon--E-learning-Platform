@@ -4,8 +4,11 @@ const Lesson = require('../models/Lesson');
 const Category = require('../models/Category');
 const Cart = require('../models/Cart');
 const Wishlist = require('../models/Wishlist');
-const notificationService = require('./notificationService');
 const { COURSE_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
+const { deleteCloudinaryAsset } = require('./fileService');
+const notificationService = require('./notificationService');
+const Certificate = require('../models/Certificate');
+
 
 function groupByChapter(lessons) {
     const map = {};
@@ -38,7 +41,7 @@ const courseService = {
             offerPercentage: Number(offerPercentage) || 0,
             category,
             tutor: tutorId,
-            thumbnail: file ? file.filename : null
+            thumbnail: file ? file.path : null 
         });
 
         await course.save();
@@ -66,7 +69,12 @@ const courseService = {
         if(statusChanged){
             course.status = status;
         }
-        if(file) course.thumbnail = file.filename;
+        if(file) {
+            if (course.thumbnail) {
+                await deleteCloudinaryAsset(course.thumbnail);
+            }
+            course.thumbnail = file.path;
+        }
 
         await course.save();
 
@@ -124,6 +132,17 @@ const courseService = {
             { $pull: { 'tutorProfile.coursesCreated': courseId } }
         );
 
+        if (course.thumbnail) {
+            await deleteCloudinaryAsset(course.thumbnail);
+        }
+
+        const lessons = await Lesson.find({ course: courseId });
+        for (const lesson of lessons) {
+            if (lesson.thumbnail) await deleteCloudinaryAsset(lesson.thumbnail);
+            if (lesson.videoUrl) await deleteCloudinaryAsset(lesson.videoUrl);
+            if (lesson.pdfNotes) await deleteCloudinaryAsset(lesson.pdfNotes);
+        }
+
         await Course.findByIdAndDelete(courseId);
         return { message: 'Course deleted successfully' };
     },
@@ -152,23 +171,57 @@ const courseService = {
     },
 
     async getAllPublishedCourses(filters = {}, page = 1, limit = 5){
-        const skip = (page -1) * limit;
+        const skip = (page - 1) * limit;
         const query = { status: COURSE_STATUS.PUBLISHED };
 
         if(filters.category){
             query.category = new RegExp(filters.category, 'i');
         }
 
+        if(filters.search && filters.search.trim()){
+            query.$or = [
+                { title: { $regex: filters.search.trim(), $options: 'i' } },
+                { description: { $regex: filters.search.trim(), $options: 'i' } }
+            ];
+        }
+
+        if(filters.tutor){
+            query.tutor = filters.tutor;
+        }
+
+        let sortObj = { createdAt: -1 };
+        if (filters.sortBy === 'rating_desc') {
+            sortObj = { rating: -1 };
+        } else if (filters.sortBy === 'price_asc') {
+            sortObj = { price: 1 };
+        } else if (filters.sortBy === 'price_desc') {
+            sortObj = { price: -1 };
+        }
+
         const courses = await Course.find(query)
-            .populate('tutor', 'name email')
-            .sort({ createdAt: -1 })
+            .populate('tutor', 'name email profileImage')
+            .sort(sortObj)
             .skip(skip)
             .limit(limit);
 
         const total = await Course.countDocuments(query);
 
+        const coursesWithOffers = courses.map((course) => {
+            const courseObj = course.toJSON();
+            if (course.offerPercentage > 0) {
+                const discountedPrice = Math.round(
+                    course.price - (course.price * course.offerPercentage) / 100
+                );
+                courseObj.offer = {
+                    discountPercentage: course.offerPercentage,
+                    discountedPrice
+                };
+            }
+            return courseObj;
+        });
+
         return {
-            courses,
+            courses: coursesWithOffers,
             pagination: {
                 currentPage: page,
                 totalPages: Math.ceil(total / limit),
@@ -206,13 +259,16 @@ const courseService = {
             return lesson;
         });
         
+        const certificateCount = await Certificate.countDocuments({ course: courseId });
+        
         const courseObj = course.toJSON();
         delete courseObj.studentsEnrolled;
         return {
             ...courseObj,
             lessons: sanitizedLessons,
             chapters: groupByChapter(sanitizedLessons),
-            isEnrolled
+            isEnrolled,
+            certificateCount
         };
     },
 

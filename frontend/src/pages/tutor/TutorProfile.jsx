@@ -8,16 +8,6 @@ import { tutorAPI } from '../../api/tutorAPI';
 import { validateImageFile } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
-
-const getFullImageUrl = (src) => {
-  if (!src) return null;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
-  return `${API_BASE}${src}`;
-};
-
 export default function TutorProfile() {
     const { tutorInfo, onUpdateProfile } = useOutletContext();
     const [isEditing, setIsEditing] = useState(false);
@@ -74,11 +64,8 @@ export default function TutorProfile() {
         }
 
         selectedFileRef.current = file;
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setFormData(prev => ({ ...prev, profileImage: reader.result }));
-        };
-        reader.readAsDataURL(file);
+        setFormData(prev => ({ ...prev, profileImage: URL.createObjectURL(file) }));
+        e.target.value = '';
     };
 
     const handleSave = async () => {
@@ -157,7 +144,7 @@ export default function TutorProfile() {
                     <div className="relative">
                         {formData.profileImage ? (
                             <img
-                                src={getFullImageUrl(formData.profileImage)}
+                                src={formData.profileImage}
                                 alt="Profile"
                                 className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
                             />
@@ -310,9 +297,10 @@ export default function TutorProfile() {
                     <div className="mt-8 flex gap-4">
                         <button
                             onClick={handleSave}
-                            className="px-8 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                            disabled={loading}
+                            className={`px-8 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors ${loading ? 'opacity-70 cursor-wait' : ''}`}
                         >
-                            Save Changes
+                            {loading ? 'Saving...' : 'Save Changes'}
                         </button>
                         <button
                             onClick={handleCancel}

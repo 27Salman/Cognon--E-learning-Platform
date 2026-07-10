@@ -11,7 +11,7 @@ const connectDB = require("./src/config/db");
 const { HTTP_STATUS } = require('./src/config/constants');
 const { errorHandler, notFound } = require('./src/middleware/errorMiddleware');
 
-require('./src/controllers/googleAuthController'); 
+require('./src/controllers/googleAuthController');
 
 const { authRoutes } = require('./src/routes/authRoutes');
 const { adminRoutes } = require('./src/routes/adminRoutes');
@@ -27,6 +27,9 @@ const checkoutController = require('./src/controllers/checkoutController');
 const { startHoldReleaseJob } = require('./src/jobs/holdReleaseJob');
 const { initSocket } = require('./src/socket/socketManager');
 const { notificationRoutes } = require('./src/routes/notificationRoutes');
+const quizRoutes = require('./src/routes/quizRoutes');
+const certificateRoutes = require('./src/routes/certificateRoutes');
+const { publicCertificateRoutes } = require('./src/routes/certificateRoutes');
 
 const PORT = process.env.PORT || 5000;
 
@@ -36,7 +39,33 @@ connectDB();
 startHoldReleaseJob();
 
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:     ["'self'"],
+      scriptSrc:      ["'self'", "'unsafe-inline'", "'unsafe-eval'",
+                       "https://checkout.razorpay.com",
+                       "https://api.razorpay.com",
+                       "https://cdn.razorpay.com",
+                       "https://lumberjack.razorpay.com"],
+      styleSrc:       ["'self'", "'unsafe-inline'",
+                       "https://fonts.googleapis.com",
+                       "https://checkout.razorpay.com"],
+      fontSrc:        ["'self'", "data:", "https://fonts.gstatic.com", "https:"],
+      frameSrc:       ["'self'",
+                       "https://api.razorpay.com",
+                       "https://checkout.razorpay.com"],
+      connectSrc:     ["'self'",
+                       "https://api.razorpay.com",
+                       "https://checkout.razorpay.com",
+                       "https://lumberjack.razorpay.com",
+                       "https://cdn.razorpay.com",
+                       "wss:", "ws:"],
+      imgSrc:         ["'self'", "data:", "blob:", "https:"],
+      objectSrc:      ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
 }));
 
 const corsOptions = {
@@ -60,15 +89,15 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use('/uploads', (req, res, next) => {
-    if (req.path.startsWith('/pdfs/')) {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-    next();
+  if (req.path.startsWith('/pdfs/')) {
+    return res.status(403).json({ success: false, message: 'Access denied' });
+  }
+  next();
 }, express.static(path.join(__dirname, 'src/uploads')));
 
 app.use('/api', (req, res, next) => {
-    res.set('Cache-Control', 'no-store');
-    next();
+  res.set('Cache-Control', 'no-store');
+  next();
 });
 
 app.use('/api/auth', authRoutes);
@@ -84,9 +113,10 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/courses', progressRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/coupons', couponRoutes);
-
 app.use('/api/notifications', notificationRoutes);
-
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/certificates', certificateRoutes);
+app.use('/api/verify', publicCertificateRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(HTTP_STATUS.OK).json({
@@ -97,7 +127,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.use(notFound);
+// Serve React build in production 
+const FRONTEND_DIST = path.join(__dirname, '../frontend/dist');
+
+app.use(express.static(FRONTEND_DIST));
+
+// All non-API routes → hand off to React Router
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+});
+// ────────────────────────────────
+
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {

@@ -5,17 +5,9 @@ import { logoutUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { BarChart3, User, BookOpen, TrendingUp, MessageSquare, LogOut, Wallet } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
+import ConfirmModal from '../common/ConfirmModal';
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
 
-const getFullImageUrl = (src) => {
-  if (!src) return null;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
-  const subfolder = src.startsWith('user-') ? 'profiles/' : '';
-  return `${API_BASE}/uploads/${subfolder}${src}`;
-};
 
 const menuItems = [
     { name: 'Dashboard',    path: ROUTES.TUTOR_DASHBOARD, icon: BarChart3 },
@@ -31,17 +23,19 @@ export default function TutorSidebar({ tutorInfo }) {
     const location = useLocation();
     const dispatch = useDispatch();
     const [imgError, setImgError] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const isActive = (path) => location.pathname.startsWith(path);
 
     const handleLogout = async () => {
+        setShowLogoutModal(false);
         localStorage.removeItem('tutorInfo');
         await dispatch(logoutUser());
         toast.success('Logged out successfully');
         navigate(ROUTES.LOGIN, { replace: true });
     };
 
-    const imageSrc = getFullImageUrl(tutorInfo?.profileImageURL || tutorInfo?.profileImage);
+    const imageSrc = tutorInfo?.profileImageURL || tutorInfo?.profileImage;
     const showImage = imageSrc && !imgError;
 
     return (
@@ -77,12 +71,21 @@ export default function TutorSidebar({ tutorInfo }) {
                         {name}
                     </button>
                 ))}
-                <button onClick={handleLogout}
+                <button onClick={() => setShowLogoutModal(true)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
                     <LogOut className="w-4 h-4 flex-shrink-0" />
                     Logout
                 </button>
             </nav>
+
+            <ConfirmModal
+                isOpen={showLogoutModal}
+                title="Log Out"
+                message="Are you sure you want to log out?"
+                confirmText="Log Out"
+                onConfirm={handleLogout}
+                onClose={() => setShowLogoutModal(false)}
+            />
         </aside>
     );
 }

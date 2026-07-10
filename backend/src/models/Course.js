@@ -94,9 +94,7 @@ courseSchema.virtual('enrolledCount').get(function () {
 
 courseSchema.virtual('thumbnailURL').get(function () {
     if (!this.thumbnail) return null;
-    if (this.thumbnail.startsWith('http')) return this.thumbnail;
-    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    return `${BASE_URL}/uploads/courses/${this.thumbnail}`;
+    return this.thumbnail;
 });
 
 courseSchema.index({ tutor: 1, status: 1 });
