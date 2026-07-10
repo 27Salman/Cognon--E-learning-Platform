@@ -268,8 +268,8 @@ export default function TutorChat() {
     };
 
         const getOtherParticipant = (chat) => {
-        const myId = user?._id || user?.id;
-        return chat?.participants?.find(p => p._id !== myId && p.id !== myId);
+        const myId = (user?._id || user?.id)?.toString();
+        return chat?.participants?.find(p => (p._id || p.id)?.toString() !== myId);
     };
 
     const isOnline = (userId) => onlineUsers.has(userId?.toString());
@@ -282,11 +282,11 @@ export default function TutorChat() {
     };
 
     const buildSidebarItems = () => {
-        const myId = user?._id || user?.id;
+        const myId = (user?._id || user?.id)?.toString();
         const items = [];
         const seenIds = new Set();
         chats.forEach(chat => {
-            const other = chat.participants?.find(p => (p._id || p.id) !== myId);
+            const other = chat.participants?.find(p => (p._id || p.id)?.toString() !== myId);
             if (!other) return;
             const otherId = (other._id || other.id)?.toString();
             seenIds.add(otherId);

@@ -4,9 +4,9 @@ const Category = require('../models/Category');
 const { HTTP_STATUS } = require('../config/constants');
 
 exports.getCourses = asyncHandler(async (req, res) => {
-    const { category, search, page, limit, tutor } = req.query;
+    const { category, search, page, limit, tutor, sortBy } = req.query;
     const data = await courseService.getAllPublishedCourses(
-        { category, search, tutor },
+        { category, search, tutor, sortBy },
         Number(page) || 1,
         Number(limit) || 12
     );

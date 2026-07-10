@@ -189,9 +189,18 @@ const courseService = {
             query.tutor = filters.tutor;
         }
 
+        let sortObj = { createdAt: -1 };
+        if (filters.sortBy === 'rating_desc') {
+            sortObj = { rating: -1 };
+        } else if (filters.sortBy === 'price_asc') {
+            sortObj = { price: 1 };
+        } else if (filters.sortBy === 'price_desc') {
+            sortObj = { price: -1 };
+        }
+
         const courses = await Course.find(query)
             .populate('tutor', 'name email profileImage')
-            .sort({ createdAt: -1 })
+            .sort(sortObj)
             .skip(skip)
             .limit(limit);
 

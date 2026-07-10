@@ -36,7 +36,9 @@ const cartService = {
             item => item.course.toString() === courseId.toString()
         );
         if (alreadyInCart) {
-            throw new Error('Course is already in your cart');
+            const error = new Error('Course is already in your cart');
+            error.statusCode = 400;
+            throw error;
         }
 
         cart.items.push({

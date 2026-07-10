@@ -1,10 +1,35 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, SlidersHorizontal, BookOpen, ChevronRight } from "lucide-react";
+import { Search, SlidersHorizontal, BookOpen, ChevronRight, Star } from "lucide-react";
 import StudentNavbar from "../../components/student/StudentNavbar";
 import Footer from "../../components/common/Footer";
 import Pagination from "../../components/common/Pagination";
 import { studentAPI } from "../../api/studentAPI";
+
+function AvatarSVG({ name, size = 64 }) {
+  const colors = [
+    ['#7c3aed', '#a78bfa'], ['#6d28d9', '#8b5cf6'],
+    ['#5b21b6', '#c4b5fd'], ['#4c1d95', '#ddd6fe'],
+  ];
+  const idx = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % colors.length;
+  const [bg, fg] = colors[idx];
+  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const gradientId = `av-${idx}-${name.replace(/\s/g, '')}`;
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" style={{ borderRadius: '50%', flexShrink: 0 }}>
+      <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={bg} />
+          <stop offset="100%" stopColor={fg} />
+        </linearGradient>
+      </defs>
+      <circle cx="32" cy="32" r="32" fill={`url(#${gradientId})`} />
+      <text x="32" y="32" textAnchor="middle" dominantBaseline="central"
+        fill="white" fontSize="22" fontWeight="600" fontFamily="Inter, sans-serif">{initials}</text>
+    </svg>
+  );
+}
 
 export default function TutorList() {
     const navigate = useNavigate();
@@ -160,8 +185,17 @@ export default function TutorList() {
 
                 {/* Tutor Grid */}
                 {loading ? (
-                    <div className="py-24 flex items-center justify-center">
-                        <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                        {[...Array(8)].map((_, i) => (
+                            <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 animate-pulse h-[380px] overflow-hidden">
+                                <div className="h-36 bg-gray-200" />
+                                <div className="p-5 space-y-3">
+                                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                                    <div className="h-3 bg-gray-200 rounded w-2/3" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : filteredTutors.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -169,33 +203,44 @@ export default function TutorList() {
                             <div
                                 key={tutor._id}
                                 onClick={() => navigate(`/tutors/${tutor._id}`)}
-                                className="bg-white border border-gray-100 hover:border-purple-100 rounded-2xl p-6 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition duration-300 flex flex-col items-center"
+                                className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between h-[380px]"
                             >
-                                {/* Circle Avatar */}
-                                <div className="relative w-36 h-36 rounded-full bg-purple-50 overflow-hidden mb-5 border-4 border-gray-50 flex items-center justify-center flex-shrink-0 shadow-inner">
+                                {/* Avatar header */}
+                                <div className="h-36 bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center relative overflow-hidden flex-shrink-0">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-100/50 to-transparent" />
                                     {tutor.profileImageURL ? (
                                         <img
                                             src={tutor.profileImageURL}
                                             alt={tutor.name}
-                                            className="w-full h-full object-cover transition duration-300 transform hover:scale-105"
+                                            className="w-16 h-16 rounded-full object-cover border-2 border-white shadow relative z-10"
                                         />
                                     ) : (
-                                        <div className="text-3xl font-bold text-purple-600 select-none">
-                                            {tutor.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                                        </div>
+                                        <AvatarSVG name={tutor.name} size={72} />
                                     )}
                                 </div>
 
-                                <h3 className="font-bold text-gray-900 text-base leading-snug hover:text-purple-600 transition-colors">
-                                    {tutor.name}
-                                </h3>
-                                <p className="text-xs text-purple-600 font-medium mt-1 uppercase tracking-wider">
-                                    {tutor.tutorProfile?.subject || "Expert Instructor"}
-                                </p>
-
-                                <button className="mt-5 px-6 py-2  text-white bg-purple-700 rounded-full text-xs font-semibold hover:bg-purple-500 hover:text-white transition duration-200 w-full">
-                                    View Profile
-                                </button>
+                                <div className="p-5 flex flex-col justify-between flex-grow">
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 text-sm mb-0.5 line-clamp-1">{tutor.name}</h3>
+                                        <p className="text-purple-600 text-xs font-medium mb-3 line-clamp-2 h-8 leading-tight">{tutor.tutorProfile?.subject || 'Instructor'}</p>
+                                    </div>
+                                    <div className="mt-auto">
+                                        <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+                                            <div className="flex items-center gap-1">
+                                                <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                                <span className="font-semibold text-gray-750">{(tutor.averageRating ?? 0).toFixed(1)}</span>
+                                            </div>
+                                            <span className="text-gray-300">|</span>
+                                            <span>{tutor.totalStudents ?? 0} students</span>
+                                        </div>
+                                        <p className="text-xs text-gray-400 mb-4">{tutor.totalCourses ?? 0} courses published</p>
+                                        <button
+                                            className="w-full py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-300 text-xs font-medium hover:shadow-md"
+                                        >
+                                            View Profile
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>

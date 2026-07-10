@@ -66,11 +66,19 @@ export default function Checkout() {
             const directCourseId = location.state?.directCourseId;
             if (directCourseId) {
                 try {
-                    await studentAPI.addToCart(directCourseId);
+                    const cartRes = await studentAPI.getCart();
+                    const cartItems = cartRes.data?.items || [];
+                    const alreadyInCart = cartItems.some(item => 
+                        item.course === directCourseId || item.course?._id === directCourseId
+                    );
+                    
+                    if (!alreadyInCart) {
+                        await studentAPI.addToCart(directCourseId);
+                    }
                 } catch (err) {
                     const msg = err.response?.data?.message || '';
-                    if (!msg.includes('already in your cart') && !msg.includes('already purchased')) {
-                        toast.error(msg || 'Failed to add course to cart');
+                    if (!msg.includes('already purchased')) {
+                        toast.error(msg || 'Failed to process course');
                         navigate(ROUTES.STUDENT_COURSE_CATALOG);
                         return;
                     }
@@ -168,7 +176,7 @@ export default function Checkout() {
 
             const options = {
                 key: keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
-                amount: amount * 100,
+                amount: Math.round(amount * 100),
                 currency: 'INR',
                 name: 'Cognon',
                 description: 'Course Enrollment',

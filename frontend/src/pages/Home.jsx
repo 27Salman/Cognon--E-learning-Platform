@@ -12,9 +12,9 @@ import {
 import Logo from '../components/common/Logo';
 import StarRating from '../components/common/StarRating';
 
-const API_BASE = import.meta.env.VITE_API_URL
+const API_BASE = (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost'))
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:5000';
+  : window.location.origin;
 
 function useScrollReveal(threshold = 0.12) {
   const ref = useRef(null);
@@ -66,60 +66,77 @@ function AvatarSVG({ name, size = 64 }) {
 }
 
 function CategoryCard({ category, navigate }) {
-  const [coords, setCoords] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setCoords({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    });
+  const getCategoryIcon = (title) => {
+    const t = title.toLowerCase();
+    if (t.includes('web') || t.includes('dev') || t.includes('code') || t.includes('software')) return Code;
+    if (t.includes('design') || t.includes('art') || t.includes('creative') || t.includes('ui')) return Palette;
+    if (t.includes('business') || t.includes('finance') || t.includes('management')) return Briefcase;
+    if (t.includes('marketing') || t.includes('sell') || t.includes('growth')) return BarChart3;
+    if (t.includes('science') || t.includes('math') || t.includes('data')) return Globe;
+    return BookOpen;
   };
+
+  const IconComponent = getCategoryIcon(category.title);
 
   return (
     <div
       onClick={() => navigate(ROUTES.LOGIN)}
-      onMouseMove={handleMouseMove}
-      className="reveal-child relative bg-white rounded-2xl p-6 cursor-pointer border border-gray-200/80 shadow-sm hover:shadow-md hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 overflow-hidden group flex flex-col justify-between min-h-[180px]"
+      className="flex-shrink-0 w-72 bg-white rounded-2xl p-6 cursor-pointer border border-gray-100 shadow-sm hover:shadow-xl hover:border-purple-300 hover:-translate-y-1.5 transition-all duration-300 group flex flex-col justify-between min-h-[160px]"
+      style={{ scrollSnapAlign: 'start' }}
     >
-      {/* Decorative accent gradient mesh on hover */}
-      <div className={`absolute -right-16 -top-16 w-32 h-32 rounded-full bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-40 blur-xl transition-all duration-500 group-hover:scale-150 pointer-events-none`} />
-
-
-
-      <div className="relative z-10 flex flex-col h-full justify-between">
-        {/* Top: Icon and Title */}
-        <div>
-          <div className="flex justify-between items-start mb-4">
-            <div className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm ${category.iconColor}`}>
-              <category.icon className="w-6 h-6" />
-            </div>
-            {category.trending && (
-              <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
-                Trending
-              </span>
-            )}
-          </div>
-
-          <h3 className="font-bold text-lg text-gray-900 mb-1 group-hover:text-purple-600 transition-colors">
-            {category.title}
-          </h3>
+      <div className="flex justify-between items-start mb-4">
+        <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm">
+          <IconComponent className="w-6 h-6" />
         </div>
-
-        {/* Bottom: Course count & Explore link */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-          <p className={`text-xs font-semibold ${category.textColor}`}>
-            {category.courses}
-          </p>
-          <div className="flex items-center gap-1 text-purple-600 font-semibold group-hover:translate-x-1 transition-transform duration-300 text-xs">
-            <span>Explore</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
+      </div>
+      <div>
+        <h3 className="font-bold text-base text-gray-900 mb-1 group-hover:text-purple-600 transition-colors">
+          {category.title}
+        </h3>
+        <div className="flex items-center gap-3 text-xs text-gray-400 mt-2 pt-2 border-t border-gray-50">
+          <span>{category.coursesCount} {category.coursesCount === 1 ? 'course' : 'courses'}</span>
+          <span>•</span>
+          <span>{category.enrollmentsCount} {category.enrollmentsCount === 1 ? 'enrollment' : 'enrollments'}</span>
         </div>
       </div>
     </div>
   );
 }
+
+const fallbackTutors = [
+  {
+    name: 'Sarah Drasner',
+    tutorProfile: { subject: 'Vue.js & Frontend Architecture' },
+    averageRating: 4.9,
+    totalStudents: 15420,
+    totalCourses: 12,
+    profileImageURL: null
+  },
+  {
+    name: 'Addy Osmani',
+    tutorProfile: { subject: 'Web Performance & Chrome DevTools' },
+    averageRating: 4.8,
+    totalStudents: 32100,
+    totalCourses: 8,
+    profileImageURL: null
+  },
+  {
+    name: 'Dan Abramov',
+    tutorProfile: { subject: 'React & Redux Ecosystem' },
+    averageRating: 4.9,
+    totalStudents: 45200,
+    totalCourses: 15,
+    profileImageURL: null
+  },
+  {
+    name: 'Evan You',
+    tutorProfile: { subject: 'Vue.js Core & Vite Build Tools' },
+    averageRating: 5.0,
+    totalStudents: 50100,
+    totalCourses: 5,
+    profileImageURL: null
+  }
+];
 
 const Home = () => {
   const navigate = useNavigate();
@@ -127,19 +144,87 @@ const Home = () => {
 
   const [courses, setCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
+  const [dbTutors, setDbTutors] = useState(fallbackTutors);
+  const [tutorsLoading, setTutorsLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const HERO_IMAGE_FILENAME = 'figma/home.jpg';
-  const HERO_IMAGE_URL = `${API_BASE}/uploads/${HERO_IMAGE_FILENAME}`;
-
+  const [activeLink, setActiveLink] = useState('#home');
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/catalog/courses?limit=8&sort=-createdAt`)
+    // Fetch courses & compute categories
+    fetch(`${API_BASE}/api/catalog/courses?limit=300`)
       .then(r => r.json())
-      .then(data => setCourses(data?.data?.courses || []))
-      .catch(() => setCourses([]))
-      .finally(() => setCoursesLoading(false));
+      .then(res => {
+        const allCourses = res?.data?.courses || [];
+        const sortedRatingCourses = [...allCourses].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        setCourses(sortedRatingCourses.slice(0, 8));
+        
+        // Group and count courses 
+        const catStats = {};
+        allCourses.forEach(c => {
+          if (c.category) {
+            if (!catStats[c.category]) {
+              catStats[c.category] = {
+                title: c.category,
+                coursesCount: 0,
+                enrollmentsCount: 0
+              };
+            }
+            catStats[c.category].coursesCount++;
+            catStats[c.category].enrollmentsCount += (c.enrolledCount || 0);
+          }
+        });
+        const sortedCats = Object.values(catStats).sort((a, b) => b.enrollmentsCount - a.enrollmentsCount);
+        setCategories(sortedCats);
+      })
+      .catch(() => {
+        setCourses([]);
+        setCategories([]);
+      })
+      .finally(() => {
+        setCoursesLoading(false);
+        setCategoriesLoading(false);
+      });
+
+    // Fetch approved public tutors
+    fetch(`${API_BASE}/api/catalog/tutors?limit=100`)
+      .then(r => r.json())
+      .then(res => {
+        const fetchedTutors = res?.data?.tutors || [];
+        if (fetchedTutors.length > 0) {
+          const sortedTutors = [...fetchedTutors].sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+          setDbTutors(sortedTutors.slice(0, 12));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setTutorsLoading(false));
   }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['home', 'courses', 'tutors', 'about', 'contact'];
+      const scrollPos = window.scrollY + 160;
+
+      for (const section of sections) {
+        const el = document.getElementById(section);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPos >= top && scrollPos < top + height) {
+            setActiveLink(`#${section}`);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const HERO_IMAGE_URL = `/assets/figma/home.jpg`;
 
   if (isAuthenticated && user) {
     const dashboard =
@@ -166,14 +251,13 @@ const Home = () => {
   const coursesBodyRef = useScrollReveal();
   const howTitleRef = useScrollReveal();
   const howGridRef = useScrollReveal();
-  const testTitleRef = useScrollReveal();
-  const testGridRef = useScrollReveal();
   const finalCtaRef = useScrollReveal();
   const footerRef = useScrollReveal();
 
   //Carousel scroll helpers
   const tutorScrollRef = useRef(null);
   const courseScrollRef = useRef(null);
+  const catScrollRef = useRef(null);
 
   const scrollCarousel = useCallback((ref, direction) => {
     if (ref.current) {
@@ -189,76 +273,11 @@ const Home = () => {
     { icon: GraduationCap, title: 'Expert-Led Instruction', description: 'Every course is created and taught by vetted professionals with proven experience in their respective industries.' }
   ];
 
-  const categories = [
-    {
-      icon: Palette,
-      title: 'Design & Creative',
-      courses: '2,456 Courses',
-      skills: ['UI/UX Design', '3D Branding', 'Figma Prototyping'],
-      color: 'from-pink-500 to-purple-600',
-      textColor: 'text-pink-600',
-      iconColor: 'bg-pink-50 text-pink-600 border-pink-100',
-      stat: '98% Student Sat.'
-    },
-    {
-      icon: Briefcase,
-      title: 'Business & Strategy',
-      courses: '1,853 Courses',
-      skills: ['Entrepreneurship', 'Venture Capital', 'Product Strategy'],
-      color: 'from-blue-500 to-indigo-600',
-      textColor: 'text-blue-600',
-      iconColor: 'bg-blue-50 text-blue-600 border-blue-100',
-      stat: '95% Career Uplift'
-    },
-    {
-      icon: Code,
-      title: 'Development & Tech',
-      courses: '3,721 Courses',
-      skills: ['React / Fullstack', 'Python / AI Dev', 'Cloud Computing'],
-      color: 'from-emerald-500 to-teal-600',
-      textColor: 'text-emerald-600',
-      iconColor: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-      stat: '99% Placement Rate',
-      trending: true
-    },
-    {
-      icon: BarChart3,
-      title: 'Marketing & Growth',
-      courses: '1,456 Courses',
-      skills: ['SEO & SEM Growth', 'Brand Strategy', 'Growth Hacking'],
-      color: 'from-purple-500 to-violet-600',
-      textColor: 'text-purple-600',
-      iconColor: 'bg-purple-50 text-purple-600 border-purple-100',
-      stat: '94% Growth Lift'
-    }
-  ];
-
   const howItWorks = [
     { step: '01', icon: FileText, title: 'Create Your Account', description: 'Sign up for free in under a minute. Set up your learner profile and define your learning goals.' },
     { step: '02', icon: Layers, title: 'Browse & Enroll', description: 'Explore our catalog of expert-curated courses. Filter by category, skill level, or instructor to find the perfect fit.' },
     { step: '03', icon: MonitorPlay, title: 'Learn & Practice', description: 'Watch HD video lessons, complete interactive assignments, and build real-world projects at your own pace.' },
     { step: '04', icon: Award, title: 'Get Certified', description: 'Pass assessments and earn a professional certificate that you can share on LinkedIn and with employers.' }
-  ];
-
-  const testimonials = [
-    {
-      name: 'Sarah Mitchell',
-      role: 'Software Engineer at Google',
-      rating: 5,
-      text: 'Cognon transformed my career. The courses are well-structured and the instructors are genuine industry experts. I landed my dream job after completing the Full Stack Development program.'
-    },
-    {
-      name: 'James Wilson',
-      role: 'Product Manager at Stripe',
-      rating: 5,
-      text: 'The flexibility of learning at my own pace while working full-time was a game changer. The practical projects helped me apply concepts immediately to my daily work and earn a promotion.'
-    },
-    {
-      name: 'Emily Rodriguez',
-      role: 'Lead UX Designer at Figma',
-      rating: 5,
-      text: 'The design courses on Cognon are top-notch. I learned from real designers working at major tech companies. The mentorship, community support, and course quality are outstanding.'
-    }
   ];
 
   const stats = [
@@ -268,21 +287,13 @@ const Home = () => {
     { icon: Star, number: '4.8/5', label: 'Average Rating' }
   ];
 
-  const tutors = [
-    { name: 'Dr. Sarah Johnson', expertise: 'Web Development', rating: 4.9, students: '12,500', courses: 24 },
-    { name: 'Prof. Michael Chen', expertise: 'Data Science', rating: 4.8, students: '8,200', courses: 18 },
-    { name: 'Emma Williams', expertise: 'UX Design', rating: 4.9, students: '6,800', courses: 12 },
-    { name: 'James Anderson', expertise: 'Digital Marketing', rating: 4.7, students: '5,400', courses: 15 },
-    { name: 'Lisa Martinez', expertise: 'Mobile Development', rating: 4.8, students: '7,200', courses: 20 },
-    { name: 'David Kim', expertise: 'Machine Learning', rating: 4.9, students: '9,100', courses: 16 }
-  ];
-
   const aboutMetrics = [
     { number: '50K+', label: 'Active Learners', icon: Users },
     { number: '10K+', label: 'Expert Courses', icon: BookOpen },
     { number: '98%', label: 'Satisfaction Rate', icon: Star },
     { number: '50+', label: 'Countries Reached', icon: Globe }
   ];
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -299,17 +310,18 @@ const Home = () => {
             <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
               {[
                 { label: 'Home', href: '#home' },
-                { label: 'About', href: '#about' },
                 { label: 'Courses', href: '#courses' },
+                { label: 'Tutors', href: '#tutors' },
+                { label: 'About', href: '#about' },
                 { label: 'Contact', href: '#contact' }
               ].map(link => (
                 <a
                   key={link.label}
                   href={link.href}
-                  className="relative text-gray-600 hover:text-purple-600 transition-colors py-1 group"
+                  className={`relative transition-colors py-1 group ${activeLink === link.href ? 'text-purple-600 font-bold' : 'text-gray-600 hover:text-purple-600'}`}
                 >
                   {link.label}
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all duration-300" />
+                  <span className={`absolute bottom-0 left-0 h-0.5 bg-purple-600 transition-all duration-300 ${activeLink === link.href ? 'w-full' : 'w-0 group-hover:w-full'}`} />
                 </a>
               ))}
             </nav>
@@ -341,7 +353,7 @@ const Home = () => {
           {/* Mobile menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-3 pb-4 border-t border-gray-100 pt-4 space-y-2">
-              {['Home', 'About', 'Courses', 'Contact'].map(label => (
+              {['Home', 'Courses', 'Tutors', 'About', 'Contact'].map(label => (
                 <a
                   key={label}
                   href={`#${label.toLowerCase()}`}
@@ -507,66 +519,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════
-          ABOUT SECTION
-          ═══════════════════════════════════════ */}
-      <section id="about" className="py-20 bg-gray-50">
-        <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
-          <div ref={aboutTitleRef} className="scroll-reveal text-center mb-14">
-            <p className="text-purple-600 font-semibold mb-10 text-xl uppercase tracking-widest">About Us</p>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Empowering Learners Globally
-            </h2>
-            <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed">
-              We are on a mission to make quality education accessible, affordable, and effective for every learner around the world.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div ref={aboutTextRef} className="scroll-reveal from-right">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Our Mission</h3>
-              <p className="text-gray-600 leading-relaxed mb-5 text-sm">
-                At Cognon, we believe that education should be accessible to everyone, everywhere. Our platform connects passionate tutors with eager learners, creating a vibrant community of knowledge sharing and growth.
-              </p>
-              <p className="text-gray-600 leading-relaxed mb-6 text-sm">
-                With thousands of courses across various disciplines, we empower individuals to pursue their passions, advance their careers, and achieve their goals through flexible, high-quality online learning experiences.
-              </p>
-              <ul className="space-y-3 mb-6">
-                {[
-                  'Self-paced courses with lifetime access to all materials',
-                  'Hands-on projects and real-world assignments for practical skills',
-                  'Dedicated mentor support and active community forums',
-                  'Industry-recognized completion certificates for career growth',
-                  'Interactive quizzes and assessments to track your progress'
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-gray-700">
-                    <CheckCircle className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link to={ROUTES.SIGNUP}>
-                <button className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-300 font-medium text-sm flex items-center gap-2 shadow-sm hover:shadow-md">
-                  Start Learning
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </Link>
-            </div>
-            <div ref={aboutMetricsRef} className="scroll-reveal from-left grid grid-cols-2 gap-4">
-              {aboutMetrics.map((metric, i) => (
-                <div
-                  key={i}
-                  className={`${i % 2 === 1 ? 'mt-6' : ''} bg-gradient-to-br ${i === 0 ? 'from-purple-500 to-indigo-600' : i === 1 ? 'from-pink-500 to-purple-600' : i === 2 ? 'from-indigo-500 to-purple-600' : 'from-violet-500 to-purple-600'} rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center hover:-translate-y-1 transition-all duration-300 min-h-[140px]`}
-                >
-                  <metric.icon className="w-8 h-8 text-white/80 mb-2" />
-                  <p className="text-white font-bold text-2xl mb-1">{metric.number}</p>
-                  <p className="text-white/80 font-medium text-xs text-center">{metric.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
 
       <section className="py-16 bg-gray-900 text-white relative">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500" />
@@ -597,11 +549,44 @@ const Home = () => {
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Popular Categories</h2>
             <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed">Explore our most popular course categories and find the skills that align with your career goals and interests.</p>
           </div>
-          <div ref={catGridRef} className="reveal-children grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category, index) => (
-              <CategoryCard key={index} category={category} navigate={navigate} />
-            ))}
-          </div>
+          {categoriesLoading ? (
+            <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-72 h-40 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm animate-pulse">
+                  <div className="w-12 h-12 bg-gray-200 rounded-xl mb-4" />
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="text-center py-10 bg-white rounded-2xl border border-dashed border-gray-200">
+              <p className="text-gray-400 text-sm">No categories available yet</p>
+            </div>
+          ) : (
+            <div className="relative">
+              <div ref={catScrollRef} className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide scroll-smooth" style={{ scrollSnapType: 'x mandatory' }}>
+                {categories.map((category, index) => (
+                  <CategoryCard key={index} category={category} navigate={navigate} />
+                ))}
+              </div>
+              {/* Carousel arrows */}
+              <button
+                onClick={() => scrollCarousel(catScrollRef, -1)}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-100 text-gray-655"
+                aria-label="Scroll categories left"
+              >
+                <ArrowRight className="w-4 h-4 rotate-180" />
+              </button>
+              <button
+                onClick={() => scrollCarousel(catScrollRef, 1)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-100 text-gray-655"
+                aria-label="Scroll categories right"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -637,75 +622,16 @@ const Home = () => {
       </section>
 
 
-      <section className="py-20 bg-white">
-        <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
-          <div ref={tutorTitleRef} className="scroll-reveal text-center mb-14">
-            <p className="text-purple-600 font-semibold mb-2 text-xs uppercase tracking-widest">Our Tutors</p>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Learn from Industry Experts</h2>
-            <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed">Our tutors are experienced professionals who bring real-world knowledge, practical insights, and mentorship to every course they create.</p>
-          </div>
-          <div ref={tutorCarouselRef} className="scroll-reveal relative">
-            <div ref={tutorScrollRef} className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
-              {tutors.map((tutor, index) => (
-                <div
-                  key={index}
-                  className="flex-shrink-0 w-64 bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-1"
-                  style={{ scrollSnapAlign: 'start' }}
-                >
-                  {/* Avatar header */}
-                  <div className="h-36 bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-100/50 to-transparent" />
-                    <AvatarSVG name={tutor.name} size={72} />
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-bold text-gray-900 text-sm mb-0.5">{tutor.name}</h3>
-                    <p className="text-purple-600 text-xs font-medium mb-3">{tutor.expertise}</p>
-                    <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                        <span className="font-semibold text-gray-700">{tutor.rating}</span>
-                      </div>
-                      <span className="text-gray-300">|</span>
-                      <span>{tutor.students} students</span>
-                    </div>
-                    <p className="text-xs text-gray-400 mb-4">{tutor.courses} courses published</p>
-                    <button
-                      onClick={() => navigate(ROUTES.TUTOR_SIGNUP)}
-                      className="w-full py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-300 text-xs font-medium hover:shadow-md"
-                    >
-                      View Profile
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Carousel arrows */}
-            <button
-              onClick={() => scrollCarousel(tutorScrollRef, -1)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-100"
-              aria-label="Scroll tutors left"
-            >
-              <ArrowRight className="w-4 h-4 rotate-180" />
-            </button>
-            <button
-              onClick={() => scrollCarousel(tutorScrollRef, 1)}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-100"
-              aria-label="Scroll tutors right"
-            >
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </section>
 
 
-      <section id="courses" className="py-20 bg-gray-50">
+
+      <section id="courses" className="py-20 bg-white">
         <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
           <div ref={coursesTitleRef} className="scroll-reveal flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-4">
             <div>
               <p className="text-purple-600 font-semibold mb-1 text-xs uppercase tracking-widest">Courses</p>
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">Featured Courses</h2>
-              <p className="text-gray-500 text-sm mt-2">Hand-picked courses from our top-rated instructors to help you build in-demand skills.</p>
+              <p className="text-gray-550 text-sm mt-2">Hand-picked courses from our top-rated courses to help you build in-demand skills.</p>
             </div>
             <button
               onClick={() => navigate(ROUTES.LOGIN)}
@@ -836,50 +762,91 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-br from-purple-50 to-indigo-50">
+      <section id="tutors" className="py-20 bg-gray-50">
         <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
-          <div ref={testTitleRef} className="scroll-reveal text-center mb-14">
-            <p className="text-purple-600 font-semibold mb-2 text-xs uppercase tracking-widest">Testimonials</p>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">What Our Students Say</h2>
-            <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed">Real stories from real people who advanced their careers, switched industries, and achieved their goals through Cognon.</p>
+          <div ref={tutorTitleRef} className="scroll-reveal text-center mb-14">
+            <p className="text-purple-600 font-semibold mb-2 text-xs uppercase tracking-widest">Our Tutors</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Learn from Industry Experts</h2>
+            <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed">Our tutors are experienced professionals who bring real-world knowledge, practical insights, and mentorship to every course they create.</p>
           </div>
-          <div ref={testGridRef} className="reveal-children grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                className="reveal-child bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2 overflow-hidden border border-gray-100 group"
-              >
-                <div className="p-8">
-                  <div className="flex items-center mb-6">
-                    <div className="relative">
-                      <AvatarSVG name={testimonial.name} size={52} />
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center border-2 border-white">
-                        <CheckCircle className="w-3 h-3 text-white" />
-                      </div>
+          {tutorsLoading ? (
+            <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-64 bg-white rounded-2xl shadow-sm border border-gray-100 animate-pulse">
+                  <div className="h-36 bg-gray-200" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    <div className="h-3 bg-gray-200 rounded w-2/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div ref={tutorCarouselRef} className="scroll-reveal relative">
+              <div ref={tutorScrollRef} className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide scroll-smooth" style={{ scrollSnapType: 'x mandatory' }}>
+                {dbTutors.map((tutor, index) => (
+                  <div
+                    key={index}
+                    className="flex-shrink-0 w-64 h-[380px] flex flex-col justify-between bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-1.5"
+                    style={{ scrollSnapAlign: 'start' }}
+                  >
+                    {/* Avatar header */}
+                    <div className="h-36 bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center relative overflow-hidden flex-shrink-0">
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-100/50 to-transparent" />
+                      {tutor.profileImageURL ? (
+                        <img src={tutor.profileImageURL} alt={tutor.name} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow relative z-10" />
+                      ) : (
+                        <AvatarSVG name={tutor.name} size={72} />
+                      )}
                     </div>
-                    <div className="ml-4">
-                      <h4 className="font-bold text-gray-900 text-sm">{testimonial.name}</h4>
-                      <p className="text-xs text-purple-600 font-medium">{testimonial.role}</p>
-                      <div className="flex items-center gap-0.5 mt-1">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                        ))}
+                    <div className="p-5 flex flex-col justify-between flex-grow">
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-sm mb-0.5 line-clamp-1">{tutor.name}</h3>
+                        <p className="text-purple-600 text-xs font-medium mb-3 line-clamp-2 h-8 leading-tight">{tutor.tutorProfile?.subject || 'Instructor'}</p>
+                      </div>
+                      <div className="mt-auto">
+                        <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                            <span className="font-semibold text-gray-750">{(tutor.averageRating ?? 0).toFixed(1)}</span>
+                          </div>
+                          <span className="text-gray-300">|</span>
+                          <span>{tutor.totalStudents ?? 0} students</span>
+                        </div>
+                        <p className="text-xs text-gray-400 mb-4">{tutor.totalCourses ?? 0} courses published</p>
+                        <button
+                          onClick={() => navigate(ROUTES.LOGIN)}
+                          className="w-full py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-300 text-xs font-medium hover:shadow-md"
+                        >
+                          View Profile
+                        </button>
                       </div>
                     </div>
                   </div>
-                  <div className="relative">
-                    <Quote className="absolute -top-1 -left-1 w-8 h-8 text-purple-100" />
-                    <p className="text-gray-600 text-sm leading-relaxed relative z-10 pl-4">{testimonial.text}</p>
-                  </div>
-                </div>
-                <div className="px-8 pb-6">
-                  <div className="h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+              {/* Carousel arrows */}
+              <button
+                onClick={() => scrollCarousel(tutorScrollRef, -1)}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-100 text-gray-655"
+                aria-label="Scroll tutors left"
+              >
+                <ArrowRight className="w-4 h-4 rotate-180" />
+              </button>
+              <button
+                onClick={() => scrollCarousel(tutorScrollRef, 1)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-100 text-gray-655"
+                aria-label="Scroll tutors right"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </section>
+
+
 
    
       <section ref={finalCtaRef} className="scroll-reveal py-20 bg-gradient-to-r from-purple-600 to-indigo-600 relative overflow-hidden">
@@ -900,6 +867,66 @@ const Home = () => {
                 Browse Courses
               </button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════
+          ABOUT SECTION (Moved above Contact)
+          ═══════════════════════════════════════ */}
+      <section id="about" className="py-20 bg-gray-50">
+        <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
+          <div ref={aboutTitleRef} className="scroll-reveal text-center mb-14">
+            <p className="text-purple-600 font-semibold mb-10 text-xl uppercase tracking-widest">About Us</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              Empowering Learners Globally
+            </h2>
+            <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed">
+              We are on a mission to make quality education accessible, affordable, and effective for every learner around the world.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div ref={aboutTextRef} className="scroll-reveal from-right">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Our Mission</h3>
+              <p className="text-gray-600 leading-relaxed mb-5 text-sm">
+                At Cognon, we believe that education should be accessible to everyone, everywhere. Our platform connects passionate tutors with eager learners, creating a vibrant community of knowledge sharing and growth.
+              </p>
+              <p className="text-gray-600 leading-relaxed mb-6 text-sm">
+                With thousands of courses across various disciplines, we empower individuals to pursue their passions, advance their careers, and achieve their goals through flexible, high-quality online learning experiences.
+              </p>
+              <ul className="space-y-3 mb-6">
+                {[
+                  'Self-paced courses with lifetime access to all materials',
+                  'Hands-on projects and real-world assignments for practical skills',
+                  'Dedicated mentor support and active community forums',
+                  'Industry-recognized completion certificates for career growth',
+                  'Interactive quizzes and assessments to track your progress'
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-gray-700">
+                    <CheckCircle className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link to={ROUTES.SIGNUP}>
+                <button className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-300 font-medium text-sm flex items-center gap-2 shadow-sm hover:shadow-md">
+                  Start Learning
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </Link>
+            </div>
+            <div ref={aboutMetricsRef} className="scroll-reveal from-left grid grid-cols-2 gap-4">
+              {aboutMetrics.map((metric, i) => (
+                <div
+                  key={i}
+                  className={`${i % 2 === 1 ? 'mt-6' : ''} bg-gradient-to-br ${i === 0 ? 'from-purple-500 to-indigo-600' : i === 1 ? 'from-pink-500 to-purple-600' : i === 2 ? 'from-indigo-500 to-purple-600' : 'from-violet-500 to-purple-600'} rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center hover:-translate-y-1 transition-all duration-300 min-h-[140px]`}
+                >
+                  <metric.icon className="w-8 h-8 text-white/80 mb-2" />
+                  <p className="text-white font-bold text-2xl mb-1">{metric.number}</p>
+                  <p className="text-white/80 font-medium text-xs text-center">{metric.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

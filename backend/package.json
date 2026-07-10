@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "build": "cd ../frontend && npm run build",
+    "start:prod": "npm run build && node server.js",
     "create-admin": "node scripts/admin.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

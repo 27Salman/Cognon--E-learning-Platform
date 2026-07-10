@@ -198,16 +198,47 @@ const certificateService = {
 
             doc.rect(0, 0, 6, H).fill('#2d1b69');
 
+            // Draw Cognon Logo at Top-Left
+            doc.save();
+            doc.translate(PAD, 24);
+            doc.scale(0.3); // Scale 100x100 to 30x30
+            
+            // Outer hexagon outline
+            doc.path("M50 15 L80 30 L80 70 L50 85 L20 70 L20 30 Z")
+               .lineWidth(3)
+               .stroke('#7c3aed');
+               
+            // Inner cube face 1
+            doc.path("M35 40 L50 48 L65 40 L65 55 L50 63 L35 55 Z")
+               .fill('#7c3aed');
+               
+            // Inner cube face 2
+            doc.path("M35 40 L35 55 L50 63 L50 48")
+               .fill('#6d28d9');
+               
+            // Inner cube face 3
+            doc.path("M65 40 L65 55 L50 63 L50 48")
+               .fill('#8b5cf6');
+               
+            doc.restore();
+
+            // Brand Name next to Logo
+            doc.font(FONT_BOLD)
+               .fontSize(16)
+               .fillColor('#2d1b69')
+               .text('Cognon', PAD + 36, 31);
+
+            // Right-aligned Issued Date
             doc.font(FONT_REGULAR)
                .fontSize(10)
                .fillColor('#64748b')
-               .text(issuedDate, PAD, 32);
+               .text(issuedDate, LEFT_W - PAD - 120, 34, { width: 120, align: 'right' });
 
-            // Student name
+            // Student name (pushed down)
             doc.font(FONT_BOLD)
                .fontSize(34)
                .fillColor('#1e293b')
-               .text(studentName.toUpperCase(), PAD, 65, { width: LEFT_W - PAD * 2 });
+               .text(studentName.toUpperCase(), PAD, 85, { width: LEFT_W - PAD * 2 });
 
             const nameBottom = doc.y + 6;
 

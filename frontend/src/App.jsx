@@ -34,7 +34,7 @@ import CreateCourse from './pages/tutor/CreateCourse';
 import EditCourse from './pages/tutor/EditCourse';
 import TutorCourseDetail from './pages/tutor/TutorCourseDetail';
 import TutorChat from './pages/tutor/TutorChat';
-import CourseCatalog from './pages/student/CourseCatalog';
+
 import CourseDetails from './pages/student/CourseDetails';
 import MyCourses from './pages/student/MyCourses';
 import CourseLessons from './pages/student/CourseLessons';
@@ -63,6 +63,7 @@ import VerifyCertificate from './pages/VerifyCertificate';
 import TutorList from './pages/student/TutorList';
 import TutorProfileView from './pages/student/TutorProfileView';
 import StudentChat from './pages/student/StudentChat';
+import ScrollToTop from './components/common/ScrollToTop';
 
 
 function App() {
@@ -79,6 +80,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       <Loader onComplete={handleLoaderComplete} />
       {!showLoader && (
         <Routes>
@@ -122,7 +124,7 @@ function App() {
           </Route>
 
           {/* Public student-facing pages — no login required */}
-          <Route path={ROUTES.STUDENT_COURSE_CATALOG} element={<CourseCatalog />} />
+
           <Route path={ROUTES.STUDENT_CATEGORIES} element={<CategoryPage />} />
           <Route path={ROUTES.STUDENT_COURSE_DETAIL} element={<CourseDetails />} />
           <Route path={ROUTES.STUDENT_TUTORS} element={<TutorList />} />

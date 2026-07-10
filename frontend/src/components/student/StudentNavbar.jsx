@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Heart, ShoppingCart } from 'lucide-react';
@@ -24,6 +24,7 @@ const getAvatarColors = (name) => {
 
 export default function StudentNavbar() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useSelector(state => state.auth);
     const [cartCount, setCartCount] = useState(0);
     const [wishlistCount, setWishlistCount] = useState(0);
@@ -97,12 +98,47 @@ export default function StudentNavbar() {
                 </div>
 
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-                    <button onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)} className="text-gray-700 hover:text-purple-600 transition">Home</button>
-                    <button onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)} className="text-gray-700 hover:text-purple-600 transition">About Us</button>
-                    <button onClick={() => navigate(ROUTES.STUDENT_CATEGORIES)} className="text-gray-700 hover:text-purple-600 transition">Categories</button>
-                    <button onClick={() => navigate(ROUTES.STUDENT_COURSE_CATALOG)} className="text-gray-700 hover:text-purple-600 transition">Courses</button>
-                    <button onClick={() => navigate(ROUTES.STUDENT_TUTORS)} className="text-gray-700 hover:text-purple-600 transition">Tutors</button>
-                    <button onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)} className="text-gray-700 hover:text-purple-600 transition">Contact</button>
+                    <button
+                        onClick={() => {
+                            navigate(ROUTES.STUDENT_DASHBOARD);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className={`transition ${location.pathname === ROUTES.STUDENT_DASHBOARD ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
+                    >
+                        Home
+                    </button>
+                    <button
+                        onClick={() => {
+                            navigate(ROUTES.STUDENT_DASHBOARD);
+                            setTimeout(() => {
+                                document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+                            }, 100);
+                        }}
+                        className="text-gray-700 hover:text-purple-600 transition"
+                    >
+                        About Us
+                    </button>
+                    <button
+                        onClick={() => navigate(ROUTES.STUDENT_CATEGORIES)}
+                        className={`transition ${location.pathname === ROUTES.STUDENT_CATEGORIES ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
+                    >
+                        Courses
+                    </button>
+
+                    <button
+                        onClick={() => navigate(ROUTES.STUDENT_TUTORS)}
+                        className={`transition ${location.pathname === ROUTES.STUDENT_TUTORS ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
+                    >
+                        Tutors
+                    </button>
+                    <button
+                        onClick={() => {
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                        }}
+                        className="text-gray-700 hover:text-purple-600 transition"
+                    >
+                        Contact
+                    </button>
                 </nav>
 
                 <div className="flex items-center gap-4">

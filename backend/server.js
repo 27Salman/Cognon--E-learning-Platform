@@ -39,7 +39,33 @@ connectDB();
 startHoldReleaseJob();
 
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:     ["'self'"],
+      scriptSrc:      ["'self'", "'unsafe-inline'", "'unsafe-eval'",
+                       "https://checkout.razorpay.com",
+                       "https://api.razorpay.com",
+                       "https://cdn.razorpay.com",
+                       "https://lumberjack.razorpay.com"],
+      styleSrc:       ["'self'", "'unsafe-inline'",
+                       "https://fonts.googleapis.com",
+                       "https://checkout.razorpay.com"],
+      fontSrc:        ["'self'", "data:", "https://fonts.gstatic.com", "https:"],
+      frameSrc:       ["'self'",
+                       "https://api.razorpay.com",
+                       "https://checkout.razorpay.com"],
+      connectSrc:     ["'self'",
+                       "https://api.razorpay.com",
+                       "https://checkout.razorpay.com",
+                       "https://lumberjack.razorpay.com",
+                       "https://cdn.razorpay.com",
+                       "wss:", "ws:"],
+      imgSrc:         ["'self'", "data:", "blob:", "https:"],
+      objectSrc:      ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
 }));
 
 const corsOptions = {
@@ -101,7 +127,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.use(notFound);
+// Serve React build in production 
+const FRONTEND_DIST = path.join(__dirname, '../frontend/dist');
+
+app.use(express.static(FRONTEND_DIST));
+
+// All non-API routes → hand off to React Router
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+});
+// ────────────────────────────────
+
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {

@@ -597,12 +597,31 @@ const tutorService = {
             User.countDocuments(query)
         ]);
 
+        const tutorsWithStats = await Promise.all(tutors.map(async t => {
+            const courses = await Course.find({ tutor: t._id, status: 'published' });
+            let totalStudents = 0;
+            let ratingSum = 0;
+            let coursesWithRating = 0;
+            courses.forEach(c => {
+                if (c.studentsEnrolled) {
+                    totalStudents += c.studentsEnrolled.length;
+                }
+                if (c.rating > 0) {
+                    ratingSum += c.rating;
+                    coursesWithRating++;
+                }
+            });
+            const averageRating = coursesWithRating > 0 ? Number((ratingSum / coursesWithRating).toFixed(1)) : 0;
+            const tObj = t.toJSON();
+            tObj.profileImageURL = t.getProfileImageURL();
+            tObj.averageRating = averageRating;
+            tObj.totalCourses = courses.length;
+            tObj.totalStudents = totalStudents;
+            return tObj;
+        }));
+
         return {
-            tutors: tutors.map(t => {
-                const tObj = t.toJSON();
-                tObj.profileImageURL = t.getProfileImageURL();
-                return tObj;
-            }),
+            tutors: tutorsWithStats,
             pagination: {
                 currentPage: pageNum,
                 totalPages: Math.ceil(totalFiltered / limitNum),

@@ -1,4 +1,6 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_URL = (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost'))
+    ? import.meta.env.VITE_API_URL
+    : `${window.location.origin}/api`;
 
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Cognon';
 
@@ -184,7 +186,7 @@ export const ROUTES = {
 
     // Student
     STUDENT_DASHBOARD: '/student/dashboard',
-    STUDENT_COURSE_CATALOG: '/student/courses',
+    STUDENT_COURSE_CATALOG: '/student/categories',
     STUDENT_COURSE_DETAIL: '/student/courses/:courseId',
     STUDENT_LESSON_VIEWER: '/student/courses/:courseId/learn',
 

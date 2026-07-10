@@ -4,7 +4,7 @@ import { ROUTES } from '../../utils/constants';
 import { adminAPI } from '../../api/adminAPI';
 import {
   Users, BookOpen, GraduationCap, DollarSign,
-  FileText, FileSpreadsheet
+  FileText, FileSpreadsheet, Award, TrendingUp, Tag
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -49,6 +49,7 @@ export default function AdminDashboard() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [dateError, setDateError] = useState('');
+  const [groupBy, setGroupBy] = useState('monthly');
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -73,10 +74,10 @@ export default function AdminDashboard() {
     })();
   }, []);
 
-  const fetchReport = useCallback(async (from, to) => {
+  const fetchReport = useCallback(async (from, to, currentGroupBy = groupBy) => {
     setReportLoading(true);
     try {
-      const params = { groupBy: 'monthly' };
+      const params = { groupBy: currentGroupBy };
       if (from) params.dateFrom = from;
       if (to) params.dateTo = to;
       const res = await adminAPI.getSalesReport(params);
@@ -86,20 +87,20 @@ export default function AdminDashboard() {
     } finally {
       setReportLoading(false);
     }
-  }, []);
+  }, [groupBy]);
 
-  useEffect(() => { fetchReport('', ''); }, [fetchReport]);
+  useEffect(() => { fetchReport('', '', 'monthly'); }, [fetchReport]);
 
   const handlePreset = (p) => {
     setPreset(p);
     setDateError('');
     if (p === 'all') {
       setDateFrom(''); setDateTo('');
-      fetchReport('', '');
+      fetchReport('', '', groupBy);
     } else {
       const { dateFrom: f, dateTo: t } = getPresetRange(p);
       setDateFrom(f); setDateTo(t);
-      fetchReport(f, t);
+      fetchReport(f, t, groupBy);
     }
   };
 
@@ -108,13 +109,18 @@ export default function AdminDashboard() {
     if (error) { setDateError(error); return; }
     setDateError('');
     setPreset('custom');
-    fetchReport(dateFrom, dateTo);
+    fetchReport(dateFrom, dateTo, groupBy);
+  };
+
+  const handleGroupByChange = (gBy) => {
+    setGroupBy(gBy);
+    fetchReport(dateFrom, dateTo, gBy);
   };
 
   const handleDownload = async (type) => {
     setDownloading(type);
     try {
-      const params = { groupBy: 'monthly' };
+      const params = { groupBy };
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo) params.dateTo = dateTo;
 
@@ -159,7 +165,7 @@ export default function AdminDashboard() {
 
   const s = stats?.summary || {};
   const reportSummary = report?.summary;
-  const chartIsFiltered = preset !== 'all' || !!(dateFrom || dateTo);
+  const chartIsFiltered = preset !== 'all' || !!(dateFrom || dateTo) || groupBy !== 'monthly';
   const chartData = chartIsFiltered
     ? (report?.chartData || [])
     : (stats?.monthlyChart || []);
@@ -167,6 +173,32 @@ export default function AdminDashboard() {
   const chartTitle = chartIsFiltered
     ? 'Revenue & Profit Overview (Filtered)'
     : 'Revenue & Profit Overview (Last 12 Months)';
+
+  const formatXAxis = (tickItem) => {
+    if (!tickItem) return '';
+    if (groupBy === 'daily') {
+      try {
+        const d = new Date(tickItem);
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      } catch {
+        return tickItem;
+      }
+    }
+    if (groupBy === 'monthly') {
+      try {
+        const [year, month] = tickItem.split('-');
+        if (year && month) {
+          const d = new Date(Number(year), Number(month) - 1, 1);
+          return d.toLocaleString('default', { month: 'short', year: 'numeric' });
+        }
+      } catch {}
+    }
+    return tickItem;
+  };
+
+  const renderRankBadge = (rank) => {
+    return <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold">{rank}</span>;
+  };
 
   const summaryCards = [
     {
@@ -343,7 +375,22 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-700">{chartTitle}</h2>
-          {reportLoading && <span className="text-xs text-gray-400 animate-pulse">Updating…</span>}
+          <div className="flex items-center gap-3">
+            {reportLoading && <span className="text-xs text-gray-400 animate-pulse">Updating…</span>}
+            <div className="flex items-center gap-1.5 text-sm">
+              <span className="text-gray-400 font-medium">Group by:</span>
+              <select
+                value={groupBy}
+                onChange={(e) => handleGroupByChange(e.target.value)}
+                className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg focus:ring-purple-500 focus:border-purple-500 px-2 py-1.5 cursor-pointer font-semibold outline-none hover:bg-gray-100 transition-colors"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+          </div>
         </div>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={260}>
@@ -352,6 +399,7 @@ export default function AdminDashboard() {
               <XAxis
                 dataKey={chartXKey}
                 tick={{ fontSize: 11 }}
+                tickFormatter={formatXAxis}
               />
               <YAxis
                 tick={{ fontSize: 11 }}
@@ -397,6 +445,136 @@ export default function AdminDashboard() {
             {reportLoading ? 'Loading chart…' : 'No revenue data for selected period'}
           </div>
         )}
+      </div>
+
+      {/* Analytics Lists Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Top 10 Best Selling Courses */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-gray-800 text-base">Top 10 Best Selling Products</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Ranked by total sales revenue</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-x-auto">
+            {stats?.topCourses?.length > 0 ? (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-400 text-xs font-semibold">
+                    <th className="py-2 px-3 text-left w-12">Rank</th>
+                    <th className="py-2 px-3 text-left">Course Info</th>
+                    <th className="py-2 px-3 text-right">Enrollments</th>
+                    <th className="py-2 px-3 text-right">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {stats.topCourses.map((c, index) => (
+                    <tr key={c._id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3 px-3 vertical-align-middle font-medium">
+                        {renderRankBadge(index + 1)}
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-3">
+                          {c.thumbnail ? (
+                            <img
+                              src={c.thumbnail}
+                              alt={c.title}
+                              className="w-10 h-10 object-cover rounded-lg border border-gray-100 flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                              {c.title.charAt(0)}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-800 text-sm truncate max-w-[180px] lg:max-w-[200px]">{c.title}</p>
+                            <p className="text-xs text-gray-400 truncate">
+                              by {c.tutor?.name || 'Unknown Tutor'} • <span className="capitalize">{c.category}</span>
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-right font-medium text-gray-600">
+                        {c.enrolledCount.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-gray-800">
+                        ₹{c.revenue.toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="h-full flex items-center justify-center py-8 text-gray-400 text-sm">
+                No course sales data found
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top 10 Best Selling Categories */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
+                <Tag className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-gray-800 text-base">Top 10 Best Selling Categories</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Ranked by category sales revenue</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-x-auto">
+            {stats?.topCategories?.length > 0 ? (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-400 text-xs font-semibold">
+                    <th className="py-2 px-3 text-left w-12">Rank</th>
+                    <th className="py-2 px-3 text-left">Category</th>
+                    <th className="py-2 px-3 text-right">Courses Sold</th>
+                    <th className="py-2 px-3 text-right">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {stats.topCategories.map((cat, index) => (
+                    <tr key={cat.name} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3 px-3 vertical-align-middle font-medium">
+                        {renderRankBadge(index + 1)}
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-800 text-sm capitalize truncate max-w-[220px] lg:max-w-[260px]">{cat.name}</p>
+                          <p className="text-xs text-gray-400 truncate max-w-xs">{cat.description || 'No description'}</p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-right font-medium text-gray-600">
+                        {cat.salesCount.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-gray-800">
+                        ₹{cat.revenue.toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="h-full flex items-center justify-center py-8 text-gray-400 text-sm">
+                No category sales data found
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* Recent Orders — full width */}

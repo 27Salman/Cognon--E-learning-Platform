@@ -51,7 +51,7 @@ const adminService = {
                 .limit(5),
             Course.find({ status: COURSE_STATUS.PUBLISHED })
                 .sort({ revenue: -1 })
-                .limit(5)
+                .limit(10)
                 .select('title price revenue studentsEnrolled thumbnail category')
                 .populate('tutor', 'name')
         ]);
@@ -65,6 +65,40 @@ const adminService = {
             : 100;
 
         const monthlyChart = await this.getMonthlyRevenueChart();
+
+        const topCategories = await Order.aggregate([
+            { $match: { paymentStatus: 'completed' } },
+            { $unwind: '$courses' },
+            { $group: {
+                _id: '$courses.courseCategory',
+                revenue: { $sum: '$courses.discountedPrice' },
+                salesCount: { $sum: 1 }
+            }},
+            { $lookup: {
+                from: 'categories',
+                localField: '_id',
+                foreignField: 'name',
+                as: 'categoryInfo'
+            }},
+            { $unwind: { path: '$categoryInfo', preserveNullAndEmptyArrays: true } },
+            { $project: {
+                name: '$_id',
+                revenue: 1,
+                salesCount: 1,
+                description: '$categoryInfo.description'
+            }},
+            { $sort: { revenue: -1 } },
+            { $limit: 10 }
+        ]);
+
+        const formattedCategories = topCategories.map(cat => {
+            return {
+                name: cat.name || 'Uncategorized',
+                revenue: Math.round(cat.revenue),
+                salesCount: cat.salesCount,
+                description: cat.description || ''
+            };
+        });
 
         return {
             summary: {
@@ -88,7 +122,8 @@ const adminService = {
                 thumbnail: c.thumbnail,
                 category: c.category,
                 tutor: c.tutor
-            }))
+            })),
+            topCategories: formattedCategories
         };
     },
 
@@ -561,6 +596,23 @@ const adminService = {
                 groupMap[key] = { period: key, orders: 0, revenue: 0, platformRevenue: 0, tutorRevenue: 0 };
                 cur.setDate(cur.getDate() + 1);
             }
+        } else if (groupBy === 'weekly') {
+            const cur = new Date(rangeStart); cur.setHours(0, 0, 0, 0);
+            const end = new Date(rangeEnd);   end.setHours(0, 0, 0, 0);
+            while (cur <= end) {
+                const startOfYear = new Date(cur.getFullYear(), 0, 1);
+                const week = Math.ceil(((cur - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+                const key = `${cur.getFullYear()}-W${String(week).padStart(2, '0')}`;
+                groupMap[key] = { period: key, orders: 0, revenue: 0, platformRevenue: 0, tutorRevenue: 0 };
+                cur.setDate(cur.getDate() + 7);
+            }
+        } else if (groupBy === 'yearly') {
+            const curYear = rangeStart.getFullYear();
+            const endYear = rangeEnd.getFullYear();
+            for (let y = curYear; y <= endYear; y++) {
+                const key = `${y}`;
+                groupMap[key] = { period: key, orders: 0, revenue: 0, platformRevenue: 0, tutorRevenue: 0 };
+            }
         }
 
         for (const order of orders) {
@@ -572,6 +624,8 @@ const adminService = {
                 const startOfYear = new Date(d.getFullYear(), 0, 1);
                 const week = Math.ceil(((d - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
                 key = `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+            } else if (groupBy === 'yearly') {
+                key = `${d.getFullYear()}`;
             } else {
                 key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
             }

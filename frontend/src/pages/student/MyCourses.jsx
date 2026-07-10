@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchEnrolledCourses } from '../../store/slices/studentSlice';
-import { BookOpen, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { ROUTES, COURSE_STATUS } from '../../utils/constants';
 import { studentAPI } from '../../api/studentAPI';
 import StarRating from '../../components/common/StarRating';
@@ -110,29 +110,56 @@ export default function MyCourses() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { enrolledCourses, loading } = useSelector(state => state.student);
-    const [inProgressPage, setInProgressPage] = useState(0);
-    const [completedPage, setCompletedPage] = useState(0);
+    const [activeTab, setActiveTab] = useState('all'); // 'all', 'in-progress', 'completed'
+    const [currentPage, setCurrentPage] = useState(0);
     const [selectedCourseForReview, setSelectedCourseForReview] = useState(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
-    const coursesPerPage = 4;
+    const coursesPerPage = 8; // Shows up to 8 courses per tab page
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('All');
+    const [sortBy, setSortBy] = useState('default');
 
     useEffect(() => {
         dispatch(fetchEnrolledCourses());
     }, [dispatch]);
 
-    const inProgress = enrolledCourses.filter(c => (c.progress || 0) < 100);
-    const completed = enrolledCourses.filter(c => (c.progress || 0) >= 100);
+    useEffect(() => {
+        setCurrentPage(0);
+    }, [searchQuery, categoryFilter, sortBy, activeTab]);
 
-    const inProgressTotalPages = Math.ceil(inProgress.length / coursesPerPage);
-    const completedTotalPages = Math.ceil(completed.length / coursesPerPage);
+    const categoriesList = ['All', ...new Set(enrolledCourses.map(c => c.category).filter(Boolean))];
 
-    const inProgressStart = inProgressPage * coursesPerPage;
-    const inProgressEnd = inProgressStart + coursesPerPage;
-    const displayedInProgress = inProgress.slice(inProgressStart, inProgressEnd);
+    // Filter by Tab
+    const tabFilteredCourses = enrolledCourses.filter(course => {
+        if (activeTab === 'in-progress') return (course.progress || 0) < 100;
+        if (activeTab === 'completed') return (course.progress || 0) >= 100;
+        return true; // 'all'
+    });
 
-    const completedStart = completedPage * coursesPerPage;
-    const completedEnd = completedStart + coursesPerPage;
-    const displayedCompleted = completed.slice(completedStart, completedEnd);
+    // Apply Search and Category Filters
+    const filteredCourses = tabFilteredCourses.filter(course => {
+        const matchesSearch = course.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              course.tutor?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = categoryFilter === 'All' || course.category === categoryFilter;
+        return matchesSearch && matchesCategory;
+    });
+
+    // Apply Sorting
+    const sortedCourses = [...filteredCourses].sort((a, b) => {
+        if (sortBy === 'alphabetical') {
+            return (a.title || '').localeCompare(b.title || '');
+        } else if (sortBy === 'progress-desc') {
+            return (b.progress || 0) - (a.progress || 0);
+        } else if (sortBy === 'progress-asc') {
+            return (a.progress || 0) - (b.progress || 0);
+        }
+        return 0;
+    });
+
+    const totalPages = Math.ceil(sortedCourses.length / coursesPerPage);
+    const startIndex = currentPage * coursesPerPage;
+    const displayedCourses = sortedCourses.slice(startIndex, startIndex + coursesPerPage);
 
     const handleRateClick = (courseId) => {
         setSelectedCourseForReview(courseId);
@@ -169,91 +196,107 @@ export default function MyCourses() {
     }
 
     return (
-        <div className="p-8">
-            {inProgress.length > 0 && (
-                <section className="mb-12">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800">Enrolled Courses</h2>
-                        {inProgressTotalPages > 1 && (
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setInProgressPage(p => Math.max(0, p - 1))}
-                                    disabled={inProgressPage === 0}
-                                    className={`p-1.5 rounded-lg border ${
-                                        inProgressPage === 0
-                                            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                                            : 'border-gray-300 text-gray-600 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                <span className="text-sm text-gray-600">
-                                    {inProgressPage + 1} / {inProgressTotalPages}
-                                </span>
-                                <button
-                                    onClick={() => setInProgressPage(p => Math.min(inProgressTotalPages - 1, p + 1))}
-                                    disabled={inProgressPage === inProgressTotalPages - 1}
-                                    className={`p-1.5 rounded-lg border ${
-                                        inProgressPage === inProgressTotalPages - 1
-                                            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                                            : 'border-gray-300 text-gray-600 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {displayedInProgress.map(course => (
-                            <CourseCard
-                                key={course._id}
-                                course={course}
-                                onClick={() => navigate(`/student/courses/${course._id}/lessons`)}
-                                onRateClick={handleRateClick}
-                                refreshTrigger={refreshTrigger}
-                            />
-                        ))}
-                    </div>
-                </section>
-            )}
+        <div className="p-8 max-w-7xl mx-auto">
+            {/* Title & Description */}
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">My Learning</h1>
+                <p className="text-gray-550 text-sm">Track your progress and continue learning where you left off.</p>
+            </div>
 
-            {completed.length > 0 && (
-                <section>
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800">Completed Courses</h2>
-                        {completedTotalPages > 1 && (
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCompletedPage(p => Math.max(0, p - 1))}
-                                    disabled={completedPage === 0}
-                                    className={`p-1.5 rounded-lg border ${
-                                        completedPage === 0
-                                            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                                            : 'border-gray-300 text-gray-600 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                <span className="text-sm text-gray-600">
-                                    {completedPage + 1} / {completedTotalPages}
-                                </span>
-                                <button
-                                    onClick={() => setCompletedPage(p => Math.min(completedTotalPages - 1, p + 1))}
-                                    disabled={completedPage === completedTotalPages - 1}
-                                    className={`p-1.5 rounded-lg border ${
-                                        completedPage === completedTotalPages - 1
-                                            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                                            : 'border-gray-300 text-gray-600 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-gray-200 mb-6 gap-8 overflow-x-auto scrollbar-hide">
+                {[
+                    { id: 'all', label: 'All Courses' },
+                    { id: 'in-progress', label: 'In Progress' },
+                    { id: 'completed', label: 'Completed' }
+                ].map(tab => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`pb-3.5 text-sm font-semibold relative transition-colors whitespace-nowrap focus:outline-none ${
+                                isActive ? 'text-purple-600' : 'text-gray-500 hover:text-purple-500'
+                            }`}
+                        >
+                            {tab.label}
+                            {isActive && (
+                                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-purple-600 rounded-full" />
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Search and Filters Bar */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-gray-50 p-4 rounded-2xl border border-gray-200/60 shadow-sm">
+                {/* Search Bar */}
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4.5 h-4.5" />
+                    <input
+                        type="text"
+                        placeholder="Search courses or tutors..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-550/15 focus:border-purple-500 transition shadow-inner bg-white text-gray-800 placeholder-gray-400"
+                    />
+                </div>
+
+                {/* Dropdown Filters */}
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Category Select */}
+                    <div className="relative">
+                        <select
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                            className="appearance-none pr-9 pl-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-550/15 focus:border-purple-500 transition bg-white text-gray-700 font-medium cursor-pointer shadow-sm min-w-[150px]"
+                        >
+                            <option value="All">All Categories</option>
+                            {categoriesList.filter(cat => cat !== 'All').map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">▼</span>
                     </div>
+
+                    {/* Sort Select */}
+                    <div className="relative">
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="appearance-none pr-9 pl-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-550/15 focus:border-purple-500 transition bg-white text-gray-700 font-medium cursor-pointer shadow-sm min-w-[155px]"
+                        >
+                            <option value="default">Sort by: Default</option>
+                            <option value="alphabetical">Sort by: A-Z</option>
+                            <option value="progress-desc">Sort by: Highest Progress</option>
+                            <option value="progress-asc">Sort by: Lowest Progress</option>
+                        </select>
+                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">▼</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Courses Display or Empty State */}
+            {sortedCourses.length === 0 ? (
+                <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 shadow-sm animate-fadeIn">
+                    <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm mb-3">No courses found matching your query or active tab</p>
+                    <button 
+                        onClick={() => {
+                            setSearchQuery('');
+                            setCategoryFilter('All');
+                            setSortBy('default');
+                        }}
+                        className="text-xs text-purple-600 font-semibold hover:underline bg-purple-50 px-3.5 py-2 rounded-lg transition hover:bg-purple-100"
+                    >
+                        Clear Filters
+                    </button>
+                </div>
+            ) : (
+                <div className="space-y-8">
+                    {/* Courses Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {displayedCompleted.map(course => (
+                        {displayedCourses.map(course => (
                             <CourseCard
                                 key={course._id}
                                 course={course}
@@ -263,7 +306,38 @@ export default function MyCourses() {
                             />
                         ))}
                     </div>
-                </section>
+
+                    {/* Centered Pagination controls at the bottom */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-4 border-t border-gray-100 pt-6 mt-8">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                                disabled={currentPage === 0}
+                                className={`p-2 px-3 rounded-xl border flex items-center gap-1.5 text-xs font-semibold transition ${
+                                    currentPage === 0
+                                        ? 'border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50'
+                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 bg-white shadow-sm'
+                                }`}
+                            >
+                                <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                            </button>
+                            <span className="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-150 px-3 py-1.5 rounded-lg shadow-sm">
+                                Page {currentPage + 1} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                                disabled={currentPage === totalPages - 1}
+                                className={`p-2 px-3 rounded-xl border flex items-center gap-1.5 text-xs font-semibold transition ${
+                                    currentPage === totalPages - 1
+                                        ? 'border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50'
+                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 bg-white shadow-sm'
+                                }`}
+                            >
+                                Next <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    )}
+                </div>
             )}
 
             {/* Modal for reviews */}

@@ -322,7 +322,7 @@ export default function QuizBuilder() {
                                         <input
                                             type="text"
                                             placeholder={`Option ${optIndex + 1}`}
-                                            value={opt}
+                                            value={opt || ''}
                                             onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
                                             className={`w-full bg-transparent outline-none ${
                                                 isCorrect ? 'text-green-900 placeholder-green-700/50' : 'text-gray-900'

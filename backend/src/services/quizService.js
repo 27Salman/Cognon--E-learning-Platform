@@ -161,20 +161,31 @@ const quizService = {
             attemptsTodayCount = attemptsToday.length;
 
             const lastAttempt = attempts[0];
-            if (!lastAttempt.passed && lastAttempt.submittedAt) {
-                const timeSinceLastAttempt = Date.now() - new Date(lastAttempt.submittedAt).getTime();
+            
+            let lastAttemptSubmittedAt = lastAttempt.submittedAt;
+            let lastAttemptStatus = lastAttempt.status;
+            if (lastAttempt.status === QUIZ_STATUS.STARTED) {
+                const expectedEndTime = new Date(lastAttempt.startTime).getTime() + (quiz.duration * 60 * 1000);
+                if (Date.now() >= expectedEndTime) {
+                    lastAttemptStatus = QUIZ_STATUS.TIMEOUT;
+                    lastAttemptSubmittedAt = new Date(expectedEndTime);
+                }
+            }
+
+            if (!lastAttempt.passed && (lastAttemptSubmittedAt || lastAttemptStatus !== QUIZ_STATUS.STARTED)) {
+                const timeSinceLastAttempt = Date.now() - new Date(lastAttemptSubmittedAt || lastAttempt.updatedAt).getTime();
                 
                 if (attemptsTodayCount >= quiz.maxAttempts) {
                     const lockPeriod = 24 * 60 * 60 * 1000; // 24 hours lock
                     if (timeSinceLastAttempt < lockPeriod) {
                         cooldownActive = true;
-                        cooldownEndsAt = new Date(new Date(lastAttempt.submittedAt).getTime() + lockPeriod);
+                        cooldownEndsAt = new Date(new Date(lastAttemptSubmittedAt || lastAttempt.updatedAt).getTime() + lockPeriod);
                     }
                 } else {
                     const cooldownPeriod = 5 * 60 * 1000; // 5 minutes cool-down between attempts
                     if (timeSinceLastAttempt < cooldownPeriod) {
                         cooldownActive = true;
-                        cooldownEndsAt = new Date(new Date(lastAttempt.submittedAt).getTime() + cooldownPeriod);
+                        cooldownEndsAt = new Date(new Date(lastAttemptSubmittedAt || lastAttempt.updatedAt).getTime() + cooldownPeriod);
                     }
                 }
             }
@@ -203,8 +214,6 @@ const quizService = {
         const status = await this.getStudentQuizStatus(studentId, quiz.courseId.toString());
 
         if (!status.isCourseCompleted) throw new Error('You must complete all lessons before starting the quiz.');
-        if (status.cooldownActive) throw new Error('You are currently in a cool-down period. Please wait.');
-        if (status.attemptsTodayCount >= quiz.maxAttempts) throw new Error('Maximum attempts reached for today.');
 
         const ongoingAttempt = status.attempts.find(a => a.status === QUIZ_STATUS.STARTED);
         if (ongoingAttempt) {
@@ -215,6 +224,9 @@ const quizService = {
             ongoingAttempt.submittedAt = new Date(expectedEndTime);
             await ongoingAttempt.save();
         }
+
+        if (status.cooldownActive) throw new Error('You are currently in a cool-down period. Please wait.');
+        if (status.attemptsTodayCount >= quiz.maxAttempts) throw new Error('Maximum attempts reached for today.');
 
         // Fisher-Yates shuffle helper 
         const shuffleArray = (arr) => {

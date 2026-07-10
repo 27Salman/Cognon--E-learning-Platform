@@ -21,6 +21,7 @@ export default function CourseDetails() {
     const [wishlistLoading, setWishlistLoading] = useState(false);
     const [inWishlist, setInWishlist] = useState(false);
     const [inCart, setInCart] = useState(false);
+    const [showLockModal, setShowLockModal] = useState(false);
 
     // Reviews State
     const [reviews, setReviews] = useState([]);
@@ -238,7 +239,10 @@ export default function CourseDetails() {
                                     <h2 className="text-lg font-bold text-gray-800 mb-4">About the Instructor</h2>
                                     <div className="flex items-start gap-4">
                                         {/* Avatar — real image or initial */}
-                                        <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 bg-purple-600 flex items-center justify-center">
+                                        <div 
+                                            onClick={() => navigate(ROUTES.STUDENT_TUTOR_DETAIL.replace(':tutorId', tutor._id))}
+                                            className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 bg-purple-600 flex items-center justify-center cursor-pointer hover:opacity-90 transition"
+                                        >
                                             {tutor.profileImageURL || tutor.profileImage ? (
                                                 <img
                                                     src={tutor.profileImageURL || tutor.profileImage}
@@ -257,7 +261,12 @@ export default function CourseDetails() {
                                         </div>
 
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-gray-900 text-base">{tutor.name}</p>
+                                            <p 
+                                                onClick={() => navigate(ROUTES.STUDENT_TUTOR_DETAIL.replace(':tutorId', tutor._id))}
+                                                className="font-bold text-gray-900 text-base cursor-pointer hover:text-purple-600 transition"
+                                            >
+                                                {tutor.name}
+                                            </p>
                                             {tutor.tutorProfile?.subject && (
                                                 <p className="text-purple-600 text-sm mb-2">{tutor.tutorProfile.subject}</p>
                                             )}
@@ -315,7 +324,17 @@ export default function CourseDetails() {
                                                 {/* Lessons in chapter */}
                                                 <div className="divide-y divide-gray-100">
                                                     {chapter.lessons.map((lesson, idx) => (
-                                                        <div key={lesson._id} className="flex items-start gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition">
+                                                        <div 
+                                                            key={lesson._id} 
+                                                            onClick={() => {
+                                                                if (currentCourse?.isEnrolled) {
+                                                                    navigate(`/student/courses/${id}/learn`, { state: { lessonId: lesson._id } });
+                                                                } else {
+                                                                    setShowLockModal(true);
+                                                                }
+                                                            }}
+                                                            className="flex items-start gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition cursor-pointer"
+                                                        >
                                                             <div className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 mt-0.5 bg-purple-100">
                                                                 <PlayCircle className="w-4 h-4 text-purple-600" />
                                                             </div>
@@ -579,6 +598,73 @@ export default function CourseDetails() {
                     </div>
                 )}
             </div>
+
+            {/* Lesson Locked Modal */}
+            {showLockModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 transition-opacity">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-gray-105 transform transition-all scale-100 duration-300">
+                        {/* Close button */}
+                        <button 
+                            onClick={() => setShowLockModal(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+                        >
+                            ✕
+                        </button>
+                        
+                        {/* Info Icon & Title */}
+                        <div className="flex flex-col items-center text-center mt-2">
+                            <div className="w-16 h-16 rounded-full border-4 border-red-600 flex items-center justify-center mb-4">
+                                <span className="text-red-600 text-4xl font-light font-serif">i</span>
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xl">🔒</span>
+                                <h3 className="text-xl font-bold text-gray-900">Lesson Locked</h3>
+                            </div>
+                            <p className="text-sm text-gray-600 px-2 mb-6">
+                                This lesson is locked. Purchase the course to unlock all {lessons.length} lessons.
+                            </p>
+                        </div>
+
+                        {/* What you'll get box */}
+                        <div className="bg-emerald-50/50 rounded-xl p-4 border border-emerald-100 mb-6">
+                            <h4 className="font-semibold text-gray-800 text-sm mb-3">What you'll get:</h4>
+                            <ul className="space-y-2 text-sm text-gray-700">
+                                <li className="flex items-center gap-2">
+                                    <span className="text-emerald-500 font-bold">✓</span> Access to all {lessons.length} video lessons
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-emerald-500 font-bold">✓</span> Lifetime access to course content
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-emerald-500 font-bold">✓</span> Certificate of completion
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-emerald-500 font-bold">✓</span> Learn at your own pace
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowLockModal(false);
+                                    handleEnrollNow();
+                                }}
+                                className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition duration-200"
+                            >
+                                Purchase Now
+                            </button>
+                            <button
+                                onClick={() => setShowLockModal(false)}
+                                className="flex-1 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-xl transition duration-200"
+                            >
+                                Maybe Later
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Footer />
         </div>

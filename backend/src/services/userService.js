@@ -18,6 +18,7 @@ const userService = {
             profileImageURL: student.profileImage,
             role: student.role,
             status: student.status,
+            studentProfile: student.studentProfile || { enrolledCourses: [], certificates: [] }
         };
     },
 

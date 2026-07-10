@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPublishedCourses, fetchEnrolledCourses } from '../../store/slices/studentSlice';
@@ -9,6 +9,7 @@ import {
   MonitorPlay, Target, Rocket
 } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
+import { studentAPI } from '../../api/studentAPI';
 
 function useScrollReveal(threshold = 0.1) {
   const ref = useRef(null);
@@ -168,26 +169,66 @@ const StudentDashboard = () => {
   const { catalog = [], enrolledCourses = [] } = useSelector(state => state.student);
   const { user } = useSelector(state => state.auth);
 
+  const [profileStats, setProfileStats] = useState({
+    enrolled: 0,
+    completed: 0,
+    certificates: 0
+  });
+
+  const catScrollRef = useRef(null);
+  const coursesScrollRef = useRef(null);
+
+  const scrollCarousel = useCallback((ref, direction) => {
+    if (ref.current) {
+      ref.current.scrollBy({ left: direction * 310, behavior: 'smooth' });
+    }
+  }, []);
+
   useEffect(() => {
     dispatch(fetchPublishedCourses({}));
     dispatch(fetchEnrolledCourses());
+
+    (async () => {
+      try {
+        const res = await studentAPI.getProfile();
+        const profile = res.data?.data || res.data || res;
+        const enrolled = profile.studentProfile?.enrolledCourses || [];
+        const certificates = profile.studentProfile?.certificates || [];
+        setProfileStats({
+          enrolled: enrolled.length,
+          completed: enrolled.filter(c => (c.progress || 0) >= 100).length,
+          certificates: certificates.length
+        });
+      } catch (err) {
+        console.error('Failed to load profile stats:', err);
+      }
+    })();
   }, [dispatch]);
 
   const enrolledIds = new Set(enrolledCourses.map(c => c._id));
-  const unenrolled = (catalog.length > 0 ? catalog.filter(c => !enrolledIds.has(c._id)) : fallbackCourses).slice(0, 4);
+  const bestRated = catalog.length > 0
+    ? [...catalog]
+        .filter(c => !enrolledIds.has(c._id))
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    : fallbackCourses;
+  const bestRatedList = bestRated.slice(0, 10);
 
-  const dbCategories = [...new Set(catalog.map(c => c.category).filter(Boolean))];
-  const uniqueCategories = dbCategories.length > 0 ? dbCategories.slice(0, 4) : ['Development', 'Design', 'Business', 'Marketing'];
+  const categoryCounts = {};
+  catalog.forEach(course => {
+    if (course.category) {
+      categoryCounts[course.category] = (categoryCounts[course.category] || 0) + 1;
+    }
+  });
+  const dbCategories = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(entry => entry[0]);
+  const uniqueCategories = (dbCategories.length > 0 ? dbCategories : ['Development', 'Design', 'Business', 'Marketing']).slice(0, 10);
 
-  const API_BASE = import.meta.env.VITE_API_URL
-    ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-    : 'http://localhost:5000';
-
-  const HERO_IMAGE_URL = `${API_BASE}/uploads/figma/home.jpg`;
-  const ABOUT_IMAGE_1 = `${API_BASE}/uploads/figma/young-man-study-at-computer-online-learning-vector-44559316.webp`;
-  const ABOUT_IMAGE_2 = `${API_BASE}/uploads/figma/e-learning-interactions-illustration-concept_114360-23713.avif`;
-  const TUTOR_IMAGE = `${API_BASE}/uploads/figma/tutor.jpg`;
-  const EXTRA_IMAGE = `${API_BASE}/uploads/figma/admin 1.jpg`;
+  const HERO_IMAGE_URL = `/assets/figma/home.jpg`;
+  const ABOUT_IMAGE_1 = `/assets/figma/young-man-study-at-computer-online-learning-vector-44559316.webp`;
+  const ABOUT_IMAGE_2 = `/assets/figma/e-learning-interactions-illustration-concept_114360-23713.avif`;
+  const TUTOR_IMAGE = `/assets/figma/tutor.jpg`;
+  const EXTRA_IMAGE = `/assets/figma/admin 1.jpg`;
 
   /* Scroll Reveal Refs */
   const catTitleRef = useScrollReveal();
@@ -261,7 +302,7 @@ const StudentDashboard = () => {
             <div className="bg-white border-l-4 border-l-blue-500 border border-gray-200/80 rounded-2xl p-6 flex items-center justify-between hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Courses Enrolled</p>
-                <h4 className="text-3xl font-extrabold text-gray-900">{enrolledCourses.length}</h4>
+                <h4 className="text-3xl font-extrabold text-gray-900">{profileStats.enrolled}</h4>
                 <p className="text-[11px] text-blue-600 font-medium mt-2">Active learning path</p>
               </div>
               <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 transition-transform duration-300 group-hover:scale-110">
@@ -273,7 +314,7 @@ const StudentDashboard = () => {
             <div className="bg-white border-l-4 border-l-emerald-500 border border-gray-200/80 rounded-2xl p-6 flex items-center justify-between hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Completed</p>
-                <h4 className="text-3xl font-extrabold text-gray-900">{enrolledCourses.filter(c => (c.progress || 0) >= 100).length}</h4>
+                <h4 className="text-3xl font-extrabold text-gray-900">{profileStats.completed}</h4>
                 <p className="text-[11px] text-emerald-600 font-medium mt-2">Programs finalized</p>
               </div>
               <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 transition-transform duration-300 group-hover:scale-110">
@@ -285,7 +326,7 @@ const StudentDashboard = () => {
             <div className="bg-white border-l-4 border-l-amber-500 border border-gray-200/80 rounded-2xl p-6 flex items-center justify-between hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Certificates</p>
-                <h4 className="text-3xl font-extrabold text-gray-900">0</h4>
+                <h4 className="text-3xl font-extrabold text-gray-900">{profileStats.certificates}</h4>
                 <p className="text-[11px] text-amber-600 font-medium mt-2">Earned credentials</p>
               </div>
               <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 transition-transform duration-300 group-hover:scale-110">
@@ -374,10 +415,29 @@ const StudentDashboard = () => {
               See All <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div ref={catGridRef} className="reveal-children grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in">
-            {uniqueCategories.map((cat) => (
-              <StudentCategoryCard key={cat} cat={cat} navigate={navigate} catalog={catalog} />
-            ))}
+          <div ref={catGridRef} className="reveal-children relative">
+            <div ref={catScrollRef} className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide scroll-smooth" style={{ scrollSnapType: 'x mandatory' }}>
+              {uniqueCategories.map((cat) => (
+                <div key={cat} className="flex-shrink-0 w-72" style={{ scrollSnapAlign: 'start' }}>
+                  <StudentCategoryCard cat={cat} navigate={navigate} catalog={catalog} />
+                </div>
+              ))}
+            </div>
+            {/* Carousel arrows */}
+            <button
+              onClick={() => scrollCarousel(catScrollRef, -1)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-150 text-gray-650"
+              aria-label="Scroll categories left"
+            >
+              <ArrowRight className="w-4 h-4 rotate-180" />
+            </button>
+            <button
+              onClick={() => scrollCarousel(catScrollRef, 1)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-150 text-gray-650"
+              aria-label="Scroll categories right"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </section>
 
@@ -392,41 +452,94 @@ const StudentDashboard = () => {
               See All <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div ref={coursesGridRef} className="reveal-children grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {unenrolled.map(course => (
-              <div
-                key={course._id}
-                onClick={() => navigate(`/student/courses/${course._id}`)}
-                className="reveal-child bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-purple-300 border border-gray-150 cursor-pointer flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 group"
-              >
-                <div className="w-full h-36 bg-gray-100 overflow-hidden relative">
-                  {course.thumbnailURL ? (
-                    <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500" />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center">
-                      <BookOpen className="w-10 h-10 text-white" />
+          <div ref={coursesGridRef} className="reveal-children relative">
+            <div ref={coursesScrollRef} className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide scroll-smooth" style={{ scrollSnapType: 'x mandatory' }}>
+              {bestRatedList.map(course => (
+                <div
+                  key={course._id}
+                  onClick={() => navigate(`/student/courses/${course._id}`)}
+                  className="flex-shrink-0 w-72 bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-purple-300 border border-gray-150 cursor-pointer flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 group"
+                  style={{ scrollSnapAlign: 'start' }}
+                >
+                  <div className="w-full h-36 bg-gray-100 overflow-hidden relative">
+                    {course.offer && (
+                      <span className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow z-10">
+                        {course.offer.discountPercentage}% OFF
+                      </span>
+                    )}
+                    {course.thumbnailURL ? (
+                      <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center">
+                        <BookOpen className="w-10 h-10 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${
+                                i < Math.round(course.rating || 0)
+                                  ? 'text-yellow-500 fill-yellow-500'
+                                  : 'text-gray-200'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs font-semibold text-gray-755">
+                          {(course.rating || 0).toFixed(1)}
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-sm mb-2 line-clamp-2 text-gray-800 group-hover:text-purple-600 transition">{course.title}</h3>
+                      <p className="text-xs text-gray-500 mb-3">By {course.tutor?.name}</p>
                     </div>
-                  )}
-                </div>
-                <div className="p-4 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold text-sm mb-2 line-clamp-2 text-gray-800 group-hover:text-purple-600 transition">{course.title}</h3>
-                    <p className="text-xs text-gray-500 mb-3">By {course.tutor?.name}</p>
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                      <div className="flex items-center gap-1.5">
+                        {course.offer ? (
+                          <>
+                            <span className="text-lg font-bold text-purple-600">
+                              {course.offer.discountedPrice === 0 ? 'Free' : `₹${course.offer.discountedPrice}`}
+                            </span>
+                            <span className="text-xs text-gray-400 line-through">
+                              ₹{course.price}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-lg font-bold text-purple-600">
+                            {course.price === 0 ? 'Free' : `₹${course.price}`}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={e => { e.stopPropagation(); navigate(`/student/courses/${course._id}`); }}
+                        className="px-3 py-1.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition text-xs font-semibold"
+                      >
+                        Enroll Now
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-                    <span className="text-lg font-bold text-purple-600">
-                      {course.price === 0 ? 'Free' : `₹${course.price}`}
-                    </span>
-                    <button
-                      onClick={e => { e.stopPropagation(); navigate(`/student/courses/${course._id}`); }}
-                      className="px-3 py-1.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition text-xs font-semibold"
-                    >
-                      Enroll Now
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            {/* Carousel arrows */}
+            <button
+              onClick={() => scrollCarousel(coursesScrollRef, -1)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-150 text-gray-655"
+              aria-label="Scroll courses left"
+            >
+              <ArrowRight className="w-4 h-4 rotate-180" />
+            </button>
+            <button
+              onClick={() => scrollCarousel(coursesScrollRef, 1)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors z-10 border border-gray-150 text-gray-655"
+              aria-label="Scroll courses right"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </section>
       </div>
