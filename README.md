@@ -1,4 +1,4 @@
-# Cognon - Comprehensive E-Learning Platform
+# Cognon - E-Learning Platform
 
 Cognon is a robust, full-stack E-Learning platform designed to connect students with expert tutors. Built with modern web technologies, it provides a seamless and engaging experience for learning, teaching, and platform administration.
 
