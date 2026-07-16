@@ -6,7 +6,7 @@ export default function Footer() {
   const adminPhone = '7012334610';
 
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer id="contact" className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-8 py-12">
 
         {/* Main grid — 4 columns matching the image */}

@@ -29,6 +29,17 @@ export default function CreateCourse() {
     const handleFile = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+            toast.error('Please upload a valid image file (JPEG, PNG, WEBP)');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image size must be less than 5MB');
+            return;
+        }
+
         setCropSrc(URL.createObjectURL(file));
         e.target.value = '';
     };
@@ -42,6 +53,7 @@ export default function CreateCourse() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.title || !form.category) return toast.error('Title and category are required');
+        if (!thumbnail) return toast.error('Course thumbnail is required');
 
         const formData = new FormData();
         Object.entries(form).forEach(([k, v]) => { if (v) formData.append(k, v); });
@@ -131,7 +143,7 @@ export default function CreateCourse() {
                                         <p className="text-xs">Drop your file here</p>
                                     </div>
                                 )}
-                                <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+                                <input type="file" accept="image/jpg" className="hidden" onChange={handleFile} />
                             </label>
                         </div>
 

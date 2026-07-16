@@ -1,8 +1,9 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
 import Input from '../../components/common/Input';
+import Logo from '../../components/common/Logo';
 import { validateEmail } from '../../utils/helpers';
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
@@ -75,30 +76,10 @@ const Login = () => {
 
   const roleContent = {
     [ROLES.STUDENT]: {
-      title: 'Learn & Grow',
-      subtitle: 'Access thousands of courses and earn certificates',
-      gradient: 'from-primary-500 to-primary-700',
-      icon: (
-        <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
-          <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
-          <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
-          <rect x="160" y="220" width="80" height="60" rx="5" fill="#7c3aed" opacity="0.8" />
-          <path d="M 180 240 L 220 240 L 220 250 L 180 250 Z" fill="white" />
-        </svg>
-      ),
+      image: '/assets/figma/student-login.jpg',
     },
     [ROLES.TUTOR]: {
-      title: 'Teach & Inspire',
-      subtitle: 'Create courses and empower learners worldwide',
-      gradient: 'from-primary-500 to-primary-700',
-      icon: (
-        <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
-          <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
-          <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
-          <rect x="100" y="280" width="200" height="100" rx="8" fill="white" opacity="0.7" />
-          <path d="M 150 310 L 180 330 L 150 350 Z" fill="#7c3aed" />
-        </svg>
-      ),
+      image: '/assets/figma/tutor-login.avif',
     },
   };
 
@@ -107,49 +88,48 @@ const Login = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left Side */}
-      <div className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}>
-        <div className="text-center text-white">
-          <div className="mb-8 transition-all duration-500">{currentContent.icon}</div>
-          <h1 className="text-4xl font-bold mb-4 transition-all duration-300">{currentContent.title}</h1>
-          <p className="text-xl opacity-90 transition-all duration-300">{currentContent.subtitle}</p>
-          <div className="mt-8 flex justify-center gap-2">
-            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.STUDENT ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
-            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.TUTOR ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
-          </div>
+      <div className="hidden lg:flex lg:w-1/2 bg-white items-center justify-center p-8 relative transition-all duration-500">
+        <div className="absolute top-8 left-8 flex items-center gap-3">
+          <Logo size={60} />
+          <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
+        </div>
+        <div className="w-full max-w-2xl xl:max-w-3xl px-8">
+          <img src={currentContent.image} alt="Login graphic" className="w-full h-auto object-contain transition-all duration-500" />
         </div>
       </div>
 
       {/* Right Side */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden text-center mb-8">
-            <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white h-screen overflow-y-auto">
+        <div className="w-full max-w-md my-auto">
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-6">
+            <Logo size={60} />
+            <h1 className="text-2xl font-bold text-primary-600">Cognon</h1>
           </div>
 
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon..!</h2>
-            <p className="text-gray-600">Cognon provides a smart platform for learning, growing, and achieving your goals faster.</p>
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome to Cognon..!</h2>
+            <p className="text-sm text-gray-600">Cognon provides a smart platform for learning, growing, and achieving your goals faster.</p>
           </div>
 
           {/* Role Tabs */}
-          <div className="flex mb-8 bg-gray-200 rounded-lg p-1">
+          <div className="flex mb-6 bg-gray-200 rounded-lg p-1 text-sm">
             <button type="button" onClick={() => handleRoleChange(ROLES.STUDENT)}
-              className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${activeRole === ROLES.STUDENT ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
+              className={`flex-1 py-2 px-3 rounded-md font-medium transition-all ${activeRole === ROLES.STUDENT ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
               STUDENT
             </button>
             <button type="button" onClick={() => handleRoleChange(ROLES.TUTOR)}
-              className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${activeRole === ROLES.TUTOR ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
+              className={`flex-1 py-2 px-3 rounded-md font-medium transition-all ${activeRole === ROLES.TUTOR ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
               TUTOR
             </button>
           </div>
 
-          <div className="mb-6 text-center">
-            <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-700">
+          <div className="mb-4 text-center">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-700">
               Logging in as {activeRole === ROLES.STUDENT ? 'Student' : 'Tutor'}
             </span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <Input label="Email" type="email" name="email" value={formData.email}
               onChange={handleChange} placeholder="Enter your email"
               error={formErrors.email} required />
@@ -169,22 +149,22 @@ const Login = () => {
               ref={submitBtnRef}
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 font-medium rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 px-4 text-sm font-medium rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Loading...' : 'Login'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-gray-600">
+          <p className="mt-4 text-center text-sm text-gray-600">
             Don't have an account?{' '}
             <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">Sign up for free!</Link>
           </p>
 
-          <div className="mt-6">
+          <div className="mt-4">
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300"></div></div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-gray-50 text-gray-500">Sign in with</span>
+                <span className="px-4 bg-white text-gray-500">Sign in with</span>
               </div>
             </div>
             <button type="button"
@@ -192,7 +172,7 @@ const Login = () => {
                 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
                 window.location.href = `${API_URL}/auth/google?role=${activeRole}`;
               }}
-              className={`mt-4 w-full flex items-center justify-center px-4 py-3 border rounded-lg font-medium transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50`}
+              className={`mt-4 w-full flex items-center justify-center px-4 py-2.5 text-sm border rounded-lg font-medium transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50`}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

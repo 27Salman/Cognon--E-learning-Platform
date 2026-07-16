@@ -341,8 +341,7 @@ export default function StudentChat() {
     const activePeer = activeChat ? getOtherParticipant(activeChat) : null;
 
     return (
-        <div className="flex h-[calc(100vh-130px)]">
-
+        <div className="flex h-[calc(100vh-120px)] m-5 rounded-2xl border-2 border-purple-600 overflow-hidden">
             {/*  Modals  */}
             {callSession && (
                 <VideoCallModal
@@ -360,7 +359,7 @@ export default function StudentChat() {
             )}
 
             {/*  LEFT SIDEBAR  */}
-            <div className="w-80 flex flex-col flex-shrink-0 bg-purple-600 rounded-l-2xl overflow-hidden">
+            <div className="w-80 flex flex-col flex-shrink-0 bg-purple-600">
 
                 {/* Search bar */}
                 <div className="p-4">
@@ -508,22 +507,7 @@ export default function StudentChat() {
                                         : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
                                     }`}
                             >
-                                <Phone className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={handleRequestCall}
-                                disabled={callRequested}
-                                title="Request video call"
-                                className={`p-2 rounded-full transition-all
-                                    ${callRequested
-                                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                                        : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
-                                    }`}
-                            >
                                 <Video className="w-4 h-4" />
-                            </button>
-                            <button className="p-2 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition-all">
-                                <MoreVertical className="w-4 h-4" />
                             </button>
                         </div>
                     </div>

@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from './constants';
+import { Code, Palette, Briefcase, BarChart3, Globe, BookOpen } from 'lucide-react';
 
 // Token 
 export const setToken = (token) => {
@@ -120,4 +121,27 @@ export const validateImageFile = (file) => {
     return `Image must be smaller than ${MAX_IMAGE_SIZE_MB}MB`;
   }
   return null; 
+};
+
+// Dynamic visual mapping for categories (assigns consistent colors/icons by semantic matching)
+export const getCategoryDetails = (title) => {
+  if (!title) return { icon: BookOpen, color: 'from-purple-500 to-violet-600', iconColor: 'bg-purple-50 text-purple-600 border-purple-100', textColor: 'text-purple-600' };
+  
+  const t = title.toLowerCase();
+  if (t.includes('web') || t.includes('dev') || t.includes('code') || t.includes('software')) {
+    return { icon: Code, color: 'from-emerald-500 to-teal-600', iconColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', textColor: 'text-emerald-600' };
+  }
+  if (t.includes('design') || t.includes('art') || t.includes('creative') || t.includes('ui')) {
+    return { icon: Palette, color: 'from-pink-500 to-purple-600', iconColor: 'bg-pink-50 text-pink-600 border-pink-100', textColor: 'text-pink-600' };
+  }
+  if (t.includes('business') || t.includes('finance') || t.includes('management') || t.includes('strategy')) {
+    return { icon: Briefcase, color: 'from-blue-500 to-indigo-600', iconColor: 'bg-blue-50 text-blue-600 border-blue-100', textColor: 'text-blue-600' };
+  }
+  if (t.includes('marketing') || t.includes('sell') || t.includes('growth')) {
+    return { icon: BarChart3, color: 'from-orange-500 to-amber-500', iconColor: 'bg-orange-50 text-orange-600 border-orange-100', textColor: 'text-orange-600' };
+  }
+  if (t.includes('science') || t.includes('math') || t.includes('data')) {
+    return { icon: Globe, color: 'from-cyan-500 to-blue-500', iconColor: 'bg-cyan-50 text-cyan-600 border-cyan-100', textColor: 'text-cyan-600' };
+  }
+  return { icon: BookOpen, color: 'from-purple-500 to-violet-600', iconColor: 'bg-purple-50 text-purple-650 border-purple-100', textColor: 'text-purple-600' };
 };

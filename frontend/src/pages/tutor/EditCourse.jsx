@@ -34,8 +34,8 @@ export default function EditCourse() {
     const [confirmCourse, setConfirmCourse] = useState(false);
     const [confirmLesson, setConfirmLesson] = useState({ open: false, id: null, title: '' });
     const [deletingLesson, setDeletingLesson] = useState(false);
-    const [cropSrc, setCropSrc] = useState(null);         // course thumbnail crop
-    const [lessonCropSrc, setLessonCropSrc] = useState(null); // lesson thumbnail crop
+    const [cropSrc, setCropSrc] = useState(null);        
+    const [lessonCropSrc, setLessonCropSrc] = useState(null); 
     const [uploadProgress, setUploadProgress] = useState(0);
 
     const resetLessonForm = () => {
@@ -78,9 +78,23 @@ export default function EditCourse() {
 
     const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
+    const validateImage = (file) => {
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+            toast.error('Please upload a valid image file (JPEG, PNG, WEBP)');
+            return false;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image size must be less than 5MB');
+            return false;
+        }
+        return true;
+    };
+
     const handleFile = (e) => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file || !validateImage(file)) return;
+
         setCropSrc(URL.createObjectURL(file));
         e.target.value = '';
     };
@@ -265,7 +279,7 @@ export default function EditCourse() {
                                     <p className="text-sm">Upload cover image</p>
                                 </div>
                             )}
-                            <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+                            <input type="file" accept={"images/*"} className="hidden" onChange={handleFile} />
                         </label>
                     </div>
                     <div>
@@ -340,7 +354,7 @@ export default function EditCourse() {
                             )}
                             <input type="file" accept="image/*" className="hidden" onChange={e => {
                                 const file = e.target.files[0];
-                                if (file) {
+                                if (file && validateImage(file)) {
                                     setLessonCropSrc(URL.createObjectURL(file));
                                     e.target.value = '';
                                 }

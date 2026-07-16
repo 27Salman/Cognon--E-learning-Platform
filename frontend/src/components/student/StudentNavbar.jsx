@@ -28,6 +28,7 @@ export default function StudentNavbar() {
     const { user } = useSelector(state => state.auth);
     const [cartCount, setCartCount] = useState(0);
     const [wishlistCount, setWishlistCount] = useState(0);
+    const [activeSection, setActiveSection] = useState('');
     const [studentInfo, setStudentInfo] = useState(() => {
         try {
             const stored = localStorage.getItem('studentInfo');
@@ -89,6 +90,34 @@ export default function StudentNavbar() {
         };
     }, [user?._id]);
 
+    useEffect(() => {
+        const handleScroll = () => {
+            if (location.pathname !== ROUTES.STUDENT_DASHBOARD) {
+                setActiveSection(location.pathname);
+                return;
+            }
+
+            const aboutSection = document.getElementById('about');
+            const contactSection = document.getElementById('contact');
+
+            let current = ROUTES.STUDENT_DASHBOARD;
+            
+            if (contactSection && (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50) {
+                current = 'contact';
+            } else if (aboutSection && window.scrollY >= aboutSection.offsetTop - 150) {
+                current = 'about';
+            }
+            
+            setActiveSection(current);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        handleScroll();
+
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [location.pathname]);
+
+
     return (
         <header className="bg-white shadow-sm border-b sticky top-0 z-50">
             <div className="flex items-center justify-between h-16 px-6 w-full">
@@ -100,42 +129,53 @@ export default function StudentNavbar() {
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
                     <button
                         onClick={() => {
-                            navigate(ROUTES.STUDENT_DASHBOARD);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            if (location.pathname !== ROUTES.STUDENT_DASHBOARD) {
+                                navigate(ROUTES.STUDENT_DASHBOARD);
+                            }
+                            setTimeout(() => {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }, 50);
                         }}
-                        className={`transition ${location.pathname === ROUTES.STUDENT_DASHBOARD ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
+                        className={`transition ${activeSection === ROUTES.STUDENT_DASHBOARD ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
                     >
                         Home
                     </button>
                     <button
-                        onClick={() => {
-                            navigate(ROUTES.STUDENT_DASHBOARD);
-                            setTimeout(() => {
-                                document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
-                            }, 100);
-                        }}
-                        className="text-gray-700 hover:text-purple-600 transition"
-                    >
-                        About Us
-                    </button>
-                    <button
                         onClick={() => navigate(ROUTES.STUDENT_CATEGORIES)}
-                        className={`transition ${location.pathname === ROUTES.STUDENT_CATEGORIES ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
+                        className={`transition ${activeSection === ROUTES.STUDENT_CATEGORIES ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
                     >
                         Courses
                     </button>
 
                     <button
                         onClick={() => navigate(ROUTES.STUDENT_TUTORS)}
-                        className={`transition ${location.pathname === ROUTES.STUDENT_TUTORS ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
+                        className={`transition ${activeSection === ROUTES.STUDENT_TUTORS ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
                     >
                         Tutors
                     </button>
                     <button
                         onClick={() => {
-                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                            if (location.pathname !== ROUTES.STUDENT_DASHBOARD) {
+                                navigate(ROUTES.STUDENT_DASHBOARD);
+                            }
+                            setTimeout(() => {
+                                document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+                            }, 100);
                         }}
-                        className="text-gray-700 hover:text-purple-600 transition"
+                        className={`transition ${activeSection === 'about' ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
+                    >
+                        About 
+                    </button>
+                    <button
+                        onClick={() => {
+                            if (location.pathname !== ROUTES.STUDENT_DASHBOARD) {
+                                navigate(ROUTES.STUDENT_DASHBOARD);
+                            }
+                            setTimeout(() => {
+                                document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+                            }, 100);
+                        }}
+                        className={`transition ${activeSection === 'contact' ? 'text-purple-600 font-semibold' : 'text-gray-700 hover:text-purple-600'}`}
                     >
                         Contact
                     </button>

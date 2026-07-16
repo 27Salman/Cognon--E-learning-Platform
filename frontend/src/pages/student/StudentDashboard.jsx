@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
 import { studentAPI } from '../../api/studentAPI';
+import { getCategoryDetails } from '../../utils/helpers';
 
 function useScrollReveal(threshold = 0.1) {
   const ref = useRef(null);
@@ -46,40 +47,7 @@ function StudentCategoryCard({ cat, navigate, catalog }) {
     });
   };
 
-  const getCategoryCardDetails = (catName) => {
-    const lower = catName.toLowerCase();
-    if (lower.includes('design') || lower.includes('creative')) {
-      return {
-        icon: Palette,
-        color: 'from-pink-500 to-purple-600',
-        textColor: 'text-pink-600',
-        iconColor: 'bg-pink-50 text-pink-600 border-pink-100'
-      };
-    } else if (lower.includes('business') || lower.includes('strategy')) {
-      return {
-        icon: Briefcase,
-        color: 'from-blue-500 to-indigo-600',
-        textColor: 'text-blue-600',
-        iconColor: 'bg-blue-50 text-blue-600 border-blue-100'
-      };
-    } else if (lower.includes('develop') || lower.includes('tech') || lower.includes('code')) {
-      return {
-        icon: Code,
-        color: 'from-emerald-500 to-teal-600',
-        textColor: 'text-emerald-600',
-        iconColor: 'bg-emerald-50 text-emerald-600 border-emerald-100'
-      };
-    } else {
-      return {
-        icon: BarChart3,
-        color: 'from-purple-500 to-violet-600',
-        textColor: 'text-purple-600',
-        iconColor: 'bg-purple-50 text-purple-650 border-purple-100'
-      };
-    }
-  };
-
-  const details = getCategoryCardDetails(cat);
+  const details = getCategoryDetails(cat);
   const Icon = details.icon;
 
   return (
@@ -544,56 +512,6 @@ const StudentDashboard = () => {
         </section>
       </div>
 
-      {/* About Section (Clean Typography & Outlined Images) */}
-      <section ref={aboutRef} className="scroll-reveal py-20 bg-gray-50 mt-16 border-y border-gray-100">
-        <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
-          <div className="text-center mb-16">
-            <p className="text-purple-600 font-bold mb-2 text-xs uppercase tracking-widest">About Us</p>
-            <h2 className="text-3xl lg:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight leading-snug">
-              Delivering High-Quality <span className="text-purple-600">e-Learning</span> Opportunities
-            </h2>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold text-gray-800">Our Mission</h3>
-              <p className="text-gray-600 leading-relaxed text-sm">
-                At Cognon, we believe that education should be accessible to everyone, everywhere. Our platform connects passionate tutors with eager learners, creating a vibrant community of knowledge sharing and growth.
-              </p>
-              <p className="text-gray-600 leading-relaxed text-sm">
-                With thousands of courses across various disciplines, we empower individuals to pursue their passions, advance their careers, and achieve their goals through flexible, high-quality online learning experiences.
-              </p>
-            </div>
-            <div className="rounded-3xl overflow-hidden shadow-lg border border-gray-200/80 max-w-sm mx-auto aspect-square bg-white p-3">
-              <img
-                src={ABOUT_IMAGE_1}
-                alt="Student studying at computer"
-                className="w-full h-full object-cover rounded-2xl transition duration-500 hover:scale-105"
-              />
-            </div>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="rounded-3xl overflow-hidden shadow-lg border border-gray-200/80 max-w-sm mx-auto aspect-square bg-white p-3 md:order-first order-last">
-              <img
-                src={ABOUT_IMAGE_2}
-                alt="Interactive e-learning illustration"
-                className="w-full h-full object-cover rounded-2xl transition duration-500 hover:scale-105"
-              />
-            </div>
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold text-gray-800">Practical Skill Building</h3>
-              <p className="text-gray-600 leading-relaxed text-sm">
-                Install practical, industry-ready web development skills into your career and gain access to modern tools, frameworks, and real-world projects. Learn how to build responsive websites and scalable applications using popular frameworks. We guide you through architecture, best practices, and deployment so you can focus on building clean, efficient, and production-ready web applications.
-              </p>
-              <p className="text-gray-600 leading-relaxed text-sm">
-                Launch high-impact digital marketing strategies and get hands-on experience with SEO, social media, paid ads, and content marketing. Learn how to reach the right audience, drive meaningful traffic, and convert users into loyal customers. Start building campaigns based on real data and measurable outcomes.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Join Us Section (Redesigned into a Premium Card) */}
       <section ref={joinUsRef} className="scroll-reveal py-20 bg-white">
         <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
@@ -651,6 +569,56 @@ const StudentDashboard = () => {
               >
                 Checkout Courses
               </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section (Clean Typography & Outlined Images) */}
+      <section id="about" ref={aboutRef} className="scroll-reveal py-20 bg-gray-50 mt-16 border-y border-gray-100">
+        <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
+          <div className="text-center mb-16">
+            <p className="text-purple-600 font-bold mb-2 text-xs uppercase tracking-widest">About Us</p>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight leading-snug">
+              Delivering High-Quality <span className="text-purple-600">e-Learning</span> Opportunities
+            </h2>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-gray-800">Our Mission</h3>
+              <p className="text-gray-600 leading-relaxed text-sm">
+                At Cognon, we believe that education should be accessible to everyone, everywhere. Our platform connects passionate tutors with eager learners, creating a vibrant community of knowledge sharing and growth.
+              </p>
+              <p className="text-gray-600 leading-relaxed text-sm">
+                With thousands of courses across various disciplines, we empower individuals to pursue their passions, advance their careers, and achieve their goals through flexible, high-quality online learning experiences.
+              </p>
+            </div>
+            <div className="rounded-3xl overflow-hidden shadow-lg border border-gray-200/80 max-w-sm mx-auto aspect-square bg-white p-3">
+              <img
+                src={ABOUT_IMAGE_1}
+                alt="Student studying at computer"
+                className="w-full h-full object-cover rounded-2xl transition duration-500 hover:scale-105"
+              />
+            </div>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="rounded-3xl overflow-hidden shadow-lg border border-gray-200/80 max-w-sm mx-auto aspect-square bg-white p-3 md:order-first order-last">
+              <img
+                src={ABOUT_IMAGE_2}
+                alt="Interactive e-learning illustration"
+                className="w-full h-full object-cover rounded-2xl transition duration-500 hover:scale-105"
+              />
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-gray-800">Practical Skill Building</h3>
+              <p className="text-gray-600 leading-relaxed text-sm">
+                Install practical, industry-ready web development skills into your career and gain access to modern tools, frameworks, and real-world projects. Learn how to build responsive websites and scalable applications using popular frameworks. We guide you through architecture, best practices, and deployment so you can focus on building clean, efficient, and production-ready web applications.
+              </p>
+              <p className="text-gray-600 leading-relaxed text-sm">
+                Launch high-impact digital marketing strategies and get hands-on experience with SEO, social media, paid ads, and content marketing. Learn how to reach the right audience, drive meaningful traffic, and convert users into loyal customers. Start building campaigns based on real data and measurable outcomes.
+              </p>
             </div>
           </div>
         </div>

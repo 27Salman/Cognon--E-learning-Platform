@@ -9,6 +9,7 @@ import {
   Globe, Shield, Zap, Layers, HeadphonesIcon, FileText,
   MonitorPlay, LifeBuoy, MessageCircle, Upload, ImageIcon
 } from 'lucide-react';
+import { getCategoryDetails } from '../utils/helpers';
 import Logo from '../components/common/Logo';
 import StarRating from '../components/common/StarRating';
 
@@ -66,30 +67,43 @@ function AvatarSVG({ name, size = 64 }) {
 }
 
 function CategoryCard({ category, navigate }) {
-  const getCategoryIcon = (title) => {
-    const t = title.toLowerCase();
-    if (t.includes('web') || t.includes('dev') || t.includes('code') || t.includes('software')) return Code;
-    if (t.includes('design') || t.includes('art') || t.includes('creative') || t.includes('ui')) return Palette;
-    if (t.includes('business') || t.includes('finance') || t.includes('management')) return Briefcase;
-    if (t.includes('marketing') || t.includes('sell') || t.includes('growth')) return BarChart3;
-    if (t.includes('science') || t.includes('math') || t.includes('data')) return Globe;
-    return BookOpen;
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCoords({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
   };
 
-  const IconComponent = getCategoryIcon(category.title);
+  const details = getCategoryDetails(category.title);
+  const IconComponent = details.icon;
 
   return (
     <div
       onClick={() => navigate(ROUTES.LOGIN)}
-      className="flex-shrink-0 w-72 bg-white rounded-2xl p-6 cursor-pointer border border-gray-100 shadow-sm hover:shadow-xl hover:border-purple-300 hover:-translate-y-1.5 transition-all duration-300 group flex flex-col justify-between min-h-[160px]"
+      onMouseMove={handleMouseMove}
+      className="flex-shrink-0 w-72 bg-white rounded-2xl p-6 cursor-pointer border border-gray-100 shadow-sm hover:shadow-xl hover:border-purple-300 hover:-translate-y-1.5 transition-all duration-300 group flex flex-col justify-between min-h-[160px] overflow-hidden relative"
       style={{ scrollSnapAlign: 'start' }}
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm">
+      {/* Dynamic spotlight tracking overlay */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
+        style={{
+          background: `radial-gradient(250px circle at ${coords.x}px ${coords.y}px, rgba(124, 58, 237, 0.04), transparent 80%)`
+        }}
+      />
+
+      {/* Decorative accent gradient mesh on hover */}
+      <div className={`absolute -right-16 -top-16 w-32 h-32 rounded-full bg-gradient-to-br ${details.color} opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500 group-hover:scale-150 pointer-events-none z-0`} />
+
+      <div className="relative z-10 flex justify-between items-start mb-4">
+        <div className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm ${details.iconColor}`}>
           <IconComponent className="w-6 h-6" />
         </div>
       </div>
-      <div>
+      <div className="relative z-10">
         <h3 className="font-bold text-base text-gray-900 mb-1 group-hover:text-purple-600 transition-colors">
           {category.title}
         </h3>
@@ -103,40 +117,7 @@ function CategoryCard({ category, navigate }) {
   );
 }
 
-const fallbackTutors = [
-  {
-    name: 'Sarah Drasner',
-    tutorProfile: { subject: 'Vue.js & Frontend Architecture' },
-    averageRating: 4.9,
-    totalStudents: 15420,
-    totalCourses: 12,
-    profileImageURL: null
-  },
-  {
-    name: 'Addy Osmani',
-    tutorProfile: { subject: 'Web Performance & Chrome DevTools' },
-    averageRating: 4.8,
-    totalStudents: 32100,
-    totalCourses: 8,
-    profileImageURL: null
-  },
-  {
-    name: 'Dan Abramov',
-    tutorProfile: { subject: 'React & Redux Ecosystem' },
-    averageRating: 4.9,
-    totalStudents: 45200,
-    totalCourses: 15,
-    profileImageURL: null
-  },
-  {
-    name: 'Evan You',
-    tutorProfile: { subject: 'Vue.js Core & Vite Build Tools' },
-    averageRating: 5.0,
-    totalStudents: 50100,
-    totalCourses: 5,
-    profileImageURL: null
-  }
-];
+
 
 const Home = () => {
   const navigate = useNavigate();
@@ -144,7 +125,7 @@ const Home = () => {
 
   const [courses, setCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
-  const [dbTutors, setDbTutors] = useState(fallbackTutors);
+  const [dbTutors, setDbTutors] = useState([]);
   const [tutorsLoading, setTutorsLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -544,13 +525,13 @@ const Home = () => {
 
       <section className="py-20 bg-gray-50/50">
         <div className="max-w-[1680px] mx-auto px-6 md:px-12 xl:px-20">
-          <div ref={catTitleRef} className="scroll-reveal text-center mb-12">
+          <div ref={catTitleRef} className="scroll-reveal text-center mb-10">
             <p className="text-purple-600 font-semibold mb-2 text-xs uppercase tracking-widest">Browse</p>
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Popular Categories</h2>
             <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed">Explore our most popular course categories and find the skills that align with your career goals and interests.</p>
           </div>
           {categoriesLoading ? (
-            <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide">
+            <div className="flex overflow-x-auto gap-6 py-6 scrollbar-hide">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="flex-shrink-0 w-72 h-40 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm animate-pulse">
                   <div className="w-12 h-12 bg-gray-200 rounded-xl mb-4" />
@@ -565,8 +546,8 @@ const Home = () => {
             </div>
           ) : (
             <div className="relative">
-              <div ref={catScrollRef} className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide scroll-smooth" style={{ scrollSnapType: 'x mandatory' }}>
-                {categories.map((category, index) => (
+              <div ref={catScrollRef} className="flex overflow-x-auto gap-6 py-6 scrollbar-hide scroll-smooth" style={{ scrollSnapType: 'x mandatory' }}>
+                {categories.slice(0, 8).map((category, index) => (
                   <CategoryCard key={index} category={category} navigate={navigate} />
                 ))}
               </div>
