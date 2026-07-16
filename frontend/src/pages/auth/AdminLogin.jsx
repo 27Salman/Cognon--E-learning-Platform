@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../store/slices/authSlice';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import Logo from '../../components/common/Logo';
 import { validateEmail } from '../../utils/helpers';
 import { ROLES, ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
@@ -63,36 +64,34 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-900 to-gray-700 items-center justify-center p-12">
-        <div className="text-center text-white">
-          <div className="mb-8">
-            <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
-              <circle cx="200" cy="100" r="50" fill="white" opacity="0.9" />
-              <rect x="150" y="170" width="100" height="120" rx="8" fill="white" opacity="0.9" />
-              <rect x="160" cy="240" width="80" height="60" rx="5" fill="#6d28d9" opacity="0.8" />
-              <path d="M 170 200 L 230 200 L 230 220 L 170 220 Z" fill="#6d28d9" />
-            </svg>
-          </div>
-          <h1 className="text-4xl font-bold mb-4">COGNON ADMIN</h1>
-          <p className="text-xl opacity-90">Secure Administrative Access</p>
+      <div className="hidden lg:flex lg:w-1/2 bg-white items-center justify-center p-8 relative">
+        <div className="absolute top-8 left-8 flex items-center gap-3">
+          <Logo size={60} />
+          <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
+        </div>
+        <div className="w-full max-w-2xl xl:max-w-3xl px-8">
+          <img src="/assets/figma/admin-login.jpg" alt="Admin Login graphic" className="w-full h-auto object-contain" />
         </div>
       </div>
 
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Cognon</h1>
-            <p className="text-sm text-gray-600 mt-1">Admin Portal</p>
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white h-screen overflow-y-auto">
+        <div className="w-full max-w-md my-auto">
+          <div className="lg:hidden flex flex-col items-center justify-center gap-2 mb-6">
+            <div className="flex items-center gap-3">
+              <Logo size={32} />
+              <h1 className="text-2xl font-bold text-gray-900">Cognon</h1>
+            </div>
+            <p className="text-xs text-gray-600">Admin Portal</p>
           </div>
 
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon..!</h2>
-            <div className="inline-block px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-medium mt-2">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome to Cognon..!</h2>
+            <div className="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-medium mt-1">
               Admin Access Only
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Email"
               type="email"
@@ -123,10 +122,20 @@ const AdminLogin = () => {
             </Button>
           </form>
 
-          <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800 text-center">
-              This is a restricted area. Unauthorized access attempts will be logged.
-            </p>
+          <div className="mt-8 p-4 bg-red-50 border-l-4 border-red-600 rounded-r-md shadow-sm">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-semibold text-red-800">Restricted Access</h3>
+                <div className="mt-1 text-xs text-red-700">
+                  <p>This system is for authorized administrative personnel only. All access attempts and activities are strictly monitored and logged.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

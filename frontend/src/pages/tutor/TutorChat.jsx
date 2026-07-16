@@ -308,8 +308,7 @@ export default function TutorChat() {
     const activePeer = activeChat ? getOtherParticipant(activeChat) : null;
 
     return (
-        <div className="flex h-[calc(100vh-130px)]">
-
+        <div className="flex h-[calc(100vh-120px)] m-5 rounded-2xl border-2 border-purple-600 overflow-hidden">
             {/* ── Modals */}
             {callSession && (
                 <VideoCallModal
@@ -330,7 +329,7 @@ export default function TutorChat() {
             )}
 
             {/* LEFT SIDEBAR */}
-            <div className="w-80 flex flex-col flex-shrink-0 bg-purple-600 rounded-l-2xl overflow-hidden">
+            <div className="w-80 flex flex-col flex-shrink-0 bg-purple-600">
 
                 {/* Search bar */}
                 <div className="p-4">
@@ -470,14 +469,7 @@ export default function TutorChat() {
                         <div className="flex items-center gap-2">
                             <button onClick={() => handleStartCall()} title="Start video call"
                                 className="p-2 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition-all">
-                                <Phone className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleStartCall()} title="Start video call"
-                                className="p-2 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition-all">
                                 <Video className="w-4 h-4" />
-                            </button>
-                            <button className="p-2 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition-all">
-                                <MoreVertical className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
