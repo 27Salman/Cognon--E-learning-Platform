@@ -1,5 +1,5 @@
 const asyncHandler = require("../middleware/asyncHandler");
-const lessonService = require("../services/lessonService");
+const lessonService = require("../services/LessonService");
 const { HTTP_STATUS } = require("../config/constants");
 
 exports.createLesson = asyncHandler(async (req, res) => {
