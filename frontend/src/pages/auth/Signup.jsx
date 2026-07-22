@@ -302,9 +302,6 @@ Cognon provides a smart platform for learning, growing, and achieving your goals
             {/* Submit Button  */}
             <button
               type="submit"
-              variant="primary"
-              fullWidth
-              loading={loading || isSubmitting}
               disabled={loading || isSubmitting}
               className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >

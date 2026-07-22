@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Award, Loader } from 'lucide-react';
-import { studentAPI } from '../api/studentAPI';
+import { certificateAPI } from '../api/certificateAPI';
 
 const VerifyCertificate = () => {
     const { certificateNumber } = useParams();
@@ -10,7 +10,7 @@ const VerifyCertificate = () => {
 
     useEffect(() => {
         if (!certificateNumber) { setStatus('invalid'); return; }
-        studentAPI.verifyCertificate(certificateNumber)
+        certificateAPI.verifyCertificate(certificateNumber)
             .then(res => { setCert(res.data); setStatus('valid'); })
             .catch(() => setStatus('invalid'));
     }, [certificateNumber]);

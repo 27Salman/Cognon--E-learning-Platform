@@ -479,7 +479,11 @@ export default function Checkout() {
                                     disabled={paying || walletPaying}
                                     className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
                                 >
-                                    <CreditCard className="w-4 h-4" />
+                                    {paying ? (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                                    ) : (
+                                        <CreditCard className="w-4 h-4" />
+                                    )}
                                     {paying ? 'Processing...' : `Pay ₹${finalAmount}`}
                                 </button>
 

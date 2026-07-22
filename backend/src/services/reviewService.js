@@ -1,10 +1,15 @@
+const mongoose = require('mongoose');
 const Review = require('../models/Review');
 const Course = require('../models/Course');
 const { HTTP_STATUS } = require('../config/constants');
 
 async function recallCourseRating(courseId) {
+    const id = courseId instanceof mongoose.Types.ObjectId
+        ? courseId
+        : new mongoose.Types.ObjectId(courseId);
+
     const result = await Review.aggregate([
-        { $match: { course: courseId } },
+        { $match: { course: id } },
         {
             $group: {
                 _id: '$course',
@@ -41,8 +46,8 @@ async function checkEnrolled(courseId, studentId) {
 
 const reviewService = {
     async submitReview(courseId, studentId, { rating, comment }) {
-        if (!rating || rating < 1 || rating > 5) {
-            const err = new Error('Rating must be a number between 1 and 5');
+        if (!rating || !Number.isInteger(Number(rating)) || rating < 1 || rating > 5) {
+            const err = new Error('Rating must be a whole number between 1 and 5');
             err.statusCode = HTTP_STATUS.BAD_REQUEST;
             throw err;
         }

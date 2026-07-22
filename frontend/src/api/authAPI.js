@@ -50,6 +50,11 @@ export const validateToken = async () => {
   }
 };
 
+export const refreshToken = async () => {
+  const response = await api.post('/auth/refresh', {}, { withCredentials: true, _isRefresh: true });
+  return response;
+};
+
 export const verifyOTP = async (email, otp) => {
   try {
     const response = await api.post('/auth/verify-otp', { email, otp });

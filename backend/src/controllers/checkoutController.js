@@ -40,18 +40,6 @@ exports.markOrderFailed = asyncHandler(async (req, res) => {
     res.status(HTTP_STATUS.OK).json({ success: true });
 });
 
-exports.markOrderFailed = asyncHandler(async (req, res) => {
-    const { razorpayOrderId } = req.body;
-    if (razorpayOrderId) {
-        await Order.findOneAndUpdate(
-            { razorpayOrderId, user: req.user.id, paymentStatus: 'pending' },
-            { paymentStatus: 'failed' }
-        );
-    }
-    res.status(HTTP_STATUS.OK).json({ success: true });
-});
-
-
 exports.handleWebhook = asyncHandler(async (req, res) => {
     const signature = req.headers['x-razorpay-signature'];
     const result = await checkoutService.handleWebhook(req.body, signature);

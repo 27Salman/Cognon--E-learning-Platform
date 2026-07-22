@@ -1,15 +1,25 @@
 import axios from 'axios';
-import toast from 'react-hot-toast';
 import { API_URL } from '../utils/constants';
-import { getToken, clearAuthData } from '../utils/helpers';
+import { getToken, setToken, clearAuthData } from '../utils/helpers';
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 300000, 
+  timeout: 300000,
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
 
-let isLoggingOut = false;
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const onRefreshed = (newToken) => {
+  refreshSubscribers.forEach((cb) => cb(newToken));
+  refreshSubscribers = [];
+};
+
+const addRefreshSubscriber = (cb) => {
+  refreshSubscribers.push(cb);
+};
 
 api.interceptors.request.use(
   (config) => {
@@ -27,8 +37,8 @@ api.interceptors.response.use(
     }
     return response.data;
   },
-  (error) => {
-    const isLogoutRequest = error.config?.url?.includes('/auth/logout');
+  async (error) => {
+    const originalRequest = error.config;
 
     if (error.response?.config?.responseType === 'blob' && error.response?.data instanceof Blob) {
       const reader = new FileReader();
@@ -43,19 +53,49 @@ api.interceptors.response.use(
       reader.readAsText(error.response.data);
     }
 
-    if (error.response?.status === 401 && !isLoggingOut && !isLogoutRequest) {
-      isLoggingOut = true;
-      clearAuthData();
+    const isRefreshCall = originalRequest?.url?.includes('/auth/refresh') || originalRequest?._isRefresh;
+    const isLogoutCall = originalRequest?.url?.includes('/auth/logout');
+    const isAlreadyRetried = originalRequest?._retry;
 
-      import('../store/store').then(({ default: store }) => {
-        import('../store/slices/authSlice').then(({ clearAuth }) => {
-          store.dispatch(clearAuth());
-          isLoggingOut = false;
+    if (error.response?.status === 401 && !isRefreshCall && !isLogoutCall && !isAlreadyRetried) {
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addRefreshSubscriber((newToken) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(api(originalRequest));
+          });
         });
-      });
+      }
 
-      const path = window.location.pathname;
-      window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const data = await api.post('/auth/refresh', {}, { withCredentials: true, _isRefresh: true });
+        const newToken = data.token;
+
+        setToken(newToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+        onRefreshed(newToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        refreshSubscribers = [];
+        clearAuthData();
+
+        import('../store/store').then(({ default: store }) => {
+          import('../store/slices/authSlice').then(({ clearAuth }) => {
+            store.dispatch(clearAuth());
+          });
+        }).catch(() => {});
+
+        const path = window.location.pathname;
+        window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
     if (error.response?.status === 403) {

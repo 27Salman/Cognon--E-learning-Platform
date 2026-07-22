@@ -4,6 +4,8 @@ import { useDispatch } from 'react-redux';
 import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import Loader from '../../components/common/Loader';
+import { getCurrentUser } from '../../api/authAPI';
+import { setToken } from '../../utils/helpers';
 import { ROUTES } from '../../utils/constants';
 
 const GoogleAuthSuccess = () => {
@@ -32,14 +34,10 @@ const GoogleAuthSuccess = () => {
 
     const fetchUser = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${API_URL}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        setToken(token);
+        const data = await getCurrentUser();
 
-        const data = await response.json();
-
-        if (response.ok && data.user) {
+        if (data && data.user) {
           dispatch(setCredentials({ token, user: data.user }));
           toast.success('Google authentication successful!');
 

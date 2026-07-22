@@ -1,20 +1,13 @@
-const User = require('../models/User')
 const authService = require("../services/authService");
-const generateToken = require("../utils/generateToken");
-const { HTTP_STATUS, MESSAGES } = require("../config/constants");
+const { generateAccessToken, generateRefreshToken, setRefreshCookie, clearRefreshCookie } = require("../utils/generateToken");
+const { HTTP_STATUS } = require("../config/constants");
 const asyncHandler = require('../middleware/asyncHandler');
-const { verifyOTP, createOTP } = require('../services/otpService');
-const { sendVerificationOTP, sendPasswordResetOTP } = require('../services/emailService');
 
 exports.signup = asyncHandler(async (req, res) => {
-    const userData = req.body;
-    const user = await authService.registerUser(userData);
-    const token = generateToken(user._id, user.role);
-
+    const user = await authService.registerUser(req.body);
     res.status(HTTP_STATUS.CREATED).json({
         success: true,
-        message: 'Registration successful',
-        token,
+        message: 'Registration successful. Please verify your email.',
         user: {
             id: user._id,
             name: user.name,
@@ -23,9 +16,9 @@ exports.signup = asyncHandler(async (req, res) => {
             phone: user.phone,
             ...(user.role === 'tutor' && {
                 tutorProfile: {
-                    bio: user.tutorProfile.bio,
-                    expertise: user.tutorProfile.expertise,
-                    isApproved: user.tutorProfile.isApproved
+                    bio: user.tutorProfile?.bio,
+                    expertise: user.tutorProfile?.expertise,
+                    isApproved: user.tutorProfile?.isApproved
                 }
             })
         }
@@ -34,16 +27,18 @@ exports.signup = asyncHandler(async (req, res) => {
 
 exports.login = asyncHandler(async (req, res) => {
     const { email, password, role } = req.body;
-
     const loginRole = role || 'student';
     
     const user = await authService.loginUser(email, password, loginRole);
-    const token = generateToken(user._id, user.role);
+    const accessToken  = generateAccessToken(user._id, user.role);
+    const refreshToken = generateRefreshToken(user._id);
+
+    setRefreshCookie(res, refreshToken);
 
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'Login successful',
-        token,
+        token: accessToken,
         user: {
             id: user._id,
             name: user.name,
@@ -70,7 +65,8 @@ exports.login = asyncHandler(async (req, res) => {
 });
 
 exports.logout = asyncHandler(async (req, res) => {
-    console.log(`User ${req.user?._id} logged out`);
+    if (process.env.NODE_ENV === 'development') console.log(`User ${req.user?._id} logged out`);
+    clearRefreshCookie(res);
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'Logout successful'
@@ -78,8 +74,7 @@ exports.logout = asyncHandler(async (req, res) => {
 });
 
 exports.getCurrentUser = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
-    const user = await authService.getUserById(userId);
+    const user = await authService.getUserById(req.user._id);
 
     if (!user) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -120,34 +115,16 @@ exports.getCurrentUser = asyncHandler(async (req, res) => {
 
 exports.verifyEmailOTP = asyncHandler(async (req, res) => {
     const { email, otp } = req.body;
+    const user = await authService.verifyEmailOTP(email, otp);
 
-    if (!email || !otp) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: 'Email and OTP are required'
-        });
-    }
-
-    await verifyOTP(email.toLowerCase(), otp, 'email_verification');
-
-    const user = await User.findOne({ email: email.toLowerCase() });
-
-    if (!user) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({
-            success: false,
-            message: 'User not found'
-        });
-    }
-
-    user.isVerified = true;
-    await user.save();
-
-    const token = generateToken(user._id, user.role);
+    const accessToken  = generateAccessToken(user._id, user.role);
+    const refreshToken = generateRefreshToken(user._id);
+    setRefreshCookie(res, refreshToken);
 
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'Email verified successfully',
-        token,
+        token: accessToken,
         user: {
             id: user._id,
             name: user.name,
@@ -167,32 +144,7 @@ exports.verifyEmailOTP = asyncHandler(async (req, res) => {
 
 exports.resendOTP = asyncHandler(async (req, res) => {
     const { email } = req.body;
-
-    if (!email) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: 'Email is required'
-        });
-    }
-
-    const user = await User.findOne({ email: email.toLowerCase() });
-
-    if (!user) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({
-            success: false,
-            message: 'User not found'
-        });
-    }
-
-    if (user.isVerified) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: 'Email already verified'
-        });
-    }
-
-    const otp = await createOTP(email.toLowerCase(), 'email_verification');
-    await sendVerificationOTP(email, user.name, otp);
+    await authService.resendOTP(email);
 
     res.status(HTTP_STATUS.OK).json({
         success: true,
@@ -202,39 +154,17 @@ exports.resendOTP = asyncHandler(async (req, res) => {
 
 exports.forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
+    await authService.forgotPassword(email);
 
-    const user = await User.findOne({ email: email.toLowerCase() });
-
-    if (!user) {
-        return res.status(HTTP_STATUS.OK).json({
-            success: true,
-            message: 'If the email exists, an OTP has been sent'
-        });
-    }
-
-    const otp = await createOTP(email.toLowerCase(), 'password_change');
-
-    await sendPasswordResetOTP(user.email, user.name, otp);
     res.status(HTTP_STATUS.OK).json({
         success: true,
-        message: 'Password reset OTP sent to your email'
+        message: 'If the email exists, an OTP has been sent'
     });
 });
 
 exports.verifyResetOTP = asyncHandler(async (req, res) => {
     const { email, otp } = req.body;
-
-    if (!email || !otp) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: 'Email and OTP are required'
-        });
-    }
-
-    await verifyOTP(email.toLowerCase(), otp, 'password_change');
-
-    const resetToken = require('crypto').randomBytes(32).toString('hex');
-    await createOTP(email.toLowerCase(), 'email_change', resetToken);
+    const resetToken = await authService.verifyResetOTP(email, otp);
 
     res.status(HTTP_STATUS.OK).json({
         success: true,
@@ -245,42 +175,7 @@ exports.verifyResetOTP = asyncHandler(async (req, res) => {
 
 exports.resetPassword = asyncHandler(async (req, res) => {
     const { email, resetToken, newPassword } = req.body;
-
-    if (!email || !resetToken || !newPassword) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: 'All fields are required'
-        });
-    }
-
-    const OTP = require('../models/OTP');
-    const tokenDoc = await OTP.findOne({
-        email: email.toLowerCase(),
-        purpose: 'email_change',
-        newEmail: resetToken,
-        verified: false
-    });
-
-    if (!tokenDoc) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: 'Invalid or expired reset token'
-        });
-    }
-
-    await OTP.deleteOne({ _id: tokenDoc._id });
-
-    const user = await User.findOne({ email: email.toLowerCase() });
-
-    if (!user) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({
-            success: false,
-            message: 'User not found'
-        });
-    }
-
-    user.password = newPassword;
-    await user.save();
+    await authService.resetPassword(email, resetToken, newPassword);
 
     res.status(HTTP_STATUS.OK).json({
         success: true,
@@ -288,52 +183,17 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     });
 });
 
-
 exports.upgradeToTutor = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
-    const { bio, expertise } = req.body;
+    const user = await authService.upgradeToTutor(req.user._id, req.body);
     
-    const user = await User.findById(userId);
-    
-    if (!user) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({
-            success: false,
-            message: 'User not found'
-        });
-    }
-    
-    if (user.role === 'tutor') {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: 'You are already a tutor'
-        });
-    }
-    
-    if (user.role !== 'student') {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: 'Only students can upgrade to tutor'
-        });
-    }
-    
-    // Upgrade to tutor
-    user.role = 'tutor';
-    user.tutorProfile = {
-        bio: bio || '',
-        expertise: expertise || [],
-        experience: 0,
-        coursesCreated: [],
-        isApproved: false 
-    };
-    
-    await user.save();
-    
-    const token = generateToken(user._id, user.role);
+    const accessToken  = generateAccessToken(user._id, user.role);
+    const refreshToken = generateRefreshToken(user._id);
+    setRefreshCookie(res, refreshToken);
     
     res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'Successfully upgraded to tutor. Awaiting admin approval.',
-        token,
+        token: accessToken,
         user: {
             id: user._id,
             name: user.name,
@@ -347,4 +207,25 @@ exports.upgradeToTutor = asyncHandler(async (req, res) => {
             }
         }
     });
+});
+
+exports.refreshToken = asyncHandler(async (req, res) => {
+    const token = req.cookies?.refreshToken;
+    try {
+        const user = await authService.refreshSession(token);
+        const newAccessToken  = generateAccessToken(user._id, user.role);
+        const newRefreshToken = generateRefreshToken(user._id);
+        setRefreshCookie(res, newRefreshToken);
+
+        res.status(HTTP_STATUS.OK).json({
+            success: true,
+            token: newAccessToken,
+        });
+    } catch (err) {
+        clearRefreshCookie(res);
+        res.status(err.statusCode || HTTP_STATUS.UNAUTHORIZED).json({
+            success: false,
+            message: err.message || 'Authentication failed'
+        });
+    }
 });

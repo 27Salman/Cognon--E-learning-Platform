@@ -71,6 +71,3 @@ router.delete('/reviews/:courseId', reviewController.deleteReview);
 router.get('/reviews/:courseId/mine', reviewController.getMyReview);
 
 module.exports = { userRoutes: router, publicCatalogRoutes: publicRouter };
-
-
-

@@ -33,25 +33,28 @@ backend/
 ## ⚙️ How It Works (Core Workings)
 
 1. **Authentication Workflow:**
-   When a user registers or logs in, the `authController` hashes passwords or validates them against the MongoDB database. Upon success, a JWT is generated and returned to the client. For sensitive actions (like password reset), Nodemailer sends an OTP to the user's email which is verified before proceeding.
+   When a user registers or logs in, `authService` verifies credentials and issues a short-lived **15-minute Access Token** along with a **7-day Refresh Token** saved in a secure `httpOnly` cookie. When the Access Token expires, the client hits `/api/auth/refresh` to obtain a new Access Token seamlessly. For password resets, Nodemailer sends an OTP which is verified before password modification.
 
-2. **Course Creation & File Uploads:**
-   When a tutor creates a course, they upload thumbnails and video files. The backend uses `Multer` to intercept the multipart/form-data. These files are then piped directly to `Cloudinary` to be hosted on the cloud, and the resulting secure URLs are saved into the `Course` document in MongoDB.
+2. **Security & Helmet Headers:**
+   The backend implements a centralized Helmet configuration (`src/config/helmet.js`) with Content Security Policy (CSP) directives that restrict resources, enabling smooth integration with Razorpay modals, Google Fonts, Cloudinary media, and WebSockets while protecting against XSS and Clickjacking.
 
-3. **Real-time Sockets & Call Signaling:**
-   In `server.js`, Socket.io is bound to the HTTP server. It listens for `join` events to map connected socket IDs to user IDs. When a student sends a chat or initiates a video call with a tutor, the backend receives the event, optionally saves text messages to MongoDB for persistence, and immediately `emits` the payload (text or call initiation data) to the specific tutor's socket ID for instant delivery. The actual video stream is then established via the ZegoCloud SDK.
+3. **Course Creation & File Uploads:**
+   When a tutor creates a course, they upload thumbnails and video files. The backend uses `Multer` to intercept multipart/form-data, uploads them directly to `Cloudinary`, and saves secure URLs into MongoDB.
 
-4. **Razorpay Integration & Invoicing:**
-   When a user initiates checkout, the backend generates a unique `razorpay_order_id`. The client pays via Razorpay, which returns a signature. The backend cryptographically verifies this signature using the Razorpay Secret Key to ensure the payment wasn't tampered with, before marking the database `Order` as `PAID`. Following this, a PDF invoice is generated dynamically via a PDF service and provided to the user.
+4. **Real-time Sockets & Call Signaling:**
+   In `server.js`, Socket.io is bound to the HTTP server. It listens for `join` events to map socket IDs to user IDs. Real-time messages are saved to MongoDB and emitted instantly. Video call signaling is passed over WebSockets to establish peer-to-peer streams via ZegoCloud.
+
+5. **Razorpay Integration & Invoicing:**
+   When a user initiates checkout, the backend generates a unique `razorpay_order_id`. The client pays via Razorpay, which returns a signature. The backend cryptographically verifies this signature before marking the `Order` as `PAID` and generating a downloadable PDF invoice.
 
 ## 🛠️ Technologies Used
 
 * **Core Framework:** Node.js, Express.js
 * **Database:** MongoDB, Mongoose
-* **Authentication:** JSON Web Tokens (JWT), bcryptjs
+* **Authentication:** Dual JWT (Access & Refresh Tokens), bcryptjs
 * **Real-time Communication:** Socket.io
 * **File Uploads:** Multer, Cloudinary
-* **Document Generation:** PDF rendering libraries (PDFKit/Puppeteer equivalent)
+* **Document Generation:** PDF rendering libraries
 * **Payments:** Razorpay
 * **Mailing:** Nodemailer
 
@@ -73,12 +76,17 @@ backend/
    ```env
    PORT=5000
    MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   CLIENT_URL=http://localhost:5173
+   JWT_ACCESS_SECRET=your_access_token_secret
+   JWT_ACCESS_EXPIRE=15m
+   JWT_REFRESH_SECRET=your_refresh_token_secret
+   JWT_REFRESH_EXPIRE=7d
+   CLIENT_URL=http://localhost:3000
    
    # Email Config
-   EMAIL_USER=your_email@gmail.com
-   EMAIL_PASS=your_app_password
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your_email@gmail.com
+   SMTP_PASS=your_app_password
    
    # Razorpay
    RAZORPAY_KEY_ID=your_razorpay_key
@@ -88,6 +96,10 @@ backend/
    CLOUDINARY_CLOUD_NAME=your_cloud_name
    CLOUDINARY_API_KEY=your_api_key
    CLOUDINARY_API_SECRET=your_api_secret
+
+   # ZegoCloud
+   ZEGO_APP_ID=your_zego_app_id
+   ZEGO_SERVER_SECRET=your_zego_server_secret
    ```
 
 3. Start the Server:

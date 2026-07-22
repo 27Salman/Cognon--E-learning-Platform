@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { studentAPI } from '../../api/studentAPI';
 import { ShoppingCart, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { ROUTES } from '../../utils/constants';
 
 const STATUS_COLORS = {
     completed: 'bg-green-100 text-green-700',

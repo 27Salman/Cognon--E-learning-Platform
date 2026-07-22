@@ -1,10 +1,10 @@
 import { useRef } from 'react';
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
 
-export default function VideoCallModal({ roomId, serverSecret, appId, userId, userName, onClose }) {
+export default function VideoCallModal({ roomId, token, appId, serverSecret, userId, userName, onClose }) {
     const initialized = useRef(false);
     const myMeeting = async (element) => {
-        if (!element || !roomId || !serverSecret || !appId) {
+        if (!element || !roomId || !appId) {
             return;
         }
         
@@ -12,14 +12,21 @@ export default function VideoCallModal({ roomId, serverSecret, appId, userId, us
         initialized.current = true;
 
         try {
-            console.log('[ZegoCloud] Initializing for room:', roomId);
-            const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-                parseInt(appId, 10),
-                serverSecret,
-                roomId,
-                String(userId),
-                userName || 'User'
-            );
+            const kitToken = serverSecret 
+                ? ZegoUIKitPrebuilt.generateKitTokenForTest(
+                    parseInt(appId, 10),
+                    serverSecret,
+                    roomId,
+                    String(userId),
+                    userName || 'User'
+                  )
+                : ZegoUIKitPrebuilt.generateKitTokenForProduction(
+                    parseInt(appId, 10),
+                    token,
+                    roomId,
+                    String(userId),
+                    userName || 'User'
+                  );
 
             const zp = ZegoUIKitPrebuilt.create(kitToken);
             

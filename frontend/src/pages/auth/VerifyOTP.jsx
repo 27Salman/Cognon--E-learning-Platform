@@ -24,17 +24,39 @@ const VerifyOTP = () => {
     const resendIntervalRef = useRef(null);
     const expiryIntervalRef = useRef(null);
 
-    const startTimers = (resendSecs = 120, expirySecs = 300) => {
+    const startTimers = (resendSecs = 120, expirySecs = 300, isResend = false) => {
         clearInterval(resendIntervalRef.current);
         clearInterval(expiryIntervalRef.current);
-        setResendTimer(resendSecs);
-        setExpiryTimer(expirySecs);
-        resendIntervalRef.current = setInterval(() => {
-            setResendTimer(prev => { if (prev <= 1) { clearInterval(resendIntervalRef.current); return 0; } return prev - 1; });
-        }, 1000);
-        expiryIntervalRef.current = setInterval(() => {
-            setExpiryTimer(prev => { if (prev <= 1) { clearInterval(expiryIntervalRef.current); return 0; } return prev - 1; });
-        }, 1000);
+
+        const now = Date.now();
+        const resendKey = `otp_resend_${email}`;
+        const expiryKey = `otp_expiry_${email}`;
+
+        let resendEnd = parseInt(sessionStorage.getItem(resendKey));
+        let expiryEnd = parseInt(sessionStorage.getItem(expiryKey));
+
+        if (!resendEnd || !expiryEnd || isResend) {
+            resendEnd = now + resendSecs * 1000;
+            expiryEnd = now + expirySecs * 1000;
+            sessionStorage.setItem(resendKey, resendEnd.toString());
+            sessionStorage.setItem(expiryKey, expiryEnd.toString());
+        }
+
+        const updateTimers = () => {
+            const currentTime = Date.now();
+            const resendRemaining = Math.max(0, Math.floor((resendEnd - currentTime) / 1000));
+            const expiryRemaining = Math.max(0, Math.floor((expiryEnd - currentTime) / 1000));
+
+            setResendTimer(resendRemaining);
+            setExpiryTimer(expiryRemaining);
+
+            if (resendRemaining <= 0) clearInterval(resendIntervalRef.current);
+            if (expiryRemaining <= 0) clearInterval(expiryIntervalRef.current);
+        };
+
+        updateTimers();
+        resendIntervalRef.current = setInterval(updateTimers, 1000);
+        expiryIntervalRef.current = setInterval(updateTimers, 1000);
     };
 
     useEffect(() => {
@@ -95,7 +117,7 @@ const VerifyOTP = () => {
             const response = await axios.post('/auth/resend-otp', { email });
             if (response.success || response.data?.success) {
                 toast.success('New OTP sent successfully!');
-                startTimers();
+                startTimers(120, 300, true);
                 setOtp(['', '', '', '', '', '']);
                 inputRefs.current[0].focus();
             }

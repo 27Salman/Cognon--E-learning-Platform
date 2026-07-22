@@ -37,7 +37,7 @@ export default function TutorChat() {
         useEffect(() => {
         if (activeChat) {
             loadMessages(activeChat._id);
-            markConversationRead(activeChat._id);
+            markConversationRead(activeChat._id, activeChat);
         }
     }, [activeChat]);
 
@@ -74,8 +74,6 @@ export default function TutorChat() {
                     chatId,
                     senderId: message.sender._id || message.sender
                 });
-            } else {
-                toast(`New message from ${message.sender?.name || 'someone'}`, { icon: '💬' });
             }
             setChats(prev => prev.map(c =>
                 c._id === chatId
@@ -169,9 +167,9 @@ export default function TutorChat() {
         }
     };
 
-    const markConversationRead = (chatId) => {
-        if (!socket || !activeChat) return;
-        const other = getOtherParticipant(activeChat);
+    const markConversationRead = (chatId, chatData) => {
+        if (!socket || !chatData) return;
+        const other = getOtherParticipant(chatData);
         if (other) {
             socket.emit(SOCKET_EVENTS.MESSAGES_READ, { chatId, senderId: other._id });
         }
@@ -245,9 +243,9 @@ export default function TutorChat() {
         try {
             const res = await chatAPI.getVideoToken(chatId);
             console.log('[TutorChat] getVideoToken response:', res.data);
-            const { roomId, serverSecret, appId } = res.data;
+            const { roomId, token, appId } = res.data;
 
-            setCallSession({ roomId, serverSecret, appId });
+            setCallSession({ roomId, token, appId });
 
             setCallRequest(null);
 
@@ -313,8 +311,9 @@ export default function TutorChat() {
             {callSession && (
                 <VideoCallModal
                     roomId={callSession.roomId}
-                    serverSecret={callSession.serverSecret}
+                    token={callSession.token}
                     appId={callSession.appId}
+                    serverSecret={callSession.serverSecret}
                     userId={myId}
                     userName={user?.name}
                     onClose={() => setCallSession(null)}

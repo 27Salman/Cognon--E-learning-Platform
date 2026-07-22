@@ -20,6 +20,9 @@ router.post('/forgot-password', authController.forgotPassword);
 router.post('/verify-reset-otp', authController.verifyResetOTP);
 router.post('/reset-password', authController.resetPassword);
 
+// Refresh token
+router.post('/refresh', authController.refreshToken);
+
 // Upgrade student to tutor
 router.post('/upgrade-to-tutor', protect, authController.upgradeToTutor);
 

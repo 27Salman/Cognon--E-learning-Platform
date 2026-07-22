@@ -56,10 +56,18 @@ const zegoService = {
 
         const roomId = existingRoomId || `cognon-${chatId}-${Date.now()}`;
 
+        const token = generateToken04(
+            appId,
+            userId.toString(),
+            serverSecret,
+            3600 
+        );
+
         return {
             roomId,
             appId,
-            serverSecret
+            serverSecret,
+            token
         };
     }
 };

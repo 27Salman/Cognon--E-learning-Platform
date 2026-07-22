@@ -42,7 +42,7 @@ frontend/
 ## ⚙️ How It Works (Core Workings)
 
 1. **Authentication Flow:** 
-   Upon login, the backend issues a JWT. The frontend stores this token in `sessionStorage` and saves the user payload in the Redux `authSlice`. Every subsequent API call via Axios uses an interceptor to automatically attach this Bearer token to the request headers. Private Routes (`<ProtectedRoute>`) check the Redux state to ensure the user has the correct role before rendering the page.
+   Upon login, the backend issues a 15-minute Access Token returned in JSON and a 7-day Refresh Token saved in an `httpOnly` cookie. The frontend stores the Access Token in `sessionStorage` and saves the user payload in the Redux `authSlice`. Every subsequent API call via Axios uses an interceptor to automatically attach this Bearer token to request headers. If a 401 error is received, the Axios interceptor silently calls `/api/auth/refresh` in the background, updates `sessionStorage`, and retries the original request without logging out the user. Private Routes (`<ProtectedRoute>`) check Redux state before rendering.
 
 2. **Real-time Chat & Video Engine:** 
    The `StudentChat` and `TutorChat` pages instantiate a `Socket.io-client` connection on mount. The frontend emits `join` events with the user ID, listens for `new-message`, and dispatches local state updates immediately to reflect messages without refreshing the page. Video calls are facilitated using the ZegoCloud SDK, with sockets acting as the signaling pathway to initiate the calls.

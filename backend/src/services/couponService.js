@@ -23,7 +23,9 @@ const couponService = {
         if (existingCoupon) {
             throw new Error('Coupon code already exists');
         }
-
+        if (!/^[A-Z0-9]+$/.test(code.toUpperCase())) {
+            throw new Error('Coupon code must contain only letters and numbers');
+        }
         const discountVal = Number(discountValue);
         const minPurchase = Number(minPurchaseAmount) || 0;
         const maxDiscount = maxDiscountAmount ? Number(maxDiscountAmount) : null;

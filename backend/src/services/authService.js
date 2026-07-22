@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const { USER_ROLES, HTTP_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require("../config/constants");
-const { sendVerificationOTP } = require('./emailService');
-const { createOTP } = require('./otpService');
+const { sendVerificationOTP, sendPasswordResetOTP } = require('./emailService');
+const { createOTP, verifyOTP } = require('./otpService');
 const notificationService = require('./notificationService');
 
 const authService = {
@@ -12,7 +12,9 @@ const authService = {
             const normalizedEmail = email.toLowerCase().trim();
             const normalizedPhone = phone.trim();
 
-            console.log('Registration attempt for:', normalizedEmail, 'as', role);
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Registration attempt for:', normalizedEmail, 'as', role);
+            }
 
             const deletedUsers = await User.deleteMany({
                 email: normalizedEmail,
@@ -20,7 +22,7 @@ const authService = {
                 isVerified: false
             });
 
-            if (deletedUsers.deletedCount > 0) {
+            if (deletedUsers.deletedCount > 0 && process.env.NODE_ENV === 'development') {
                 console.log(`Deleted ${deletedUsers.deletedCount} unverified user(s) with role ${role}`);
             }
 
@@ -58,8 +60,8 @@ const authService = {
                     bio: bio || '',
                     expertise: expertise || [],
                     experience: 0,
-                    coursesCreated: [],
-                    isApproved: true  
+                    coursesCreated: []
+                    // approvalStatus defaults to PENDING via schema
                 };
             } else if (userRole === USER_ROLES.STUDENT) {
                 newUser.studentProfile = {
@@ -73,11 +75,11 @@ const authService = {
             for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
                     savedUser = await newUser.save();
-                    console.log(`User saved on attempt ${attempt}:`, savedUser._id);
+                    if (process.env.NODE_ENV === 'development') console.log(`User saved on attempt ${attempt}:`, savedUser._id);
                     break;
                 } catch (saveError) {
                     if (saveError.code === 11000 && attempt < 3) {
-                        console.log(`Duplicate key error on attempt ${attempt}, retrying...`);
+                        if (process.env.NODE_ENV === 'development') console.log(`Duplicate key error on attempt ${attempt}, retrying...`);
                         
                         await User.deleteMany({
                             email: normalizedEmail,
@@ -116,9 +118,10 @@ const authService = {
 
             try {
                 await sendVerificationOTP(normalizedEmail, name, otp);
-                console.log('OTP sent successfully to:', normalizedEmail);
+                if (process.env.NODE_ENV === 'development') console.log('OTP sent successfully to:', normalizedEmail);
             } catch (emailError) {
                 console.error('Failed to send verification OTP:', emailError.message);
+                throw new Error('Failed to send verification email. Please try again later.');
             }
 
             const userObject = savedUser.toObject();
@@ -150,6 +153,12 @@ const authService = {
             err.statusCode = HTTP_STATUS.UNAUTHORIZED;
             throw err;
         
+        };
+
+        if (user.status === 'blocked') {
+            const err =  new Error('Your account has been blocked. Please contact admin.');
+            err.statusCode = HTTP_STATUS.FORBIDDEN;
+            throw err;
         }
 
         if(user.lockUntil && user.lockUntil > new Date()){
@@ -174,7 +183,7 @@ const authService = {
                 throw err;
             }
 
-            user.save();
+            await user.save();
             const remaining = 3 - user.loginAttempts;
             const err = new Error(`Invalid email or password. ${remaining} Attempts left.`);
             err.statusCode = HTTP_STATUS.UNAUTHORIZED;
@@ -183,12 +192,6 @@ const authService = {
 
         user.loginAttempts = 0;
         user.lockUntil = null;
-
-        if (user.status === 'blocked') {
-            const err =  new Error('Your account has been blocked. Please contact admin.');
-            err.statusCode = HTTP_STATUS.FORBIDDEN;
-            throw err;
-        }
 
         if (!user.isVerified && user.role !== USER_ROLES.ADMIN) {
             const err = new Error('Please verify your email before logging in');
@@ -227,6 +230,180 @@ const authService = {
             isVerified: true 
         });
         return !!user;
+    },
+
+    async verifyEmailOTP(email, otp) {
+        if (!email || !otp) {
+            const err = new Error('Email and OTP are required');
+            err.statusCode = HTTP_STATUS.BAD_REQUEST;
+            throw err;
+        }
+
+        await verifyOTP(email.toLowerCase(), otp, 'email_verification');
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            const err = new Error('User not found');
+            err.statusCode = HTTP_STATUS.NOT_FOUND;
+            throw err;
+        }
+
+        user.isVerified = true;
+        await user.save();
+        return user;
+    },
+
+    async resendOTP(email) {
+        if (!email) {
+            const err = new Error('Email is required');
+            err.statusCode = HTTP_STATUS.BAD_REQUEST;
+            throw err;
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            const err = new Error('User not found');
+            err.statusCode = HTTP_STATUS.NOT_FOUND;
+            throw err;
+        }
+
+        if (user.isVerified) {
+            const err = new Error('Email already verified');
+            err.statusCode = HTTP_STATUS.BAD_REQUEST;
+            throw err;
+        }
+
+        const otp = await createOTP(email.toLowerCase(), 'email_verification');
+        await sendVerificationOTP(email, user.name, otp);
+        return true;
+    },
+
+    async forgotPassword(email) {
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return true;
+        }
+
+        const otp = await createOTP(email.toLowerCase(), 'password_change');
+        await sendPasswordResetOTP(user.email, user.name, otp);
+        return true;
+    },
+
+    async verifyResetOTP(email, otp) {
+        if (!email || !otp) {
+            const err = new Error('Email and OTP are required');
+            err.statusCode = HTTP_STATUS.BAD_REQUEST;
+            throw err;
+        }
+
+        await verifyOTP(email.toLowerCase(), otp, 'password_change');
+
+        const resetToken = require('crypto').randomBytes(32).toString('hex');
+        await createOTP(email.toLowerCase(), 'email_change', resetToken);
+
+        return resetToken;
+    },
+
+    async resetPassword(email, resetToken, newPassword) {
+        if (!email || !resetToken || !newPassword) {
+            const err = new Error('All fields are required');
+            err.statusCode = HTTP_STATUS.BAD_REQUEST;
+            throw err;
+        }
+
+        const OTP = require('../models/OTP');
+        const tokenDoc = await OTP.findOne({
+            email: email.toLowerCase(),
+            purpose: 'email_change',
+            newEmail: resetToken,
+            verified: false
+        });
+
+        if (!tokenDoc) {
+            const err = new Error('Invalid or expired reset token');
+            err.statusCode = HTTP_STATUS.BAD_REQUEST;
+            throw err;
+        }
+
+        await OTP.deleteOne({ _id: tokenDoc._id });
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            const err = new Error('User not found');
+            err.statusCode = HTTP_STATUS.NOT_FOUND;
+            throw err;
+        }
+
+        user.password = newPassword;
+        await user.save();
+        return true;
+    },
+
+    async upgradeToTutor(userId, { bio, expertise }) {
+        const user = await User.findById(userId);
+        if (!user) {
+            const err = new Error('User not found');
+            err.statusCode = HTTP_STATUS.NOT_FOUND;
+            throw err;
+        }
+
+        if (user.role === 'tutor') {
+            const err = new Error('You are already a tutor');
+            err.statusCode = HTTP_STATUS.BAD_REQUEST;
+            throw err;
+        }
+
+        if (user.role !== 'student') {
+            const err = new Error('Only students can upgrade to tutor');
+            err.statusCode = HTTP_STATUS.BAD_REQUEST;
+            throw err;
+        }
+
+        user.role = 'tutor';
+        user.tutorProfile = {
+            bio: bio || '',
+            expertise: expertise || [],
+            experience: 0,
+            coursesCreated: [],
+            isApproved: false
+        };
+
+        await user.save();
+        return user;
+    },
+
+    async refreshSession(refreshTokenCookie) {
+        if (!refreshTokenCookie) {
+            const err = new Error('No refresh token. Please log in again.');
+            err.statusCode = HTTP_STATUS.UNAUTHORIZED;
+            throw err;
+        }
+
+        let decoded;
+        try {
+            const jwt = require('jsonwebtoken');
+            decoded = jwt.verify(refreshTokenCookie, process.env.JWT_REFRESH_SECRET);
+        } catch (err) {
+            const error = new Error('Refresh token expired or invalid. Please log in again.');
+            error.statusCode = HTTP_STATUS.UNAUTHORIZED;
+            error.isTokenExpired = true;
+            throw error;
+        }
+
+        const user = await User.findById(decoded.id).select('-password');
+        if (!user) {
+            const err = new Error('User not found.');
+            err.statusCode = HTTP_STATUS.UNAUTHORIZED;
+            throw err;
+        }
+
+        if (user.status === 'blocked') {
+            const err = new Error('Your account has been blocked.');
+            err.statusCode = HTTP_STATUS.FORBIDDEN;
+            throw err;
+        }
+
+        return user;
     }
 };
 

@@ -17,7 +17,7 @@ exports.protect = async (req,res,next) => {
             });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET);
         const user = await User.findById(decoded.id).select('-password');
 
         if (!user) {
@@ -66,7 +66,7 @@ exports.optionalAuth = async (req, res, next) => {
     try {
         const token = req.cookies?.token || req.headers?.authorization?.split(' ')[1];
         if (token) {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET);
             req.user = await User.findById(decoded.id).select('-password');
         }
     } catch (err) {

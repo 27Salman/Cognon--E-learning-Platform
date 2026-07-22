@@ -3,13 +3,13 @@ require("dotenv").config({ path: __dirname + '/.env' });
 const path = require('path');
 const express = require("express");
 const cors = require('cors');
-const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const connectDB = require("./src/config/db");
 const { HTTP_STATUS } = require('./src/config/constants');
 const { errorHandler, notFound } = require('./src/middleware/errorMiddleware');
+const helmetConfig = require('./src/config/helmet');
 
 require('./src/controllers/googleAuthController');
 
@@ -28,8 +28,7 @@ const { startHoldReleaseJob } = require('./src/jobs/holdReleaseJob');
 const { initSocket } = require('./src/socket/socketManager');
 const { notificationRoutes } = require('./src/routes/notificationRoutes');
 const quizRoutes = require('./src/routes/quizRoutes');
-const certificateRoutes = require('./src/routes/certificateRoutes');
-const { publicCertificateRoutes } = require('./src/routes/certificateRoutes');
+const { certificateRoutes, publicCertificateRoutes } = require('./src/routes/certificateRoutes');
 
 const PORT = process.env.PORT || 5000;
 
@@ -38,35 +37,7 @@ connectDB();
 
 startHoldReleaseJob();
 
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc:     ["'self'"],
-      scriptSrc:      ["'self'", "'unsafe-inline'", "'unsafe-eval'",
-                       "https://checkout.razorpay.com",
-                       "https://api.razorpay.com",
-                       "https://cdn.razorpay.com",
-                       "https://lumberjack.razorpay.com"],
-      styleSrc:       ["'self'", "'unsafe-inline'",
-                       "https://fonts.googleapis.com",
-                       "https://checkout.razorpay.com"],
-      fontSrc:        ["'self'", "data:", "https://fonts.gstatic.com", "https:"],
-      frameSrc:       ["'self'",
-                       "https://api.razorpay.com",
-                       "https://checkout.razorpay.com"],
-      connectSrc:     ["'self'",
-                       "https://api.razorpay.com",
-                       "https://checkout.razorpay.com",
-                       "https://lumberjack.razorpay.com",
-                       "https://cdn.razorpay.com",
-                       "wss:", "ws:"],
-      imgSrc:         ["'self'", "data:", "blob:", "https:"],
-      objectSrc:      ["'none'"],
-      upgradeInsecureRequests: [],
-    },
-  },
-}));
+app.use(helmetConfig);
 
 const corsOptions = {
   origin: [process.env.CLIENT_URL, 'http://localhost:3000'].filter(Boolean),
@@ -136,8 +107,8 @@ app.use(express.static(FRONTEND_DIST));
 app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
 });
-// ────────────────────────────────
 
+app.use('/api', notFound);
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {

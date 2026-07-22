@@ -40,7 +40,7 @@ Cognon/
 ## ⚙️ Core Workings
 
 1. **Authentication & Authorization:** 
-   Authentication is handled via JWTs (JSON Web Tokens). When a user logs in, the backend verifies credentials and issues a signed token. The frontend stores this token and intercepts all future Axios requests to include it in the `Authorization` header. Private routes ensure that only users with the correct roles (Student, Tutor, Admin) can access specific dashboard features.
+   Authentication uses a secure **Dual-Token Architecture** (Access Token + Refresh Token). Upon login, the backend issues a 15-minute Access Token returned in JSON and a 7-day Refresh Token stored in an `httpOnly` cookie (XSS-protected). The frontend stores the Access Token in `sessionStorage` and automatically attaches it to request headers. When the Access Token expires, an Axios interceptor silently calls `/api/auth/refresh` to fetch a new Access Token without interrupting the user. Role-Based Access Control (RBAC) restricts routes by user role (Student, Tutor, Admin).
 
 2. **Real-time Engine (Sockets & ZegoCloud):** 
    Socket.io is implemented to allow live chat communication and signaling for video calls between Students and Tutors. The backend maintains an active registry mapping user IDs to socket IDs. When a message or call request is sent, it is immediately emitted to the recipient's socket for real-time delivery without page reloads. ZegoCloud handles the actual P2P video stream.

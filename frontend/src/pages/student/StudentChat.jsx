@@ -70,8 +70,6 @@ export default function StudentChat() {
                 socket.emit(SOCKET_EVENTS.MESSAGES_READ, {
                     chatId, senderId: message.sender._id || message.sender
                 });
-            } else {
-                toast(`New message from ${message.sender?.name || 'someone'}`, { icon: '💬' });
             }
             setChats(prev => prev.map(c =>
                 c._id === chatId
@@ -254,8 +252,8 @@ export default function StudentChat() {
             if (!chat) { toast.error('Cannot find the chat for this call'); return; }
             const res = await chatAPI.getVideoToken(chat._id, incomingCall.roomId);
             console.log('[StudentChat] getVideoToken response:', res.data);
-            const { serverSecret, appId } = res.data;
-            setCallSession({ roomId: incomingCall.roomId, serverSecret, appId });
+            const { token, appId } = res.data;
+            setCallSession({ roomId: incomingCall.roomId, token, appId });
             setIncomingCall(null);
         } catch { toast.error('Failed to join call'); }
     };
@@ -345,8 +343,9 @@ export default function StudentChat() {
             {/*  Modals  */}
             {callSession && (
                 <VideoCallModal
-                    roomId={callSession.roomId} serverSecret={callSession.serverSecret}
-                    appId={callSession.appId} userId={myId} userName={user?.name}
+                    roomId={callSession.roomId} token={callSession.token}
+                    appId={callSession.appId} serverSecret={callSession.serverSecret}
+                    userId={myId} userName={user?.name}
                     onClose={handleEndCall}
                 />
             )}

@@ -1,10 +1,10 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../models/User');
-const generateToken = require('../utils/generateToken');
+const { generateAccessToken, generateRefreshToken, setRefreshCookie } = require('../utils/generateToken');
 const { USER_ROLES } = require('../config/constants');
+const cloudinary = require('../config/cloudinary');
 
-// Configure Google Strategy
 passport.use(
   new GoogleStrategy(
     {
@@ -31,27 +31,40 @@ passport.use(
           return done(null, user);
         }
 
-        // Create new user with Google data
+        let profileImageUrl = profile.photos[0]?.value || null;
+        if (profileImageUrl) {
+          try {
+            const uploaded = await cloudinary.uploader.upload(profileImageUrl, {
+              folder: 'Cognon/profiles',
+              public_id: `google-${Date.now()}`,
+              transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }]
+            });
+            profileImageUrl = uploaded.secure_url;
+          } catch (uploadErr) {
+            console.error('Failed to upload Google profile photo to Cloudinary, using original URL:', uploadErr.message);
+          }
+        }
+
+        // Create new user
         user = await User.create({
           name: googleName,
           email: email,
           password: Math.random().toString(36).slice(-8) + 'Aa1!',
           phone: null,
           role: role === USER_ROLES.TUTOR ? USER_ROLES.TUTOR : USER_ROLES.STUDENT,
-          profileImage: profile.photos[0]?.value || null,
+          profileImage: profileImageUrl,
           isVerified: true,
           status: 'active',
           authProvider: 'google',
         });
 
-        // Add role-specific profile
+        // role-specific profile
         if (role === USER_ROLES.TUTOR) {
           user.tutorProfile = {
             bio: '',
             expertise: [],
             experience: 0,
             coursesCreated: [],
-            isApproved: false, 
           };
         } else {
           user.studentProfile = {
@@ -103,8 +116,10 @@ exports.googleAuthCallback = (req, res, next) => {
       return res.redirect(`${process.env.CLIENT_URL}/login?error=${msg}`);
     }
 
-    const token = generateToken(user._id, user.role);
-    res.redirect(`${process.env.CLIENT_URL}/auth/google/success?token=${token}`);
+    const accessToken  = generateAccessToken(user._id, user.role);
+    const refreshToken = generateRefreshToken(user._id);
+    setRefreshCookie(res, refreshToken);
+    res.redirect(`${process.env.CLIENT_URL}/auth/google/success?token=${accessToken}`);
   })(req, res, next);
 };
 

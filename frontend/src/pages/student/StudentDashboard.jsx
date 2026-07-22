@@ -193,10 +193,10 @@ const StudentDashboard = () => {
   const uniqueCategories = (dbCategories.length > 0 ? dbCategories : ['Development', 'Design', 'Business', 'Marketing']).slice(0, 10);
 
   const HERO_IMAGE_URL = `/assets/figma/home.jpg`;
-  const ABOUT_IMAGE_1 = `/assets/figma/young-man-study-at-computer-online-learning-vector-44559316.webp`;
-  const ABOUT_IMAGE_2 = `/assets/figma/e-learning-interactions-illustration-concept_114360-23713.avif`;
-  const TUTOR_IMAGE = `/assets/figma/tutor.jpg`;
-  const EXTRA_IMAGE = `/assets/figma/admin 1.jpg`;
+  const ABOUT_IMAGE_1 = `/assets/figma/about 1.jpg`;
+  const ABOUT_IMAGE_2 = `/assets/figma/about 2.avif`;
+  const TUTOR_IMAGE = `/assets/figma/expert tutor.jpg`;
+  const EXTRA_IMAGE = `/assets/figma/transform.jpg`;
 
   /* Scroll Reveal Refs */
   const catTitleRef = useScrollReveal();

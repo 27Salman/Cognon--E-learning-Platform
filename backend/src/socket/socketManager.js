@@ -18,7 +18,7 @@ const initSocket = (server) => {
     });
 
     io.on('connection', (socket) => {
-        console.log(`[Socket] Connected: ${socket.id}`);
+        if (process.env.NODE_ENV === 'development') console.log(`[Socket] Connected: ${socket.id}`);
 
         socket.on(SOCKET_EVENTS.JOIN, (userId) => {
             if (!userId) return;
@@ -30,13 +30,13 @@ const initSocket = (server) => {
 
             socket.userId = uid;
 
-            console.log(`[Socket] User ${uid} joined. Online users: ${onlineUsers.size}`);
+            if (process.env.NODE_ENV === 'development') console.log(`[Socket] User ${uid} joined. Online users: ${onlineUsers.size}`);
 
             socket.broadcast.emit(SOCKET_EVENTS.USER_ONLINE, { userId: uid });
         });
 
         socket.on(SOCKET_EVENTS.DISCONNECT, () => {
-            console.log(`[Socket] Disconnected: ${socket.id}`);
+            if (process.env.NODE_ENV === 'development') console.log(`[Socket] Disconnected: ${socket.id}`);
             const uid = socket.userId;
             if (uid) {
                 const sockets = onlineUsers.get(uid);
@@ -68,7 +68,7 @@ const initSocket = (server) => {
                 const recipients = chat.participants.filter(
                     p => p._id.toString() !== senderId.toString()
                 );
-                console.log('Sending notification to:', recipients.map(r => r._id)); await chatService.notifyNewMessage(chatId, senderId, text, recipients); console.log('Notification sent successfully');
+                await chatService.notifyNewMessage(chatId, senderId, text, recipients);
 
             } catch (err) {
                 console.error('[Socket] send-message error:', err.message);
@@ -81,6 +81,7 @@ const initSocket = (server) => {
                 const recipientId = socket.userId;
                 if (!recipientId) return;
 
+                const chatService = require('../services/chatService');
                 const message = await chatService.markDelivered(chatId, messageId, recipientId);
                 if (!message) return;
 

@@ -24,6 +24,15 @@ const Login = () => {
     return () => dispatch(clearError());
   }, [dispatch]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const error = params.get('error');
+    if (error) {
+      toast.error(decodeURIComponent(error));
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, navigate]);
+
   if (isAuthenticated && user) {
     const dashboard =
       user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD

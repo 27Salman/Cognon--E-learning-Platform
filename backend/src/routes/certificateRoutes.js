@@ -15,8 +15,7 @@ router.get('/:id', studentOnly, certificateController.getCertificateById);
 const publicRouter = express.Router();
 publicRouter.get('/:certificateNumber', certificateController.verifyCertificate);
 
-module.exports = router;
-module.exports.publicCertificateRoutes = publicRouter;
+module.exports = { certificateRoutes: router, publicCertificateRoutes: publicRouter };
 
 
 
