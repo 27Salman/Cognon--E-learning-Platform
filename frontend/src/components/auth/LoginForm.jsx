@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { loginUser, clearError } from '../../store/slices/authSlice';
-import { validateEmail } from '../../utils/helpers';
-import Input from '../common/Input';
-import Button from '../common/Button';
-import toast from 'react-hot-toast';
-import { ROUTES } from '../../utils/constants';
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { loginUser, clearError } from "../../store/slices/authSlice";
+import { validateEmail } from "../../utils/helpers";
+import Input from "../common/Input";
+import Button from "../common/Button";
+import toast from "react-hot-toast";
+import { ROUTES } from "../../utils/constants";
 
 const LoginForm = () => {
   const dispatch = useDispatch();
@@ -14,8 +14,8 @@ const LoginForm = () => {
   const { loading, error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -32,19 +32,19 @@ const LoginForm = () => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     if (errors[name]) {
-      setErrors({ ...errors, [name]: '' });
+      setErrors({ ...errors, [name]: "" });
     }
   };
 
   const validate = () => {
     const newErrors = {};
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = "Invalid email format";
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -56,14 +56,13 @@ const LoginForm = () => {
 
     try {
       const result = await dispatch(loginUser(formData)).unwrap();
-      toast.success('Login successful!');
-      
+      toast.success("Login successful!");
+
       const role = result.user.role;
-      if (role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD);
-      else if (role === 'tutor') navigate(ROUTES.TUTOR_DASHBOARD);
+      if (role === "admin") navigate(ROUTES.ADMIN_DASHBOARD);
+      else if (role === "tutor") navigate(ROUTES.TUTOR_DASHBOARD);
       else navigate(ROUTES.STUDENT_DASHBOARD);
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
   return (

@@ -53,17 +53,16 @@ const notificationSchema = new mongoose.Schema(
 
     expiresAt: {
       type: Date,
-      default: () =>
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 //compound
-notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1, });
+notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 });
 
 //TTL
 notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

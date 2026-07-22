@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 const Input = ({
   label,
-  type = 'text',
+  type = "text",
   name,
   value,
   onChange,
@@ -14,8 +14,8 @@ const Input = ({
   ...rest
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const isPassword = type === 'password';
-  const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
+  const isPassword = type === "password";
+  const inputType = isPassword ? (showPassword ? "text" : "password") : type;
 
   return (
     <div className="mb-4">
@@ -39,12 +39,12 @@ const Input = ({
           disabled={disabled}
           className={`
             w-full px-4 py-3 rounded-lg border
-            ${error ? 'border-red-500' : 'border-gray-300'}
+            ${error ? "border-red-500" : "border-gray-300"}
             focus:outline-none focus:ring-2
-            ${error ? 'focus:ring-red-500' : 'focus:ring-primary-500'}
+            ${error ? "focus:ring-red-500" : "focus:ring-primary-500"}
             disabled:bg-gray-100 disabled:cursor-not-allowed
             transition-all duration-200
-            ${isPassword ? 'pr-12' : ''}
+            ${isPassword ? "pr-12" : ""}
           `}
           {...rest}
         />
@@ -55,7 +55,11 @@ const Input = ({
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
             tabIndex={-1}
           >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            {showPassword ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
           </button>
         )}
       </div>

@@ -1,25 +1,25 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 // Create transporter
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: parseInt(process.env.SMTP_PORT) || 587,
     secure: false,
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
+      pass: process.env.SMTP_PASS,
+    },
   });
 };
 
 const sendVerificationOTP = async (email, name, otp) => {
   const transporter = createTransporter();
-  
+
   const mailOptions = {
     from: `"Cognon E-Learning" <${process.env.SMTP_USER}>`,
     to: email,
-    subject: 'Verify Your Email - Cognon',
+    subject: "Verify Your Email - Cognon",
     html: `
       <!DOCTYPE html>
       <html>
@@ -52,7 +52,7 @@ const sendVerificationOTP = async (email, name, otp) => {
         </div>
       </body>
       </html>
-    `
+    `,
   };
 
   await transporter.sendMail(mailOptions);
@@ -60,11 +60,11 @@ const sendVerificationOTP = async (email, name, otp) => {
 
 const sendPasswordResetOTP = async (email, name, otp) => {
   const transporter = createTransporter();
-  
+
   const mailOptions = {
     from: `"Cognon E-Learning" <${process.env.SMTP_USER}>`,
     to: email,
-    subject: 'Password Reset Request - Cognon',
+    subject: "Password Reset Request - Cognon",
     html: `
       <!DOCTYPE html>
       <html>
@@ -97,7 +97,7 @@ const sendPasswordResetOTP = async (email, name, otp) => {
         </div>
       </body>
       </html>
-    `
+    `,
   };
 
   await transporter.sendMail(mailOptions);
@@ -108,14 +108,14 @@ module.exports = {
   sendPasswordResetOTP,
   sendOTPEmail: async (email, otp, purpose) => {
     const subjects = {
-      email_change: 'Email Change Request - Cognon',
-      password_change: 'Password Change Request - Cognon',
+      email_change: "Email Change Request - Cognon",
+      password_change: "Password Change Request - Cognon",
     };
     const transporter = createTransporter();
     await transporter.sendMail({
       from: `"Cognon E-Learning" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: subjects[purpose] || 'OTP - Cognon',
+      subject: subjects[purpose] || "OTP - Cognon",
       html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
         <div style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:white;padding:30px;text-align:center;border-radius:10px 10px 0 0">
           <h1>Cognon E-Learning</h1>
@@ -125,7 +125,7 @@ module.exports = {
           <div style="background:white;border:2px solid #8b5cf6;padding:20px;text-align:center;font-size:32px;font-weight:bold;letter-spacing:8px;color:#8b5cf6;margin:20px 0;border-radius:8px">${otp}</div>
           <p><strong>This code expires in 5 minutes.</strong></p>
         </div>
-      </div>`
+      </div>`,
     });
-  }
+  },
 };

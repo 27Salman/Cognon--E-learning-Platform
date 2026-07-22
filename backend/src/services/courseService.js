@@ -1,370 +1,394 @@
-const Course = require('../models/Course');
-const User = require('../models/User');
-const Lesson = require('../models/Lesson');
-const Category = require('../models/Category');
-const Cart = require('../models/Cart');
-const Wishlist = require('../models/Wishlist');
-const { COURSE_STATUS, NOTIFICATION_TYPES, NOTIFICATION_ACTIONS } = require('../config/constants');
-const { deleteCloudinaryAsset } = require('./fileService');
-const notificationService = require('./notificationService');
-const Certificate = require('../models/Certificate');
-
+const Course = require("../models/Course");
+const User = require("../models/User");
+const Lesson = require("../models/Lesson");
+const Category = require("../models/Category");
+const Cart = require("../models/Cart");
+const Wishlist = require("../models/Wishlist");
+const {
+  COURSE_STATUS,
+  NOTIFICATION_TYPES,
+  NOTIFICATION_ACTIONS,
+} = require("../config/constants");
+const { deleteCloudinaryAsset } = require("./fileService");
+const notificationService = require("./notificationService");
+const Certificate = require("../models/Certificate");
 
 function groupByChapter(lessons) {
-    const map = {};
-    for (const lesson of lessons) {
-        const key = lesson.chapter?.order ?? 1;
-        if (!map[key]) {
-            map[key] = { order: key, title: lesson.chapter?.title ?? 'Chapter 1', lessons: [] };
-        }
-        map[key].lessons.push(lesson);
+  const map = {};
+  for (const lesson of lessons) {
+    const key = lesson.chapter?.order ?? 1;
+    if (!map[key]) {
+      map[key] = {
+        order: key,
+        title: lesson.chapter?.title ?? "Chapter 1",
+        lessons: [],
+      };
     }
-    return Object.values(map)
-        .sort((a, b) => a.order - b.order)
-        .map(ch => ({ ...ch, lessons: ch.lessons.sort((a, b) => a.order - b.order) }));
+    map[key].lessons.push(lesson);
+  }
+  return Object.values(map)
+    .sort((a, b) => a.order - b.order)
+    .map((ch) => ({
+      ...ch,
+      lessons: ch.lessons.sort((a, b) => a.order - b.order),
+    }));
 }
 
 const courseService = {
+  async createCourse(tutorId, courseData, file) {
+    const { title, description, price, offerPercentage, category } = courseData;
 
-    async createCourse(tutorId, courseData, file){
-        const { title, description, price, offerPercentage, category } = courseData;
+    const categoryDoc = await Category.findOne({
+      name: category,
+      isActive: true,
+    });
+    if (!categoryDoc) {
+      throw new Error(
+        "The selected category is not available. Please choose an active category.",
+      );
+    }
 
-        const categoryDoc = await Category.findOne({ name: category, isActive: true });
-        if (!categoryDoc) {
-            throw new Error('The selected category is not available. Please choose an active category.');
+    const course = new Course({
+      title,
+      description,
+      price: price || 0,
+      offerPercentage: Number(offerPercentage) || 0,
+      category,
+      tutor: tutorId,
+      thumbnail: file ? file.path : null,
+    });
+
+    await course.save();
+
+    await User.findByIdAndUpdate(tutorId, {
+      $push: { "tutorProfile.coursesCreated": course._id },
+    });
+
+    return await Course.findById(course._id).populate("tutor", "name email");
+  },
+
+  async updateCourse(courseId, tutorId, updateData, file) {
+    const course = await Course.findOne({ _id: courseId, tutor: tutorId });
+    if (!course) throw new Error("Course not found or unauthorized");
+
+    const { title, description, price, offerPercentage, category, status } =
+      updateData;
+
+    if (title) course.title = title;
+    if (description) course.description = description;
+    if (price !== undefined) course.price = price;
+    if (offerPercentage !== undefined)
+      course.offerPercentage = Number(offerPercentage) || 0;
+    if (category) course.category = category;
+    const statusChanged =
+      status &&
+      status !== course.status &&
+      Object.values(COURSE_STATUS).includes(status);
+    if (statusChanged) {
+      course.status = status;
+    }
+    if (file) {
+      if (course.thumbnail) {
+        await deleteCloudinaryAsset(course.thumbnail);
+      }
+      course.thumbnail = file.path;
+    }
+
+    await course.save();
+
+    if (statusChanged) {
+      try {
+        const tutorUser = await User.findById(tutorId).select("name");
+        const tutorName = tutorUser ? tutorUser.name : "Tutor";
+        const admin = await User.findOne({ role: "admin" }).select("_id");
+        if (admin) {
+          await notificationService.create({
+            recipient: admin._id,
+            type: NOTIFICATION_TYPES.COURSE_STATUS_CHANGED,
+            title: `Course status updated by tutor`,
+            message: `Tutor "${tutorName}" has updated "${course.title}" status to "${status}".`,
+            priority: "medium",
+            actionUrl: NOTIFICATION_ACTIONS.ADMIN_COURSES(),
+            data: { courseId: course._id, status },
+          });
         }
-
-        const course = new Course({
-            title, 
-            description,
-            price: price || 0,
-            offerPercentage: Number(offerPercentage) || 0,
-            category,
-            tutor: tutorId,
-            thumbnail: file ? file.path : null 
-        });
-
-        await course.save();
-
-        await User.findByIdAndUpdate(
-            tutorId,
-            { $push: { 'tutorProfile.coursesCreated': course._id } }
+      } catch (err) {
+        console.error(
+          "Failed to notify admin on course status change:",
+          err.message,
         );
+      }
+    }
 
-        return await Course.findById(course._id).populate('tutor', 'name email');
-    },
+    const change = title || description;
+    if (change && course.studentsEnrolled?.length > 0) {
+      await notificationService.createBulk(course.studentsEnrolled, {
+        type: NOTIFICATION_TYPES.COURSE_CONTENT_UPDATED,
+        title: `"${course.title}" has been updated`,
+        message: "Your enrolled course has been updated by the tutor.",
+        priority: "low",
+        actionUrl: NOTIFICATION_ACTIONS.STUDENT_MY_COURSES(),
+        data: { courseId: course._id },
+      });
+    }
 
-    async updateCourse(courseId, tutorId, updateData, file) {
-        const course = await Course.findOne({ _id: courseId, tutor: tutorId });
-        if(!course) throw new Error('Course not found or unauthorized');
+    return await Course.findById(course._id).populate("tutor", "name email");
+  },
 
-        const { title, description, price, offerPercentage, category, status } = updateData;
+  async deleteCourse(courseId, tutorId) {
+    const course = await Course.findOne({ _id: courseId, tutor: tutorId });
+    if (!course) throw new Error("Course not found or unauthorized");
 
-        if(title) course.title = title;
-        if(description) course.description = description;
-        if(price !== undefined) course.price = price;
-        if(offerPercentage !== undefined) course.offerPercentage = Number(offerPercentage) || 0;
-        if(category) course.category = category;
-        const statusChanged = status && status !== course.status && Object.values(COURSE_STATUS).includes(status);
-        if(statusChanged){
-            course.status = status;
-        }
-        if(file) {
-            if (course.thumbnail) {
-                await deleteCloudinaryAsset(course.thumbnail);
-            }
-            course.thumbnail = file.path;
-        }
+    if (course.studentsEnrolled && course.studentsEnrolled.length > 0) {
+      throw new Error(
+        `Cannot delete this course — ${course.studentsEnrolled.length} student(s) are enrolled. Set it to draft or archived instead.`,
+      );
+    }
 
-        await course.save();
+    await Lesson.deleteMany({ course: courseId });
 
-        if (statusChanged) {
-            try {
-                const tutorUser = await User.findById(tutorId).select('name');
-                const tutorName = tutorUser ? tutorUser.name : 'Tutor';
-                const admin = await User.findOne({ role: 'admin' }).select('_id');
-                if (admin) {
-                    await notificationService.create({
-                        recipient: admin._id,
-                        type: NOTIFICATION_TYPES.COURSE_STATUS_CHANGED,
-                        title: `Course status updated by tutor`,
-                        message: `Tutor "${tutorName}" has updated "${course.title}" status to "${status}".`,
-                        priority: 'medium',
-                        actionUrl: NOTIFICATION_ACTIONS.ADMIN_COURSES(),
-                        data: { courseId: course._id, status }
-                    });
-                }
-            } catch (err) {
-                console.error('Failed to notify admin on course status change:', err.message);
-            }
-        }
+    await Cart.updateMany({}, { $pull: { items: { course: courseId } } });
+    await Wishlist.updateMany({}, { $pull: { courses: courseId } });
 
-        const change = title || description;
-        if (change && course.studentsEnrolled?.length > 0) {
-            await notificationService.createBulk(course.studentsEnrolled, {
-                type: NOTIFICATION_TYPES.COURSE_CONTENT_UPDATED,
-                title: `"${course.title}" has been updated`,
-                message: 'Your enrolled course has been updated by the tutor.',
-                priority: 'low',
-                actionUrl: NOTIFICATION_ACTIONS.STUDENT_MY_COURSES(),
-                data: { courseId: course._id }
-            });
-        }
+    await User.findByIdAndUpdate(tutorId, {
+      $pull: { "tutorProfile.coursesCreated": courseId },
+    });
 
-        return await Course.findById(course._id).populate('tutor', 'name email');
-    },
+    if (course.thumbnail) {
+      await deleteCloudinaryAsset(course.thumbnail);
+    }
 
-    async deleteCourse(courseId, tutorId) {
-        const course = await Course.findOne({ _id: courseId, tutor: tutorId });
-        if(!course) throw new Error('Course not found or unauthorized');
+    const lessons = await Lesson.find({ course: courseId });
+    for (const lesson of lessons) {
+      if (lesson.thumbnail) await deleteCloudinaryAsset(lesson.thumbnail);
+      if (lesson.videoUrl) await deleteCloudinaryAsset(lesson.videoUrl);
+      if (lesson.pdfNotes) await deleteCloudinaryAsset(lesson.pdfNotes);
+    }
 
-        if (course.studentsEnrolled && course.studentsEnrolled.length > 0) {
-            throw new Error(`Cannot delete this course — ${course.studentsEnrolled.length} student(s) are enrolled. Set it to draft or archived instead.`);
-        }
+    await Course.findByIdAndDelete(courseId);
+    return { message: "Course deleted successfully" };
+  },
 
-        await Lesson.deleteMany({ course: courseId });
+  async getTutorCourses(tutorId, page = 1, limit = 5) {
+    const skip = (page - 1) * limit;
 
-        await Cart.updateMany({}, { $pull: { items: { course: courseId } } });
-        await Wishlist.updateMany({}, { $pull: { courses: courseId } });
+    const courses = await Course.find({ tutor: tutorId })
+      .populate("tutor", "name email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-        await User.findByIdAndUpdate(
-            tutorId,
-            { $pull: { 'tutorProfile.coursesCreated': courseId } }
+    const total = await Course.countDocuments({ tutor: tutorId });
+
+    return {
+      courses,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalCourses: total,
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      },
+    };
+  },
+
+  async getAllPublishedCourses(filters = {}, page = 1, limit = 5) {
+    const skip = (page - 1) * limit;
+    const query = { status: COURSE_STATUS.PUBLISHED };
+
+    if (filters.category) {
+      query.category = new RegExp(filters.category, "i");
+    }
+
+    if (filters.search && filters.search.trim()) {
+      query.$or = [
+        { title: { $regex: filters.search.trim(), $options: "i" } },
+        { description: { $regex: filters.search.trim(), $options: "i" } },
+      ];
+    }
+
+    if (filters.tutor) {
+      query.tutor = filters.tutor;
+    }
+
+    let sortObj = { createdAt: -1 };
+    if (filters.sortBy === "rating_desc") {
+      sortObj = { rating: -1 };
+    } else if (filters.sortBy === "price_asc") {
+      sortObj = { price: 1 };
+    } else if (filters.sortBy === "price_desc") {
+      sortObj = { price: -1 };
+    }
+
+    const courses = await Course.find(query)
+      .populate("tutor", "name email profileImage")
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Course.countDocuments(query);
+
+    const coursesWithOffers = courses.map((course) => {
+      const courseObj = course.toJSON();
+      if (course.offerPercentage > 0) {
+        const discountedPrice = Math.round(
+          course.price - (course.price * course.offerPercentage) / 100,
         );
-
-        if (course.thumbnail) {
-            await deleteCloudinaryAsset(course.thumbnail);
-        }
-
-        const lessons = await Lesson.find({ course: courseId });
-        for (const lesson of lessons) {
-            if (lesson.thumbnail) await deleteCloudinaryAsset(lesson.thumbnail);
-            if (lesson.videoUrl) await deleteCloudinaryAsset(lesson.videoUrl);
-            if (lesson.pdfNotes) await deleteCloudinaryAsset(lesson.pdfNotes);
-        }
-
-        await Course.findByIdAndDelete(courseId);
-        return { message: 'Course deleted successfully' };
-    },
-
-    async getTutorCourses(tutorId, page = 1, limit = 5){
-        const skip = (page - 1) * limit;
-
-        const courses = await Course.find({ tutor: tutorId })
-            .populate('tutor', 'name email')
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
-        
-        const total = await Course.countDocuments({ tutor: tutorId });
-
-        return {
-            courses,
-            pagination: {
-                currentPage: page,
-                totalPages: Math.ceil(total / limit),
-                totalCourses: total,
-                hasNext: page < Math.ceil(total / limit),
-                hasPrev: page > 1
-            }
+        courseObj.offer = {
+          discountPercentage: course.offerPercentage,
+          discountedPrice,
         };
-    },
+      }
+      return courseObj;
+    });
 
-    async getAllPublishedCourses(filters = {}, page = 1, limit = 5){
-        const skip = (page - 1) * limit;
-        const query = { status: COURSE_STATUS.PUBLISHED };
+    return {
+      courses: coursesWithOffers,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalCourses: total,
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      },
+    };
+  },
 
-        if(filters.category){
-            query.category = new RegExp(filters.category, 'i');
-        }
+  async getCourseById(courseId, userId = null, userRole = null) {
+    const course = await Course.findById(courseId).populate(
+      "tutor",
+      "name email profileImage tutorProfile totalCourses totalStudents",
+    );
 
-        if(filters.search && filters.search.trim()){
-            query.$or = [
-                { title: { $regex: filters.search.trim(), $options: 'i' } },
-                { description: { $regex: filters.search.trim(), $options: 'i' } }
-            ];
-        }
+    if (!course) throw new Error("Course not found");
 
-        if(filters.tutor){
-            query.tutor = filters.tutor;
-        }
+    const isEnrolled = userId
+      ? course.studentsEnrolled.some((id) => id.toString() === userId)
+      : false;
+    const isOwner = userId ? course.tutor._id.toString() === userId : false;
 
-        let sortObj = { createdAt: -1 };
-        if (filters.sortBy === 'rating_desc') {
-            sortObj = { rating: -1 };
-        } else if (filters.sortBy === 'price_asc') {
-            sortObj = { price: 1 };
-        } else if (filters.sortBy === 'price_desc') {
-            sortObj = { price: -1 };
-        }
+    if (course.status !== COURSE_STATUS.PUBLISHED) {
+      if (!isOwner && !isEnrolled) {
+        throw new Error("Course not available");
+      }
+    }
 
-        const courses = await Course.find(query)
-            .populate('tutor', 'name email profileImage')
-            .sort(sortObj)
-            .skip(skip)
-            .limit(limit);
+    const lessons = await Lesson.find({ course: courseId }).sort({
+      "chapter.order": 1,
+      order: 1,
+    });
 
-        const total = await Course.countDocuments(query);
+    const sanitizedLessons = lessons.map((l) => {
+      const lesson = l.toJSON();
+      if (!isEnrolled && !isOwner) {
+        delete lesson.videoUrl;
+        delete lesson.pdfNotes;
+        delete lesson.pdfNotesURL;
+      }
+      return lesson;
+    });
 
-        const coursesWithOffers = courses.map((course) => {
-            const courseObj = course.toJSON();
-            if (course.offerPercentage > 0) {
-                const discountedPrice = Math.round(
-                    course.price - (course.price * course.offerPercentage) / 100
-                );
-                courseObj.offer = {
-                    discountPercentage: course.offerPercentage,
-                    discountedPrice
-                };
-            }
-            return courseObj;
-        });
+    const certificateCount = await Certificate.countDocuments({
+      course: courseId,
+    });
 
-        return {
-            courses: coursesWithOffers,
-            pagination: {
-                currentPage: page,
-                totalPages: Math.ceil(total / limit),
-                totalCourses: total,
-                hasNext: page < Math.ceil(total / limit),
-                hasPrev: page > 1
-            }
-        }; 
-    },
+    const courseObj = course.toJSON();
+    delete courseObj.studentsEnrolled;
+    return {
+      ...courseObj,
+      lessons: sanitizedLessons,
+      chapters: groupByChapter(sanitizedLessons),
+      isEnrolled,
+      certificateCount,
+    };
+  },
 
-    async getCourseById(courseId, userId = null, userRole = null) {
-        const course = await Course.findById(courseId)
-            .populate('tutor', 'name email profileImage tutorProfile totalCourses totalStudents');
+  //Student
+  async enrollStudent(courseId, studentId) {
+    const course = await Course.findById(courseId);
+    if (!course) throw new Error("Course not found");
 
-        if (!course) throw new Error('Course not found');
+    if (course.status !== COURSE_STATUS.PUBLISHED) {
+      throw new Error("Course is not available for enrollment");
+    }
 
-        const isEnrolled = userId ? course.studentsEnrolled.some(id => id.toString() === userId) : false;
-        const isOwner = userId ? course.tutor._id.toString() === userId : false;
+    if (course.studentsEnrolled.includes(studentId)) {
+      throw new Error("Already enrolled in this course");
+    }
 
-        if (course.status !== COURSE_STATUS.PUBLISHED) {
-            if (!isOwner && !isEnrolled) {
-                throw new Error('Course not available');
-            }
-        }
+    course.studentsEnrolled.push(studentId);
+    await course.save();
 
-        const lessons = await Lesson.find({ course: courseId }).sort({ 'chapter.order': 1, order: 1 });
+    await User.findByIdAndUpdate(studentId, {
+      $push: {
+        "studentProfile.enrolledCourses": {
+          courseId: courseId,
+          enrolledAt: new Date(),
+          progress: 0,
+        },
+      },
+    });
 
-        const sanitizedLessons = lessons.map(l => {
-            const lesson = l.toJSON();
-            if (!isEnrolled && !isOwner) {
-                delete lesson.videoUrl;
-                delete lesson.pdfNotes;
-                delete lesson.pdfNotesURL;
-            }
-            return lesson;
-        });
-        
-        const certificateCount = await Certificate.countDocuments({ course: courseId });
-        
-        const courseObj = course.toJSON();
-        delete courseObj.studentsEnrolled;
-        return {
-            ...courseObj,
-            lessons: sanitizedLessons,
-            chapters: groupByChapter(sanitizedLessons),
-            isEnrolled,
-            certificateCount
-        };
-    },
+    return await Course.findById(courseId).populate("tutor", "name email");
+  },
 
-    //Student 
-    async enrollStudent(courseId, studentId){
-        const course = await Course.findById(courseId);
-        if(!course) throw new Error('Course not found');
+  async getEnrolledCourses(studentId, page = 1, limit = 5) {
+    const skip = (page - 1) * limit;
 
-        if(course.status !== COURSE_STATUS.PUBLISHED){
-            throw new Error('Course is not available for enrollment');
-        }
+    const student = await User.findById(studentId).populate({
+      path: "studentProfile.enrolledCourses.courseId",
+      populate: {
+        path: "tutor",
+        select: "name email",
+      },
+    });
 
-        if(course.studentsEnrolled.includes(studentId)){
-            throw new Error('Already enrolled in this course');
-        }
+    if (!student) throw new Error("Student not found");
 
-        course.studentsEnrolled.push(studentId);
-        await course.save();
+    const enrolledCourses = student.studentProfile.enrolledCourses
+      .filter((enrollment) => enrollment.courseId != null) // skip deleted courses
+      .slice(skip, skip + limit)
+      .map((enrollment) => ({
+        ...enrollment.courseId.toJSON(),
+        enrolledAt: enrollment.enrolledAt,
+        progress: enrollment.progress,
+      }));
 
-        await User.findByIdAndUpdate(
-            studentId,
-            {
-                $push: {
-                    'studentProfile.enrolledCourses': {
-                        courseId: courseId,
-                        enrolledAt: new Date(),
-                        progress: 0
-                    }
-                }
-            }
-        );
+    const total = student.studentProfile.enrolledCourses.filter(
+      (e) => e.courseId != null,
+    ).length;
 
-        return await Course.findById(courseId).populate('tutor', 'name email');
-    },
+    return {
+      courses: enrolledCourses,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalCourses: total,
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      },
+    };
+  },
 
-    async getEnrolledCourses(studentId, page = 1, limit = 5) {
-        const skip = (page - 1) * limit;
-        
-        const student = await User.findById(studentId)
-            .populate({
-                path: 'studentProfile.enrolledCourses.courseId',
-                populate: {
-                    path: 'tutor',
-                    select: 'name email'
-                }
-            });
+  async checkEnrollmentStatus(studentId, courseId) {
+    const student = await User.findById(studentId);
+    if (!student) throw new Error("Student not found");
 
-        if (!student) throw new Error('Student not found');
+    const enrollment = student.studentProfile.enrolledCourses.find(
+      (ec) => ec.courseId.toString() === courseId,
+    );
 
-        const enrolledCourses = student.studentProfile.enrolledCourses
-            .filter(enrollment => enrollment.courseId != null) // skip deleted courses
-            .slice(skip, skip + limit)
-            .map(enrollment => ({
-                ...enrollment.courseId.toJSON(),
-                enrolledAt: enrollment.enrolledAt,
-                progress: enrollment.progress
-            }));
+    if (!enrollment) {
+      return { isEnrolled: false, progress: 0, completedLessons: [] };
+    }
 
-        const total = student.studentProfile.enrolledCourses.filter(e => e.courseId != null).length;
-
-        return {
-            courses: enrolledCourses,
-            pagination: {
-                currentPage: page,
-                totalPages: Math.ceil(total / limit),
-                totalCourses: total,
-                hasNext: page < Math.ceil(total / limit),
-                hasPrev: page > 1
-            }
-        };
-    },
-
-    async checkEnrollmentStatus(studentId, courseId){
-        const student = await User.findById(studentId);
-        if(!student) throw new Error('Student not found');
-
-        const enrollment = student.studentProfile.enrolledCourses.find(
-            ec => ec.courseId.toString() === courseId
-        );
-
-        if(!enrollment){
-            return { isEnrolled: false, progress: 0, completedLessons: [] }
-        }
-
-        return {
-            isEnrolled: true,
-            enrolledAt: enrollment.enrolledAt,
-            progress: enrollment.progress,
-            completedLessons: enrollment.completedLessons
-        };
-    },
-
-}
+    return {
+      isEnrolled: true,
+      enrolledAt: enrollment.enrolledAt,
+      progress: enrollment.progress,
+      completedLessons: enrollment.completedLessons,
+    };
+  },
+};
 
 module.exports = courseService;
-
-
-
-

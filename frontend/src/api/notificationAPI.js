@@ -1,26 +1,15 @@
-import api from './axios';
+import api from "./axios";
 
 export const notificationAPI = {
+  getNotifications: (params) => api.get("/notifications", { params }),
 
-    getNotifications: (params) =>
-        api.get('/notifications', {params}),
+  getUnreadCount: () => api.get("/notifications/unread-count"),
 
-    getUnreadCount: () =>
-        api.get('/notifications/unread-count'),
+  markAsRead: (id) => api.patch(`/notifications/${id}/read`),
 
-    markAsRead: (id) =>
-        api.patch(`/notifications/${id}/read`),
+  markAllAsRead: () => api.patch("/notifications/read-all"),
 
-    markAllAsRead: () =>
-        api.patch('/notifications/read-all'),
+  deleteOne: (id) => api.delete(`/notifications/${id}`),
 
-    deleteOne: (id) =>
-        api.delete(`/notifications/${id}`),
-
-    deleteAll: () =>
-        api.delete('/notifications')
-    
-}
-
-
-
+  deleteAll: () => api.delete("/notifications"),
+};

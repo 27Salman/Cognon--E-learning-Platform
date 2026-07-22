@@ -9,6 +9,7 @@
     "build": "cd ../frontend && npm run build",
     "start:prod": "npm run build && node server.js",
     "create-admin": "node scripts/admin.js",
+    "format": "prettier --write \"src/**/*.{js,json}\" \"server.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

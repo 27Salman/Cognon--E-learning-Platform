@@ -1,8 +1,12 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import * as authAPI from '../../api/authAPI';
-import { setToken, setUser, clearAuthData, getToken, getUser } from '../../utils/helpers';
-
-
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import * as authAPI from "../../api/authAPI";
+import {
+  setToken,
+  setUser,
+  clearAuthData,
+  getToken,
+  getUser,
+} from "../../utils/helpers";
 
 const initialState = {
   user: getUser(),
@@ -12,36 +16,35 @@ const initialState = {
   error: null,
 };
 
-
 // Signup
 export const signupUser = createAsyncThunk(
-  'auth/signup',
+  "auth/signup",
   async (userData, { rejectWithValue }) => {
     try {
       const response = await authAPI.signup(userData);
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Signup failed');
+      return rejectWithValue(error.response?.data?.message || "Signup failed");
     }
-  }
+  },
 );
 
 // Login
 export const loginUser = createAsyncThunk(
-  'auth/login',
+  "auth/login",
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await authAPI.login(credentials);
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+      return rejectWithValue(error.response?.data?.message || "Login failed");
     }
-  }
+  },
 );
 
 // Logout
 export const logoutUser = createAsyncThunk(
-  'auth/logout',
+  "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
       const token = getToken();
@@ -50,24 +53,26 @@ export const logoutUser = createAsyncThunk(
     } catch (error) {
       return true;
     }
-  }
+  },
 );
 
 // Get Current User
 export const fetchCurrentUser = createAsyncThunk(
-  'auth/getCurrentUser',
+  "auth/getCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
       const response = await authAPI.getCurrentUser();
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch user');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch user",
+      );
     }
-  }
+  },
 );
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -97,7 +102,7 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.isAuthenticated = true;
       state.error = null;
-      
+
       setToken(action.payload.token);
       setUser(user);
     },
@@ -138,7 +143,7 @@ const authSlice = createSlice({
         state.user = user;
         state.token = action.payload.token;
         state.error = null;
-        
+
         setToken(action.payload.token);
         setUser(user);
       })
@@ -170,8 +175,7 @@ const authSlice = createSlice({
 
     // Get Current User
     builder
-      .addCase(fetchCurrentUser.pending, (state) => {
-      })
+      .addCase(fetchCurrentUser.pending, (state) => {})
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.loading = false;
         const user = action.payload.user;
@@ -184,7 +188,7 @@ const authSlice = createSlice({
         }
         state.user = user;
         state.isAuthenticated = true;
-        
+
         setUser(user);
       })
       .addCase(fetchCurrentUser.rejected, (state) => {
@@ -192,11 +196,12 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.user = null;
         state.token = null;
-        
+
         clearAuthData();
       });
   },
 });
 
-export const { clearError, clearAuth, setAuthFromStorage, setCredentials } = authSlice.actions;
+export const { clearError, clearAuth, setAuthFromStorage, setCredentials } =
+  authSlice.actions;
 export default authSlice.reducer;

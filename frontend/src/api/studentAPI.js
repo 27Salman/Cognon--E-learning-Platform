@@ -1,147 +1,122 @@
-import api from './axios';
+import api from "./axios";
 
 export const studentAPI = {
-    // Profile
-    getProfile: () => 
-        api.get('/student/profile'),
-    
-    updateProfile: (formData) =>
-        api.put('/student/profile', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-    
-    requestPasswordChange: () => 
-        api.post('/student/change-password/request'),
+  // Profile
+  getProfile: () => api.get("/student/profile"),
 
-    verifyPasswordChange: (newPassword, otp) =>
-        api.post('/student/change-password/verify', { newPassword, otp }),
+  updateProfile: (formData) =>
+    api.put("/student/profile", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 
-    // Catalog 
-    fetchPublishedCourses: (params = {}) => 
-        api.get('/catalog/courses', { params }),
+  requestPasswordChange: () => api.post("/student/change-password/request"),
 
-    fetchCourseDetails: (courseId) => 
-        api.get(`/catalog/courses/${courseId}`),
+  verifyPasswordChange: (newPassword, otp) =>
+    api.post("/student/change-password/verify", { newPassword, otp }),
 
-    getFilterOptions: () => 
-        api.get('/catalog/courses/filters'),
+  // Catalog
+  fetchPublishedCourses: (params = {}) =>
+    api.get("/catalog/courses", { params }),
 
-    // Enrollment 
-    enrollInCourse: (courseId) => 
-        api.post(`/courses/${courseId}/enroll`),
+  fetchCourseDetails: (courseId) => api.get(`/catalog/courses/${courseId}`),
 
-    fetchEnrolledCourses: (page = 1, limit = 100) =>
-        api.get(`/courses/student/enrolled?page=${page}&limit=${limit}`),
+  getFilterOptions: () => api.get("/catalog/courses/filters"),
 
-    fetchCourseLessons: (courseId) => api.get(`/lessons/course/${courseId}`),
+  // Enrollment
+  enrollInCourse: (courseId) => api.post(`/courses/${courseId}/enroll`),
 
-    // Progress
-    markLessonComplete: (courseId, lessonId) =>
-        api.post(`/courses/${courseId}/lessons/${lessonId}/complete`),
+  fetchEnrolledCourses: (page = 1, limit = 100) =>
+    api.get(`/courses/student/enrolled?page=${page}&limit=${limit}`),
 
-    fetchCourseProgress: (courseId) => 
-        api.get(`/courses/${courseId}/progress`),
+  fetchCourseLessons: (courseId) => api.get(`/lessons/course/${courseId}`),
 
-    // Wishlist
-    getWishlist: (params = {}) => 
-        api.get('/student/wishlist', { params }),
+  // Progress
+  markLessonComplete: (courseId, lessonId) =>
+    api.post(`/courses/${courseId}/lessons/${lessonId}/complete`),
 
-    addToWishlist: (courseId) => 
-        api.post('/student/wishlist', { courseId }),
+  fetchCourseProgress: (courseId) => api.get(`/courses/${courseId}/progress`),
 
-    removeFromWishlist: (courseId) => 
-        api.delete(`/student/wishlist/${courseId}`),
+  // Wishlist
+  getWishlist: (params = {}) => api.get("/student/wishlist", { params }),
 
-    // Cart
-    getCart: () => 
-        api.get('/student/cart'),
-    addToCart: (courseId) => 
-        api.post('/student/cart', { courseId }),
+  addToWishlist: (courseId) => api.post("/student/wishlist", { courseId }),
 
-    removeFromCart: (courseId) => 
-        api.delete(`/student/cart/${courseId}`),
+  removeFromWishlist: (courseId) => api.delete(`/student/wishlist/${courseId}`),
 
-    clearCart: () => 
-        api.delete('/student/cart'),
+  // Cart
+  getCart: () => api.get("/student/cart"),
+  addToCart: (courseId) => api.post("/student/cart", { courseId }),
 
-    // Coupon
-    validateCoupon: (code, cartTotal, courseIds) =>
-        api.post('/student/coupons/validate', { code, cartTotal, courseIds }),
+  removeFromCart: (courseId) => api.delete(`/student/cart/${courseId}`),
 
-    getAvailableCoupons: (courseIds = []) =>
-        api.get('/student/coupons/available', {
-            params: courseIds.length > 0 ? { courseIds: courseIds.join(',') } : {}
-        }),
+  clearCart: () => api.delete("/student/cart"),
 
-    // Checkout
-    calculatePrice: (couponCode) =>
-        api.post('/student/checkout/calculate', { couponCode }),
+  // Coupon
+  validateCoupon: (code, cartTotal, courseIds) =>
+    api.post("/student/coupons/validate", { code, cartTotal, courseIds }),
 
-    createRazorpayOrder: (couponCode) =>
-        api.post('/student/checkout/create-order', { couponCode }),
+  getAvailableCoupons: (courseIds = []) =>
+    api.get("/student/coupons/available", {
+      params: courseIds.length > 0 ? { courseIds: courseIds.join(",") } : {},
+    }),
 
-    verifyPayment: (paymentData) =>
-        api.post('/student/checkout/verify-payment', paymentData),
+  // Checkout
+  calculatePrice: (couponCode) =>
+    api.post("/student/checkout/calculate", { couponCode }),
 
-    retryPayment: (orderId) =>
-        api.post(`/student/checkout/retry-payment/${orderId}`),
+  createRazorpayOrder: (couponCode) =>
+    api.post("/student/checkout/create-order", { couponCode }),
 
-    markOrderFailed: (razorpayOrderId) =>
-        api.post('/student/checkout/mark-failed', { razorpayOrderId }),
+  verifyPayment: (paymentData) =>
+    api.post("/student/checkout/verify-payment", paymentData),
 
+  retryPayment: (orderId) =>
+    api.post(`/student/checkout/retry-payment/${orderId}`),
 
-    // Orders
-    getMyOrders: (params = {}) => 
-        api.get('/student/orders', { params }),
+  markOrderFailed: (razorpayOrderId) =>
+    api.post("/student/checkout/mark-failed", { razorpayOrderId }),
 
-    getMyOrderById: (id) => 
-        api.get(`/student/orders/${id}`),
+  // Orders
+  getMyOrders: (params = {}) => api.get("/student/orders", { params }),
 
-    downloadInvoice: (id) =>
-        api.get(`/student/orders/${id}/invoice`, { responseType: 'blob' }),
+  getMyOrderById: (id) => api.get(`/student/orders/${id}`),
 
-    //wallet
-    getMyWallet: () => 
-        api.get('/student/wallet'),
+  downloadInvoice: (id) =>
+    api.get(`/student/orders/${id}/invoice`, { responseType: "blob" }),
 
-    //refund
-    cancelOrder: (orderId) => 
-        api.post(`/student/orders/${orderId}/cancel`),
+  //wallet
+  getMyWallet: () => api.get("/student/wallet"),
 
-    // wallet payment
-    payWithWallet: (couponCode) =>
-        api.post('/student/checkout/wallet', { couponCode }),
+  //refund
+  cancelOrder: (orderId) => api.post(`/student/orders/${orderId}/cancel`),
 
-    // Certificates
-    getCertificates: (page = 1, limit = 10, search = '', sort = '') =>
-        api.get(`/certificates`, { params: { page, limit, search, sort } }),
+  // wallet payment
+  payWithWallet: (couponCode) =>
+    api.post("/student/checkout/wallet", { couponCode }),
 
-    getCertificateById: (id) =>
-        api.get(`/certificates/${id}`),
+  // Certificates
+  getCertificates: (page = 1, limit = 10, search = "", sort = "") =>
+    api.get(`/certificates`, { params: { page, limit, search, sort } }),
 
-    downloadCertificate: (id) =>
-        api.get(`/certificates/${id}/download`, { responseType: 'blob' }),
+  getCertificateById: (id) => api.get(`/certificates/${id}`),
 
-    // Public 
-    verifyCertificate: (certificateNumber) =>
-        api.get(`/verify/${certificateNumber}`),
+  downloadCertificate: (id) =>
+    api.get(`/certificates/${id}/download`, { responseType: "blob" }),
 
-    // Reviews
-    submitReview: (courseId, rating, comment) =>
-        api.post(`/student/reviews/${courseId}`, { rating, comment }),
+  // Public
+  verifyCertificate: (certificateNumber) =>
+    api.get(`/verify/${certificateNumber}`),
 
-    deleteReview: (courseId) =>
-        api.delete(`/student/reviews/${courseId}`),
+  // Reviews
+  submitReview: (courseId, rating, comment) =>
+    api.post(`/student/reviews/${courseId}`, { rating, comment }),
 
-    getMyReview: (courseId) =>
-        api.get(`/student/reviews/${courseId}/mine`),
+  deleteReview: (courseId) => api.delete(`/student/reviews/${courseId}`),
 
-    // Tutors
-    fetchTutors: (params = {}) =>
-        api.get('/catalog/tutors', { params }),
+  getMyReview: (courseId) => api.get(`/student/reviews/${courseId}/mine`),
 
-    fetchTutorDetails: (tutorId) =>
-        api.get(`/catalog/tutors/${tutorId}`),
+  // Tutors
+  fetchTutors: (params = {}) => api.get("/catalog/tutors", { params }),
+
+  fetchTutorDetails: (tutorId) => api.get(`/catalog/tutors/${tutorId}`),
 };
-
-
-
-

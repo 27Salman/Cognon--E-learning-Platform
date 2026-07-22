@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import AdminNavbar from '../admin/AdminNavbar';
-import AdminSidebar from '../admin/AdminSidebar';
-import Footer from '../common/Footer';
-import { adminAPI } from '../../api/adminAPI';
+import { useState, useEffect } from "react";
+import { Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
+import AdminNavbar from "../admin/AdminNavbar";
+import AdminSidebar from "../admin/AdminSidebar";
+import Footer from "../common/Footer";
+import { adminAPI } from "../../api/adminAPI";
 
 export default function AdminLayout() {
   const { user } = useSelector((state) => state.auth);
 
   const [adminInfo, setAdminInfo] = useState(() => {
     try {
-      const stored = localStorage.getItem('adminInfo');
+      const stored = localStorage.getItem("adminInfo");
       const parsed = stored ? JSON.parse(stored) : null;
       if (parsed && user && parsed._id === user._id) {
-        if (parsed.profileImage && !parsed.profileImage.startsWith('http')) {
+        if (parsed.profileImage && !parsed.profileImage.startsWith("http")) {
           parsed.profileImage = null;
         }
         return parsed;
@@ -28,7 +28,8 @@ export default function AdminLayout() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    adminAPI.getProfile()
+    adminAPI
+      .getProfile()
       .then((res) => {
         if (cancelled) return;
         const data = res.data || res;
@@ -41,12 +42,12 @@ export default function AdminLayout() {
           role: data.role,
         };
         setAdminInfo(profile);
-        localStorage.setItem('adminInfo', JSON.stringify(profile));
+        localStorage.setItem("adminInfo", JSON.stringify(profile));
       })
       .catch(() => {
         if (cancelled) return;
         if (user) {
-          setAdminInfo(prev => ({
+          setAdminInfo((prev) => ({
             ...prev,
             _id: user._id,
             name: user.name,
@@ -55,14 +56,17 @@ export default function AdminLayout() {
           }));
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?._id]);
 
   const handleUpdateProfile = (updatedData) => {
     const { password, ...toStore } = updatedData;
-    toStore.profileImage = toStore.profileImageURL || toStore.profileImage || null;
+    toStore.profileImage =
+      toStore.profileImageURL || toStore.profileImage || null;
     setAdminInfo(toStore);
-    localStorage.setItem('adminInfo', JSON.stringify(toStore));
+    localStorage.setItem("adminInfo", JSON.stringify(toStore));
   };
 
   return (
@@ -73,7 +77,9 @@ export default function AdminLayout() {
         <AdminSidebar adminInfo={adminInfo} />
 
         <main className="flex-1 overflow-y-auto">
-          <Outlet context={{ adminInfo, onUpdateProfile: handleUpdateProfile }} />
+          <Outlet
+            context={{ adminInfo, onUpdateProfile: handleUpdateProfile }}
+          />
         </main>
       </div>
 

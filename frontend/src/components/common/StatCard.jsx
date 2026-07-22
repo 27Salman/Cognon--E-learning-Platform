@@ -1,4 +1,4 @@
-export default function StatCard({ label, value, color = 'text-gray-800' }) {
+export default function StatCard({ label, value, color = "text-gray-800" }) {
   return (
     <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
       <p className="text-sm text-gray-500">{label}</p>
@@ -6,5 +6,3 @@ export default function StatCard({ label, value, color = 'text-gray-800' }) {
     </div>
   );
 }
-
-

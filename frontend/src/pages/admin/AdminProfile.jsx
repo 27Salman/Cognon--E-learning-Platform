@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { useOutletContext } from 'react-router-dom';
-import { adminAPI } from '../../api/adminAPI';
-import { validateImageFile } from '../../utils/helpers';
-import { Camera, Pencil, User, Mail, Phone, Lock } from 'lucide-react';
-import toast from 'react-hot-toast';
-import ChangePasswordModal from '../../components/common/ChangePasswordModal';
-import { ROUTES } from '../../utils/constants';
+import { useState, useRef, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useOutletContext } from "react-router-dom";
+import { adminAPI } from "../../api/adminAPI";
+import { validateImageFile } from "../../utils/helpers";
+import { Camera, Pencil, User, Mail, Phone, Lock } from "lucide-react";
+import toast from "react-hot-toast";
+import ChangePasswordModal from "../../components/common/ChangePasswordModal";
+import { ROUTES } from "../../utils/constants";
 
-
-const isValidImageSrc = (src) => src && (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/'));
+const isValidImageSrc = (src) =>
+  src &&
+  (src.startsWith("http") || src.startsWith("data:") || src.startsWith("/"));
 
 export default function AdminProfile() {
   const { adminInfo, onUpdateProfile } = useOutletContext();
@@ -22,25 +23,25 @@ export default function AdminProfile() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: adminInfo?.name || user?.name || '',
-    email: adminInfo?.email || user?.email || '',
-    phone: adminInfo?.phone || user?.phone || '',
+    name: adminInfo?.name || user?.name || "",
+    email: adminInfo?.email || user?.email || "",
+    phone: adminInfo?.phone || user?.phone || "",
     profileImage: adminInfo?.profileImage || null,
   });
 
   useEffect(() => {
     if (!isEditing) {
       setFormData({
-        name: adminInfo?.name || user?.name || '',
-        email: adminInfo?.email || user?.email || '',
-        phone: adminInfo?.phone || user?.phone || '',
+        name: adminInfo?.name || user?.name || "",
+        email: adminInfo?.email || user?.email || "",
+        phone: adminInfo?.phone || user?.phone || "",
         profileImage: adminInfo?.profileImage || null,
       });
     }
   }, [adminInfo]);
 
   const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleImageChange = (e) => {
@@ -50,13 +51,14 @@ export default function AdminProfile() {
     const error = validateImageFile(file);
     if (error) {
       toast.error(error);
-      e.target.value = '';
+      e.target.value = "";
       return;
     }
 
     selectedFileRef.current = file;
     const reader = new FileReader();
-    reader.onloadend = () => setFormData(prev => ({ ...prev, profileImage: reader.result }));
+    reader.onloadend = () =>
+      setFormData((prev) => ({ ...prev, profileImage: reader.result }));
     reader.readAsDataURL(file);
   };
 
@@ -64,9 +66,10 @@ export default function AdminProfile() {
     try {
       setLoading(true);
       const fd = new FormData();
-      fd.append('name', formData.name.trim());
-      fd.append('phone', formData.phone.trim());
-      if (selectedFileRef.current) fd.append('profileImage', selectedFileRef.current);
+      fd.append("name", formData.name.trim());
+      fd.append("phone", formData.phone.trim());
+      if (selectedFileRef.current)
+        fd.append("profileImage", selectedFileRef.current);
 
       const result = await adminAPI.updateProfile(fd);
       const updated = result.data;
@@ -75,16 +78,16 @@ export default function AdminProfile() {
       onUpdateProfile(updated);
 
       setFormData({
-        name: updated.name || '',
-        email: updated.email || '',
-        phone: updated.phone || '',
+        name: updated.name || "",
+        email: updated.email || "",
+        phone: updated.phone || "",
         profileImage: updated.profileImageURL || updated.profileImage || null,
       });
 
       setIsEditing(false);
-      toast.success('Profile updated successfully!');
+      toast.success("Profile updated successfully!");
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      toast.error(error.response?.data?.message || "Failed to update profile");
     } finally {
       setLoading(false);
     }
@@ -93,9 +96,9 @@ export default function AdminProfile() {
   const handleCancel = () => {
     selectedFileRef.current = null;
     setFormData({
-      name: adminInfo?.name || user?.name || '',
-      email: adminInfo?.email || user?.email || '',
-      phone: adminInfo?.phone || user?.phone || '',
+      name: adminInfo?.name || user?.name || "",
+      email: adminInfo?.email || user?.email || "",
+      phone: adminInfo?.phone || user?.phone || "",
       profileImage: adminInfo?.profileImage || null,
     });
     setIsEditing(false);
@@ -104,7 +107,9 @@ export default function AdminProfile() {
   return (
     <div className="p-6 max-w-4xl">
       <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
-      <p className="text-sm text-gray-500 mt-1 mb-8">Manage your admin profile</p>
+      <p className="text-sm text-gray-500 mt-1 mb-8">
+        Manage your admin profile
+      </p>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-8">
@@ -124,7 +129,7 @@ export default function AdminProfile() {
                 disabled={loading}
                 className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
               >
-                {loading ? 'Saving...' : 'Save'}
+                {loading ? "Saving..." : "Save"}
               </button>
               <button
                 onClick={handleCancel}
@@ -148,7 +153,7 @@ export default function AdminProfile() {
               ) : (
                 <div className="w-28 h-28 rounded-full bg-purple-100 flex items-center justify-center border-4 border-white shadow-md">
                   <span className="text-4xl font-bold text-purple-600">
-                    {formData.name?.charAt(0)?.toUpperCase() || 'A'}
+                    {formData.name?.charAt(0)?.toUpperCase() || "A"}
                   </span>
                 </div>
               )}
@@ -169,7 +174,9 @@ export default function AdminProfile() {
                 className="hidden"
               />
             </div>
-            <p className="font-semibold text-gray-800 text-base">{formData.name}</p>
+            <p className="font-semibold text-gray-800 text-base">
+              {formData.name}
+            </p>
             <p className="text-xs text-gray-500">System Administrator</p>
           </div>
 

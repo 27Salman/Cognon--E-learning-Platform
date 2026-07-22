@@ -4,342 +4,407 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetchPublishedCourses } from "../../store/slices/studentSlice";
 import StudentNavbar from "../../components/student/StudentNavbar";
 import Footer from "../../components/common/Footer";
-import { BookOpen, Search, X, Clock, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  BookOpen,
+  Search,
+  X,
+  Clock,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { ROUTES } from "../../utils/constants";
 
 const SORT_OPTIONS = [
-    { value: "newest",    label: "Newest" },
-    { value: "price_asc", label: "Price: Low to High" },
-    { value: "price_desc",label: "Price: High to Low" },
+  { value: "newest", label: "Newest" },
+  { value: "price_asc", label: "Price: Low to High" },
+  { value: "price_desc", label: "Price: High to Low" },
 ];
 
 function formatDuration(minutes) {
-    if (!minutes || minutes === 0) return null;
-    if (minutes < 60) return `${minutes} min`;
-    const hrs = Math.round(minutes / 60);
-    return `${hrs} hr${hrs !== 1 ? 's' : ''}`;
+  if (!minutes || minutes === 0) return null;
+  if (minutes < 60) return `${minutes} min`;
+  const hrs = Math.round(minutes / 60);
+  return `${hrs} hr${hrs !== 1 ? "s" : ""}`;
 }
 
 function CourseCard({ course }) {
-    const navigate = useNavigate();
-    return (
-        <div
-            onClick={() => navigate(`/student/courses/${course._id}`)}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden"
-        >
-            <div className="w-full h-36 bg-gray-100 overflow-hidden">
-                {course.thumbnailURL ? (
-                    <img src={course.thumbnailURL} alt={course.title} className="w-full h-full object-cover" />
-                ) : (
-                    <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                        <BookOpen className="w-8 h-8 text-purple-300" />
-                    </div>
-                )}
-            </div>
-            <div className="p-3">
-                <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-                    <span className="text-purple-500 font-medium">{course.category}</span>
-                    {formatDuration(course.totalDuration) && (
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDuration(course.totalDuration)}</span>
-                    )}
-                </div>
-                <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-2">{course.title}</h3>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-xs font-bold text-purple-700">
-                            {course.tutor?.name?.charAt(0)?.toUpperCase() || "T"}
-                        </div>
-                        <span className="text-xs text-gray-600">{course.tutor?.name}</span>
-                    </div>
-                        <div className="flex items-center gap-1.5">
-                            {course.offer && course.offer.discountedPrice < course.price ? (
-                                <div className="flex flex-col items-end">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-xs text-gray-400 line-through">₹{course.price}</span>
-                                        <span className="text-purple-600 font-bold text-sm">₹{course.offer.discountedPrice}</span>
-                                    </div>
-                                    <span className="text-[9px] font-bold text-green-600 bg-green-50 px-1 py-0.5 rounded leading-none mt-0.5">
-                                        {course.offer.discountPercentage}% OFF
-                                    </span>
-                                </div>
-                            ) : (
-                                <span className="text-purple-600 font-bold text-sm">
-                                    {course.price === 0 ? "Free" : `₹${course.price}`}
-                                </span>
-                            )}
-                        </div>
-                </div>
-            </div>
+  const navigate = useNavigate();
+  return (
+    <div
+      onClick={() => navigate(`/student/courses/${course._id}`)}
+      className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden"
+    >
+      <div className="w-full h-36 bg-gray-100 overflow-hidden">
+        {course.thumbnailURL ? (
+          <img
+            src={course.thumbnailURL}
+            alt={course.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+            <BookOpen className="w-8 h-8 text-purple-300" />
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+          <span className="text-purple-500 font-medium">{course.category}</span>
+          {formatDuration(course.totalDuration) && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {formatDuration(course.totalDuration)}
+            </span>
+          )}
         </div>
-    );
+        <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-2">
+          {course.title}
+        </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-xs font-bold text-purple-700">
+              {course.tutor?.name?.charAt(0)?.toUpperCase() || "T"}
+            </div>
+            <span className="text-xs text-gray-600">{course.tutor?.name}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {course.offer && course.offer.discountedPrice < course.price ? (
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-gray-400 line-through">
+                    ₹{course.price}
+                  </span>
+                  <span className="text-purple-600 font-bold text-sm">
+                    ₹{course.offer.discountedPrice}
+                  </span>
+                </div>
+                <span className="text-[9px] font-bold text-green-600 bg-green-50 px-1 py-0.5 rounded leading-none mt-0.5">
+                  {course.offer.discountPercentage}% OFF
+                </span>
+              </div>
+            ) : (
+              <span className="text-purple-600 font-bold text-sm">
+                {course.price === 0 ? "Free" : `₹${course.price}`}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function CategoryPage() {
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { catalog, loading } = useSelector(state => state.student);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { catalog, loading } = useSelector((state) => state.student);
 
-    const params = new URLSearchParams(location.search);
-    const focusCategory = params.get("category") || null;
+  const params = new URLSearchParams(location.search);
+  const focusCategory = params.get("category") || null;
 
-    const [searchValue, setSearchValue] = useState("");
-    const [suggestions, setSuggestions] = useState([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [sortBy, setSortBy] = useState("newest");
-    const [categoryFilter, setCategoryFilter] = useState(focusCategory || "");
-    const [adminCategories, setAdminCategories] = useState([]);
-    const [categoryPages, setCategoryPages] = useState({});
+  const [searchValue, setSearchValue] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [sortBy, setSortBy] = useState("newest");
+  const [categoryFilter, setCategoryFilter] = useState(focusCategory || "");
+  const [adminCategories, setAdminCategories] = useState([]);
+  const [categoryPages, setCategoryPages] = useState({});
 
-    useEffect(() => {
-        const delayDebounce = setTimeout(()=>{
-            dispatch(fetchPublishedCourses({
-                search: searchValue,
-                category: categoryFilter,
-                sort: sortBy === 'newest' ? '-createdAt' : sortBy,
-                limit: 200,   // fetch all for client-side category grouping
-                page: 1
-            }));
-        },300);
-        return () => clearTimeout(delayDebounce);
-    }, [dispatch, searchValue, categoryFilter, sortBy]);
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      dispatch(
+        fetchPublishedCourses({
+          search: searchValue,
+          category: categoryFilter,
+          sort: sortBy === "newest" ? "-createdAt" : sortBy,
+          limit: 200, // fetch all for client-side category grouping
+          page: 1,
+        }),
+      );
+    }, 300);
+    return () => clearTimeout(delayDebounce);
+  }, [dispatch, searchValue, categoryFilter, sortBy]);
 
-    useEffect(() => {
-        setCategoryFilter(focusCategory || "");
-    }, [focusCategory]);
+  useEffect(() => {
+    setCategoryFilter(focusCategory || "");
+  }, [focusCategory]);
 
-    useEffect(() => {
-        if (searchValue.trim().length < 2) { setSuggestions([]); return; }
-        const matches = catalog.filter(c =>
-            c.title.toLowerCase().includes(searchValue.toLowerCase())
-        ).slice(0, 5);
-        setSuggestions(matches);
-    }, [searchValue, catalog]);
+  useEffect(() => {
+    if (searchValue.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    const matches = catalog
+      .filter((c) => c.title.toLowerCase().includes(searchValue.toLowerCase()))
+      .slice(0, 5);
+    setSuggestions(matches);
+  }, [searchValue, catalog]);
 
-    const handleSearch = (val) => {
-        setSearchValue(val);
-    };
+  const handleSearch = (val) => {
+    setSearchValue(val);
+  };
 
-    const handleClear = () => {
-        setSearchValue("");
-    };
+  const handleClear = () => {
+    setSearchValue("");
+  };
 
-    const handleCategoryPageChange = (category, direction) => {
-        const courses = grouped[category];
-        const coursesPerPage = 4;
-        const totalPages = Math.ceil(courses.length / coursesPerPage);
-        const currentPage = categoryPages[category] || 0;
+  const handleCategoryPageChange = (category, direction) => {
+    const courses = grouped[category];
+    const coursesPerPage = 4;
+    const totalPages = Math.ceil(courses.length / coursesPerPage);
+    const currentPage = categoryPages[category] || 0;
 
-        let newPage = currentPage + direction;
-        if (newPage < 0) newPage = 0;
-        if (newPage >= totalPages) newPage = totalPages - 1;
+    let newPage = currentPage + direction;
+    if (newPage < 0) newPage = 0;
+    if (newPage >= totalPages) newPage = totalPages - 1;
 
-        setCategoryPages(prev => ({ ...prev, [category]: newPage }));
-    };
+    setCategoryPages((prev) => ({ ...prev, [category]: newPage }));
+  };
 
-    const allCategories = adminCategories.length > 0
-        ? adminCategories.map(c => c.name)
-        : [...new Set(catalog.map(c => c.category).filter(Boolean))].sort();
+  const allCategories =
+    adminCategories.length > 0
+      ? adminCategories.map((c) => c.name)
+      : [...new Set(catalog.map((c) => c.category).filter(Boolean))].sort();
 
-    const sortedCatalog = catalog;
+  const sortedCatalog = catalog;
 
-    const grouped = sortedCatalog.reduce((acc, course) => {
-        const cat = course.category || "Other";
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(course);
-        return acc;
-    }, {});
+  const grouped = sortedCatalog.reduce((acc, course) => {
+    const cat = course.category || "Other";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(course);
+    return acc;
+  }, {});
 
-    const categories = Object.keys(grouped).sort();
+  const categories = Object.keys(grouped).sort();
 
-    const displayCategories = categoryFilter
-        ? categories.filter(c => c === categoryFilter)
-        : categories;
+  const displayCategories = categoryFilter
+    ? categories.filter((c) => c === categoryFilter)
+    : categories;
 
-    return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <StudentNavbar />
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <StudentNavbar />
 
-            {/* Search header */}
-            <div className="bg-white border-b border-gray-200 py-5 px-6">
-                <div className="max-w-2xl mx-auto">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-3 text-center">Browse by Category</h1>
-                    <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search courses..."
-                            value={searchValue}
-                            onChange={e => handleSearch(e.target.value)}
-                            onFocus={() => setShowSuggestions(true)}
-                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                            className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        />
-                        {searchValue && (
-                            <button onClick={handleClear} className="absolute right-3 top-1/2 -translate-y-1/2">
-                                <X className="w-4 h-4 text-gray-400" />
-                            </button>
-                        )}
-                        {showSuggestions && suggestions.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                                {suggestions.map(s => (
-                                    <button
-                                        key={s._id}
-                                        onMouseDown={() => navigate(`/student/courses/${s._id}`)}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-purple-50 text-left"
-                                    >
-                                        <BookOpen className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                                        <span className="text-sm text-gray-700 truncate">{s.title}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    {focusCategory && (
-                        <button
-                            onClick={() => { navigate(ROUTES.STUDENT_CATEGORIES); setCategoryFilter(""); }}
-                            className="mt-3 text-sm text-purple-600 hover:underline"
-                        >
-                            ← All Categories
-                        </button>
-                    )}
-                    {/* Filter + Sort bar */}
-                    <div className="flex flex-wrap items-center gap-3 mt-4">
-                        <SlidersHorizontal className="w-4 h-4 text-gray-400 flex-shrink-0" />
+      {/* Search header */}
+      <div className="bg-white border-b border-gray-200 py-5 px-6">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold text-gray-800 mb-3 text-center">
+            Browse by Category
+          </h1>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search courses..."
+              value={searchValue}
+              onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+            />
+            {searchValue && (
+              <button
+                onClick={handleClear}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            )}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                {suggestions.map((s) => (
+                  <button
+                    key={s._id}
+                    onMouseDown={() => navigate(`/student/courses/${s._id}`)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-purple-50 text-left"
+                  >
+                    <BookOpen className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 truncate">
+                      {s.title}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {focusCategory && (
+            <button
+              onClick={() => {
+                navigate(ROUTES.STUDENT_CATEGORIES);
+                setCategoryFilter("");
+              }}
+              className="mt-3 text-sm text-purple-600 hover:underline"
+            >
+              ← All Categories
+            </button>
+          )}
+          {/* Filter + Sort bar */}
+          <div className="flex flex-wrap items-center gap-3 mt-4">
+            <SlidersHorizontal className="w-4 h-4 text-gray-400 flex-shrink-0" />
 
-                        {/* Category filter */}
-                        <div className="flex items-center gap-1.5">
-                            <label className="text-sm text-gray-500 flex-shrink-0">Filter</label>
-                            <select
-                                value={categoryFilter}
-                                onChange={e => setCategoryFilter(e.target.value)}
-                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                            >
-                                <option value="">All Categories</option>
-                                {allCategories.map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Sort by */}
-                        <div className="flex items-center gap-1.5">
-                            <label className="text-sm text-gray-500 flex-shrink-0">Sort by</label>
-                            <select
-                                value={sortBy}
-                                onChange={e => setSortBy(e.target.value)}
-                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                            >
-                                {SORT_OPTIONS.map(opt => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Clear filters */}
-                        <button
-                            onClick={() => { setCategoryFilter(""); setSortBy("newest"); setSearchValue(""); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 transition-colors"
-                        >
-                         Clear
-                        </button>
-                    </div>
-                </div>
+            {/* Category filter */}
+            <div className="flex items-center gap-1.5">
+              <label className="text-sm text-gray-500 flex-shrink-0">
+                Filter
+              </label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+              >
+                <option value="">All Categories</option>
+                {allCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Category sections */}
-            <div className="flex-1 py-8 px-6">
-                {loading ? (
-                    <div className="space-y-10">
-                        {[1, 2, 3].map(i => (
-                            <div key={i}>
-                                <div className="h-6 bg-gray-200 rounded w-40 mb-4 animate-pulse" />
-                                <div className="grid grid-cols-4 gap-5">
-                                    {[...Array(4)].map((_, j) => <div key={j} className="h-52 bg-gray-100 rounded-xl animate-pulse" />)}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : displayCategories.length === 0 ? (
-                    <div className="text-center py-20">
-                        <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500">No courses found</p>
-                    </div>
-                ) : (
-                    <div className="space-y-10">
-                        {displayCategories.map(category => {
-                            const courses = grouped[category];
-                            const coursesPerPage = 4;
-                            const currentPage = categoryPages[category] || 0;
-                            const totalPages = Math.ceil(courses.length / coursesPerPage);
-                            const startIndex = currentPage * coursesPerPage;
-                            const endIndex = startIndex + coursesPerPage;
-                            const displayedCourses = categoryFilter ? courses : courses.slice(startIndex, endIndex);
-
-                            return (
-                                <section key={category}>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-xl font-bold text-gray-800">
-                                            {category}
-                                            <span className="ml-2 text-sm font-normal text-gray-400">
-                                                ({courses.length} course{courses.length !== 1 ? 's' : ''})
-                                            </span>
-                                        </h2>
-                                        <div className="flex items-center gap-3">
-                                            {!categoryFilter && (
-                                                <div className="flex items-center gap-1.5">
-                                                    <button
-                                                        onClick={() => handleCategoryPageChange(category, -1)}
-                                                        disabled={currentPage === 0}
-                                                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
-                                                            currentPage === 0
-                                                                ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                                                                : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
-                                                        }`}
-                                                    >
-                                                        <ChevronLeft className="w-5 h-5" />
-                                                    </button>
-                                                    {totalPages > 1 && (
-                                                        <span className="text-sm text-gray-500 min-w-[3rem] text-center">
-                                                            {currentPage + 1} / {totalPages}
-                                                        </span>
-                                                    )}
-                                                    <button
-                                                        onClick={() => handleCategoryPageChange(category, 1)}
-                                                        disabled={currentPage >= totalPages - 1}
-                                                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
-                                                            currentPage >= totalPages - 1
-                                                                ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                                                                : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
-                                                        }`}
-                                                    >
-                                                        <ChevronRight className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {courses.length > 4 && (
-                                                <button
-                                                    onClick={() => navigate(`/student/categories?category=${encodeURIComponent(category)}`)}
-                                                    className="text-sm text-purple-600 font-medium hover:underline"
-                                                >
-                                                    See all
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-                                        {displayedCourses.map(course => (
-                                            <CourseCard key={course._id} course={course} />
-                                        ))}
-                                    </div>
-                                </section>
-                            );
-                        })}
-                    </div>
-                )}
+            {/* Sort by */}
+            <div className="flex items-center gap-1.5">
+              <label className="text-sm text-gray-500 flex-shrink-0">
+                Sort by
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <Footer />
+            {/* Clear filters */}
+            <button
+              onClick={() => {
+                setCategoryFilter("");
+                setSortBy("newest");
+                setSearchValue("");
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Clear
+            </button>
+          </div>
         </div>
-    );
+      </div>
+
+      {/* Category sections */}
+      <div className="flex-1 py-8 px-6">
+        {loading ? (
+          <div className="space-y-10">
+            {[1, 2, 3].map((i) => (
+              <div key={i}>
+                <div className="h-6 bg-gray-200 rounded w-40 mb-4 animate-pulse" />
+                <div className="grid grid-cols-4 gap-5">
+                  {[...Array(4)].map((_, j) => (
+                    <div
+                      key={j}
+                      className="h-52 bg-gray-100 rounded-xl animate-pulse"
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : displayCategories.length === 0 ? (
+          <div className="text-center py-20">
+            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No courses found</p>
+          </div>
+        ) : (
+          <div className="space-y-10">
+            {displayCategories.map((category) => {
+              const courses = grouped[category];
+              const coursesPerPage = 4;
+              const currentPage = categoryPages[category] || 0;
+              const totalPages = Math.ceil(courses.length / coursesPerPage);
+              const startIndex = currentPage * coursesPerPage;
+              const endIndex = startIndex + coursesPerPage;
+              const displayedCourses = categoryFilter
+                ? courses
+                : courses.slice(startIndex, endIndex);
+
+              return (
+                <section key={category}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">
+                      {category}
+                      <span className="ml-2 text-sm font-normal text-gray-400">
+                        ({courses.length} course
+                        {courses.length !== 1 ? "s" : ""})
+                      </span>
+                    </h2>
+                    <div className="flex items-center gap-3">
+                      {!categoryFilter && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() =>
+                              handleCategoryPageChange(category, -1)
+                            }
+                            disabled={currentPage === 0}
+                            className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+                              currentPage === 0
+                                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                : "bg-purple-100 text-purple-600 hover:bg-purple-200"
+                            }`}
+                          >
+                            <ChevronLeft className="w-5 h-5" />
+                          </button>
+                          {totalPages > 1 && (
+                            <span className="text-sm text-gray-500 min-w-[3rem] text-center">
+                              {currentPage + 1} / {totalPages}
+                            </span>
+                          )}
+                          <button
+                            onClick={() =>
+                              handleCategoryPageChange(category, 1)
+                            }
+                            disabled={currentPage >= totalPages - 1}
+                            className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+                              currentPage >= totalPages - 1
+                                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                : "bg-purple-100 text-purple-600 hover:bg-purple-200"
+                            }`}
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )}
+                      {courses.length > 4 && (
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/student/categories?category=${encodeURIComponent(category)}`,
+                            )
+                          }
+                          className="text-sm text-purple-600 font-medium hover:underline"
+                        >
+                          See all
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                    {displayedCourses.map((course) => (
+                      <CourseCard key={course._id} course={course} />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <Footer />
+    </div>
+  );
 }

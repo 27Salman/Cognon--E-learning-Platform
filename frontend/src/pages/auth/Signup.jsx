@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { signupUser, clearError } from '../../store/slices/authSlice';
-import Input from '../../components/common/Input';
-import { validateEmail, validatePhone, validatePassword } from '../../utils/helpers';
-import { ROLES, ROUTES } from '../../utils/constants';
-import toast from 'react-hot-toast';
-import { getPasswordStrength } from '../../utils/helpers';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { signupUser, clearError } from "../../store/slices/authSlice";
+import Input from "../../components/common/Input";
+import {
+  validateEmail,
+  validatePhone,
+  validatePassword,
+} from "../../utils/helpers";
+import { ROLES, ROUTES } from "../../utils/constants";
+import toast from "react-hot-toast";
+import { getPasswordStrength } from "../../utils/helpers";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -14,10 +18,15 @@ const Signup = () => {
   const dispatch = useDispatch();
   const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const initialRole = location.pathname === '/tutor/register' ? ROLES.TUTOR : ROLES.STUDENT;
+  const initialRole =
+    location.pathname === "/tutor/register" ? ROLES.TUTOR : ROLES.STUDENT;
   const [activeRole, setActiveRole] = useState(initialRole);
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', password: '', confirmPassword: '',
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
   });
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,9 +36,12 @@ const Signup = () => {
   }, [dispatch]);
 
   if (isAuthenticated && user) {
-    const dashboard = user.role === ROLES.TUTOR ? ROUTES.TUTOR_DASHBOARD
-      : user.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD
-      : ROUTES.STUDENT_DASHBOARD;
+    const dashboard =
+      user.role === ROLES.TUTOR
+        ? ROUTES.TUTOR_DASHBOARD
+        : user.role === ROLES.ADMIN
+          ? ROUTES.ADMIN_DASHBOARD
+          : ROUTES.STUDENT_DASHBOARD;
     return <Navigate to={dashboard} replace />;
   }
 
@@ -41,14 +53,14 @@ const Signup = () => {
 
   const roleContent = {
     [ROLES.STUDENT]: {
-      title: 'Join as Student',
-      subtitle: 'Start your learning journey today',
-      gradient: 'from-primary-500 to-primary-700',
+      title: "Join as Student",
+      subtitle: "Start your learning journey today",
+      gradient: "from-primary-500 to-primary-700",
     },
     [ROLES.TUTOR]: {
-      title: 'Join as Tutor',
-      subtitle: 'Share your knowledge with the world',
-      gradient: 'from-primary-500 to-primary-700',
+      title: "Join as Tutor",
+      subtitle: "Share your knowledge with the world",
+      gradient: "from-primary-500 to-primary-700",
     },
   };
 
@@ -61,7 +73,7 @@ const Signup = () => {
       [name]: value,
     });
     if (formErrors[name]) {
-      setFormErrors({ ...formErrors, [name]: '' });
+      setFormErrors({ ...formErrors, [name]: "" });
     }
   };
 
@@ -69,37 +81,39 @@ const Signup = () => {
     const errors = {};
 
     if (!formData.name.trim()) {
-      errors.name = 'Name is required';
+      errors.name = "Name is required";
     } else if (formData.name.trim().length < 2) {
-      errors.name = 'Name must be at least 2 characters';
+      errors.name = "Name must be at least 2 characters";
     } else if (formData.name.trim().length > 50) {
-      errors.name = 'Name cannot exceed 50 characters';
+      errors.name = "Name cannot exceed 50 characters";
     } else if (!/^[a-zA-Z]+([ '\-\.][a-zA-Z]+)*$/.test(formData.name.trim())) {
-      errors.name = 'Name can only contain letters, spaces, hyphens, apostrophes and dots';
+      errors.name =
+        "Name can only contain letters, spaces, hyphens, apostrophes and dots";
     }
 
     if (!formData.email.trim()) {
-      errors.email = 'Email is required';
+      errors.email = "Email is required";
     } else if (!validateEmail(formData.email.trim())) {
-      errors.email = 'Invalid email format';
+      errors.email = "Invalid email format";
     }
 
     if (!formData.phone.trim()) {
-      errors.phone = 'Phone number is required';
+      errors.phone = "Phone number is required";
     } else if (!validatePhone(formData.phone)) {
-      errors.phone = 'Invalid phone number (10 digits, starts with 6-9)';
+      errors.phone = "Invalid phone number (10 digits, starts with 6-9)";
     }
 
     if (!formData.password) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     } else if (!validatePassword(formData.password)) {
-      errors.password = 'Min 8 chars, must include uppercase, lowercase, number & special character (@$!%*?&), no spaces';
+      errors.password =
+        "Min 8 chars, must include uppercase, lowercase, number & special character (@$!%*?&), no spaces";
     }
 
     if (!formData.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
+      errors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = "Passwords do not match";
     }
 
     return errors;
@@ -128,20 +142,20 @@ const Signup = () => {
           phone: formData.phone.trim(),
           password: formData.password,
           role: activeRole,
-        })
+        }),
       );
 
       if (signupUser.fulfilled.match(resultAction)) {
-        toast.success('Registration successful! Please verify your email.');
-        navigate(ROUTES.VERIFY_OTP, { 
+        toast.success("Registration successful! Please verify your email.");
+        navigate(ROUTES.VERIFY_OTP, {
           replace: true,
-          state: { 
+          state: {
             email: formData.email.trim(),
             role: activeRole,
-          } 
+          },
         });
       } else {
-        toast.error(resultAction.payload || 'Signup failed');
+        toast.error(resultAction.payload || "Signup failed");
       }
     } finally {
       setIsSubmitting(false);
@@ -151,12 +165,26 @@ const Signup = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Dynamic Illustration */}
-      <div className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}>
+      <div
+        className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}
+      >
         <div className="text-center text-white">
           <div className="mb-8">
-            <svg className="w-64 h-64 mx-auto" viewBox="0 0 400 400" fill="none">
+            <svg
+              className="w-64 h-64 mx-auto"
+              viewBox="0 0 400 400"
+              fill="none"
+            >
               <circle cx="200" cy="120" r="60" fill="white" opacity="0.9" />
-              <rect x="140" y="200" width="120" height="140" rx="10" fill="white" opacity="0.9" />
+              <rect
+                x="140"
+                y="200"
+                width="120"
+                height="140"
+                rx="10"
+                fill="white"
+                opacity="0.9"
+              />
               <circle cx="160" cy="250" r="8" fill="#7c3aed" />
               <circle cx="200" cy="250" r="8" fill="#7c3aed" />
               <circle cx="240" cy="250" r="8" fill="#7c3aed" />
@@ -169,8 +197,12 @@ const Signup = () => {
             {currentContent.subtitle}
           </p>
           <div className="mt-8 flex justify-center gap-2">
-            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.STUDENT ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
-            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.TUTOR ? 'bg-white scale-110' : 'bg-white/30'}`}></div>
+            <div
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.STUDENT ? "bg-white scale-110" : "bg-white/30"}`}
+            ></div>
+            <div
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${activeRole === ROLES.TUTOR ? "bg-white scale-110" : "bg-white/30"}`}
+            ></div>
           </div>
         </div>
       </div>
@@ -185,9 +217,13 @@ const Signup = () => {
 
           {/* Welcome Text */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Cognon...!</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome to Cognon...!
+            </h2>
             <p className="text-gray-600">
-Cognon provides a smart platform for learning, growing, and achieving your goals faster.            </p>
+              Cognon provides a smart platform for learning, growing, and
+              achieving your goals faster.{" "}
+            </p>
           </div>
 
           {/* Role Tabs */}
@@ -197,8 +233,8 @@ Cognon provides a smart platform for learning, growing, and achieving your goals
               onClick={() => handleRoleChange(ROLES.STUDENT)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
                 activeRole === ROLES.STUDENT
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? "bg-white text-primary-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
               STUDENT
@@ -208,8 +244,8 @@ Cognon provides a smart platform for learning, growing, and achieving your goals
               onClick={() => handleRoleChange(ROLES.TUTOR)}
               className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
                 activeRole === ROLES.TUTOR
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? "bg-white text-primary-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
               TUTOR
@@ -265,10 +301,14 @@ Cognon provides a smart platform for learning, growing, and achieving your goals
             {formData.password && (
               <div className="mt-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-600">Password Strength:</span>
-                  <span 
+                  <span className="text-xs text-gray-600">
+                    Password Strength:
+                  </span>
+                  <span
                     className="text-xs font-medium"
-                    style={{ color: getPasswordStrength(formData.password).color }}
+                    style={{
+                      color: getPasswordStrength(formData.password).color,
+                    }}
                   >
                     {getPasswordStrength(formData.password).text}
                   </span>
@@ -276,14 +316,16 @@ Cognon provides a smart platform for learning, growing, and achieving your goals
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="h-2 rounded-full transition-all"
-                    style={{ 
+                    style={{
                       width: `${getPasswordStrength(formData.password).strength}%`,
-                      backgroundColor: getPasswordStrength(formData.password).color
+                      backgroundColor: getPasswordStrength(formData.password)
+                        .color,
                     }}
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Must contain: uppercase, lowercase, number, special character (@$!%*?&), min 8 chars
+                  Must contain: uppercase, lowercase, number, special character
+                  (@$!%*?&), min 8 chars
                 </p>
               </div>
             )}
@@ -305,14 +347,17 @@ Cognon provides a smart platform for learning, growing, and achieving your goals
               disabled={loading || isSubmitting}
               className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating Account...' : 'Register'}
+              {loading ? "Creating Account..." : "Register"}
             </button>
           </form>
 
           {/* Login Link */}
           <p className="mt-6 text-center text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="text-primary-600 hover:text-primary-700 font-medium"
+            >
               Login here
             </Link>
           </p>
@@ -324,13 +369,16 @@ Cognon provides a smart platform for learning, growing, and achieving your goals
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-gray-50 text-gray-500">Sign up with</span>
+                <span className="px-4 bg-gray-50 text-gray-500">
+                  Sign up with
+                </span>
               </div>
             </div>
             <button
               type="button"
               onClick={() => {
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                const API_URL =
+                  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
                 window.location.href = `${API_URL}/auth/google?role=${activeRole}`;
               }}
               className="mt-4 w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium transition-colors"

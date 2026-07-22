@@ -29,7 +29,11 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -114,12 +118,24 @@ input[type="password"]::-webkit-strong-password-auto-fill-button {
 }
 
 /* Stagger delays */
-.reveal-children.revealed > .reveal-child:nth-child(1) { transition-delay: 0ms; }
-.reveal-children.revealed > .reveal-child:nth-child(2) { transition-delay: 120ms; }
-.reveal-children.revealed > .reveal-child:nth-child(3) { transition-delay: 240ms; }
-.reveal-children.revealed > .reveal-child:nth-child(4) { transition-delay: 360ms; }
-.reveal-children.revealed > .reveal-child:nth-child(5) { transition-delay: 480ms; }
-.reveal-children.revealed > .reveal-child:nth-child(6) { transition-delay: 600ms; }
+.reveal-children.revealed > .reveal-child:nth-child(1) {
+  transition-delay: 0ms;
+}
+.reveal-children.revealed > .reveal-child:nth-child(2) {
+  transition-delay: 120ms;
+}
+.reveal-children.revealed > .reveal-child:nth-child(3) {
+  transition-delay: 240ms;
+}
+.reveal-children.revealed > .reveal-child:nth-child(4) {
+  transition-delay: 360ms;
+}
+.reveal-children.revealed > .reveal-child:nth-child(5) {
+  transition-delay: 480ms;
+}
+.reveal-children.revealed > .reveal-child:nth-child(6) {
+  transition-delay: 600ms;
+}
 
 /* Scale variant for children */
 .reveal-children-scale > .reveal-child {
@@ -136,25 +152,47 @@ input[type="password"]::-webkit-strong-password-auto-fill-button {
   transform: none;
 }
 
-.reveal-children-scale.revealed > .reveal-child:nth-child(1) { transition-delay: 0ms; }
-.reveal-children-scale.revealed > .reveal-child:nth-child(2) { transition-delay: 120ms; }
-.reveal-children-scale.revealed > .reveal-child:nth-child(3) { transition-delay: 240ms; }
-.reveal-children-scale.revealed > .reveal-child:nth-child(4) { transition-delay: 360ms; }
+.reveal-children-scale.revealed > .reveal-child:nth-child(1) {
+  transition-delay: 0ms;
+}
+.reveal-children-scale.revealed > .reveal-child:nth-child(2) {
+  transition-delay: 120ms;
+}
+.reveal-children-scale.revealed > .reveal-child:nth-child(3) {
+  transition-delay: 240ms;
+}
+.reveal-children-scale.revealed > .reveal-child:nth-child(4) {
+  transition-delay: 360ms;
+}
 
 /* ============================================
    HERO FLOATING BLOBS
    ============================================ */
 
 @keyframes floatBlob1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -30px) scale(1.05); }
-  66% { transform: translate(-20px, 20px) scale(0.95); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.95);
+  }
 }
 
 @keyframes floatBlob2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(-25px, 15px) scale(1.08); }
-  66% { transform: translate(15px, -25px) scale(0.92); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-25px, 15px) scale(1.08);
+  }
+  66% {
+    transform: translate(15px, -25px) scale(0.92);
+  }
 }
 
 .hero-blob-1 {
@@ -170,13 +208,25 @@ input[type="password"]::-webkit-strong-password-auto-fill-button {
    ============================================ */
 
 @keyframes heroFadeUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes heroFadeLeft {
-  from { opacity: 0; transform: translateX(40px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .hero-animate-text {
@@ -192,17 +242,16 @@ input[type="password"]::-webkit-strong-password-auto-fill-button {
    ============================================ */
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    #e5e7eb 0%,
-    #f3f4f6 40%,
-    #e5e7eb 80%
-  );
+  background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 40%, #e5e7eb 80%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
@@ -263,7 +312,7 @@ input[type="password"]::-webkit-strong-password-auto-fill-button {
 }
 
 .card-gradient-border::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
