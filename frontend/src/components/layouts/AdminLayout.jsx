@@ -61,6 +61,8 @@ export default function AdminLayout() {
     };
   }, [user?._id]);
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const handleUpdateProfile = (updatedData) => {
     const { password, ...toStore } = updatedData;
     toStore.profileImage =
@@ -71,10 +73,17 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <AdminNavbar adminInfo={adminInfo} />
+      <AdminNavbar
+        adminInfo={adminInfo}
+        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+      />
 
       <div className="flex flex-1">
-        <AdminSidebar adminInfo={adminInfo} />
+        <AdminSidebar
+          adminInfo={adminInfo}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
 
         <main className="flex-1 overflow-y-auto">
           <Outlet

@@ -11,6 +11,7 @@ import {
   MessageSquare,
   LogOut,
   Wallet,
+  X,
 } from "lucide-react";
 import { ROUTES } from "../../utils/constants";
 import ConfirmModal from "../common/ConfirmModal";
@@ -24,7 +25,7 @@ const menuItems = [
   { name: "Chat & Video", path: ROUTES.TUTOR_CHAT, icon: MessageSquare },
 ];
 
-export default function TutorSidebar({ tutorInfo }) {
+export default function TutorSidebar({ tutorInfo, isOpen, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -33,8 +34,14 @@ export default function TutorSidebar({ tutorInfo }) {
 
   const isActive = (path) => location.pathname.startsWith(path);
 
+  const handleNav = (path) => {
+    navigate(path);
+    if (onClose) onClose();
+  };
+
   const handleLogout = async () => {
     setShowLogoutModal(false);
+    if (onClose) onClose();
     localStorage.removeItem("tutorInfo");
     await dispatch(logoutUser());
     toast.success("Logged out successfully");
@@ -44,8 +51,8 @@ export default function TutorSidebar({ tutorInfo }) {
   const imageSrc = tutorInfo?.profileImageURL || tutorInfo?.profileImage;
   const showImage = imageSrc && !imgError;
 
-  return (
-    <aside className="bg-white w-56 min-h-screen flex-shrink-0 border-r border-gray-200 flex flex-col">
+  const sidebarContent = (
+    <>
       <div className="px-4 pt-6 pb-5 border-b border-gray-100 flex flex-col items-center">
         {showImage ? (
           <img
@@ -68,7 +75,7 @@ export default function TutorSidebar({ tutorInfo }) {
         {menuItems.map(({ name, path, icon: Icon }) => (
           <button
             key={path}
-            onClick={() => navigate(path)}
+            onClick={() => handleNav(path)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               isActive(path)
                 ? "bg-purple-600 text-white"
@@ -87,6 +94,37 @@ export default function TutorSidebar({ tutorInfo }) {
           Logout
         </button>
       </nav>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex bg-white w-56 min-h-screen flex-shrink-0 border-r border-gray-200 flex-col">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Drawer Overlay */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+            onClick={onClose}
+          />
+          <aside className="relative w-64 max-w-xs bg-white min-h-full flex flex-col z-50 shadow-xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <span className="font-bold text-gray-800 text-sm">Tutor Navigation</span>
+              <button
+                onClick={onClose}
+                className="p-1 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
 
       <ConfirmModal
         isOpen={showLogoutModal}
@@ -96,6 +134,6 @@ export default function TutorSidebar({ tutorInfo }) {
         onConfirm={handleLogout}
         onClose={() => setShowLogoutModal(false)}
       />
-    </aside>
+    </>
   );
 }

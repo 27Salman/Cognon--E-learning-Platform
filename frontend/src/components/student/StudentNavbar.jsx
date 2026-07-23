@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart, Menu, X, PanelLeft } from "lucide-react";
 import { studentAPI } from "../../api/studentAPI";
 import Logo from "../common/Logo";
 import NotificationBell from "../common/NotificationBell";
@@ -24,13 +24,14 @@ const getAvatarColors = (name) => {
   return palettes[name.charCodeAt(0) % palettes.length];
 };
 
-export default function StudentNavbar() {
+export default function StudentNavbar({ onToggleSidebar, hideSidebarToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [activeSection, setActiveSection] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [studentInfo, setStudentInfo] = useState(() => {
     try {
       const stored = localStorage.getItem("studentInfo");
@@ -145,17 +146,38 @@ export default function StudentNavbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname]);
 
+  const handleNavClick = (action) => {
+    setIsMobileMenuOpen(false);
+    action();
+  };
+
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-      <div className="flex items-center justify-between h-16 px-6 w-full">
-        <div
-          className="flex items-center gap-3 cursor-pointer"
-          onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)}
-        >
-          <Logo size={40} />
-          <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
+      <div className="flex items-center justify-between h-16 px-4 md:px-6 w-full">
+        {/* Left: Sidebar Toggle (if logged in) + Logo */}
+        <div className="flex items-center gap-2 md:gap-3">
+          {user && !hideSidebarToggle && onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 text-gray-600 hover:text-purple-600 hover:bg-gray-100 rounded-lg focus:outline-none md:hidden transition-colors"
+              title="Open Sidebar"
+            >
+              <PanelLeft className="w-5 h-5" />
+            </button>
+          )}
+
+          <div
+            className="flex items-center gap-2 md:gap-3 cursor-pointer"
+            onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)}
+          >
+            <Logo size={36} />
+            <h1 className="text-xl md:text-2xl font-bold text-purple-600">
+              Cognon
+            </h1>
+          </div>
         </div>
 
+        {/* Desktop Navbar Links */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
           <button
             onClick={() => {
@@ -215,7 +237,8 @@ export default function StudentNavbar() {
           </button>
         </nav>
 
-        <div className="flex items-center gap-4">
+        {/* Right side actions */}
+        <div className="flex items-center gap-2 md:gap-4">
           {user ? (
             <>
               <button
@@ -285,8 +308,96 @@ export default function StudentNavbar() {
               Login
             </button>
           )}
+
+          {/* Mobile Hamburger Toggle for Top Nav Links */}
+          <button
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-gray-100 rounded-lg focus:outline-none md:hidden transition-colors"
+            aria-label="Toggle navigation menu"
+          >
+            {isMobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Collapsible Nav Links Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-white border-t border-gray-100 px-4 py-3 space-y-2 shadow-lg animate-fadeIn">
+          <button
+            onClick={() =>
+              handleNavClick(() => {
+                if (location.pathname !== ROUTES.STUDENT_DASHBOARD) {
+                  navigate(ROUTES.STUDENT_DASHBOARD);
+                }
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }, 50);
+              })
+            }
+            className={`w-full text-left py-2 px-3 rounded-lg text-sm font-medium transition ${activeSection === ROUTES.STUDENT_DASHBOARD ? "bg-purple-50 text-purple-600 font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Home
+          </button>
+
+          <button
+            onClick={() =>
+              handleNavClick(() => navigate(ROUTES.STUDENT_CATEGORIES))
+            }
+            className={`w-full text-left py-2 px-3 rounded-lg text-sm font-medium transition ${activeSection === ROUTES.STUDENT_CATEGORIES ? "bg-purple-50 text-purple-600 font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Courses
+          </button>
+
+          <button
+            onClick={() =>
+              handleNavClick(() => navigate(ROUTES.STUDENT_TUTORS))
+            }
+            className={`w-full text-left py-2 px-3 rounded-lg text-sm font-medium transition ${activeSection === ROUTES.STUDENT_TUTORS ? "bg-purple-50 text-purple-600 font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Tutors
+          </button>
+
+          <button
+            onClick={() =>
+              handleNavClick(() => {
+                if (location.pathname !== ROUTES.STUDENT_DASHBOARD) {
+                  navigate(ROUTES.STUDENT_DASHBOARD);
+                }
+                setTimeout(() => {
+                  document
+                    .getElementById("about")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+              })
+            }
+            className={`w-full text-left py-2 px-3 rounded-lg text-sm font-medium transition ${activeSection === "about" ? "bg-purple-50 text-purple-600 font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            About
+          </button>
+
+          <button
+            onClick={() =>
+              handleNavClick(() => {
+                if (location.pathname !== ROUTES.STUDENT_DASHBOARD) {
+                  navigate(ROUTES.STUDENT_DASHBOARD);
+                }
+                setTimeout(() => {
+                  document
+                    .getElementById("contact")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+              })
+            }
+            className={`w-full text-left py-2 px-3 rounded-lg text-sm font-medium transition ${activeSection === "contact" ? "bg-purple-50 text-purple-600 font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Contact
+          </button>
+        </div>
+      )}
     </header>
   );
 }

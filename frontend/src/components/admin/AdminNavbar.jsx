@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { Menu } from "lucide-react";
 import Logo from "../common/Logo";
 import NotificationBell from "../common/NotificationBell";
 import { ROUTES } from "../../utils/constants";
 
-export default function AdminNavbar({ adminInfo }) {
+export default function AdminNavbar({ adminInfo, onToggleSidebar }) {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
@@ -13,16 +14,25 @@ export default function AdminNavbar({ adminInfo }) {
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="flex items-center justify-between px-6 py-3">
-        {/* Logo */}
-        <div
-          className="flex items-center gap-3 cursor-pointer"
-          onClick={() => navigate(ROUTES.ADMIN_DASHBOARD)}
-        >
-          <Logo size={36} />
-          <div>
-            <h1 className="text-xl font-bold text-purple-600">Cognon</h1>
-            <span className="text-sm text-gray-500 font-medium">Admin</span>
+      <div className="flex items-center justify-between px-4 md:px-6 py-3">
+        {/* Left side: Hamburger + Logo */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onToggleSidebar}
+            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-gray-100 rounded-lg focus:outline-none md:hidden transition-colors"
+            aria-label="Toggle menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate(ROUTES.ADMIN_DASHBOARD)}
+          >
+            <Logo size={36} />
+            <div>
+              <h1 className="text-xl font-bold text-purple-600">Cognon</h1>
+              <span className="text-sm text-gray-500 font-medium">Admin</span>
+            </div>
           </div>
         </div>
 

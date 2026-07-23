@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { Menu } from "lucide-react";
 import Logo from "../common/Logo";
 import NotificationBell from "../common/NotificationBell";
 import { ROUTES } from "../../utils/constants";
 
-export default function TutorNavbar({ tutorInfo }) {
+export default function TutorNavbar({ tutorInfo, onToggleSidebar }) {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
@@ -13,16 +14,25 @@ export default function TutorNavbar({ tutorInfo }) {
 
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-      <div className="flex items-center justify-between px-6 py-4">
-        {/* Left - Logo */}
-        <div
-          className="flex items-center gap-3 cursor-pointer"
-          onClick={() => navigate(ROUTES.TUTOR_DASHBOARD)}
-        >
-          <Logo size={40} />
-          <div>
-            <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
-            <span className="text-sm text-gray-500 font-medium">Tutor</span>
+      <div className="flex items-center justify-between px-4 md:px-6 py-4">
+        {/* Left - Hamburger + Logo */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onToggleSidebar}
+            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-gray-100 rounded-lg focus:outline-none md:hidden transition-colors"
+            aria-label="Toggle menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate(ROUTES.TUTOR_DASHBOARD)}
+          >
+            <Logo size={40} />
+            <div>
+              <h1 className="text-2xl font-bold text-purple-600">Cognon</h1>
+              <span className="text-sm text-gray-500 font-medium">Tutor</span>
+            </div>
           </div>
         </div>
 

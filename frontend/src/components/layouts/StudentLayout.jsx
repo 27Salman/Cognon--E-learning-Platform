@@ -70,6 +70,8 @@ export default function StudentLayout() {
     };
   }, [user?._id]);
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const handleUpdateProfile = (updatedData) => {
     const { password, ...toStore } = updatedData;
     setStudentInfo(toStore);
@@ -78,11 +80,20 @@ export default function StudentLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {!isQuizPage && <StudentNavbar />}
+      {!isQuizPage && (
+        <StudentNavbar
+          onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+          hideSidebarToggle={hideSidebar}
+        />
+      )}
 
       <div className="flex flex-1">
         {!hideSidebar && !isQuizPage && (
-          <StudentSidebar studentInfo={studentInfo} />
+          <StudentSidebar
+            studentInfo={studentInfo}
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+          />
         )}
 
         <main className="flex-1 overflow-y-auto min-h-0">

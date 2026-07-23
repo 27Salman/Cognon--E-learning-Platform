@@ -59,6 +59,8 @@ export default function TutorLayout() {
     };
   }, [user?._id]);
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const handleUpdateProfile = (updatedData) => {
     const { password, ...toStore } = updatedData;
     setTutorInfo(toStore);
@@ -67,10 +69,17 @@ export default function TutorLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <TutorNavbar tutorInfo={tutorInfo} />
+      <TutorNavbar
+        tutorInfo={tutorInfo}
+        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+      />
 
       <div className="flex flex-1">
-        <TutorSidebar tutorInfo={tutorInfo} />
+        <TutorSidebar
+          tutorInfo={tutorInfo}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
 
         <main className="flex-1 overflow-y-auto min-h-0">
           <div className="min-h-full">
