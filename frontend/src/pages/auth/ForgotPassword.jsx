@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
+import Logo from "../../components/common/Logo";
 import { validateEmail } from "../../utils/helpers";
 import toast from "react-hot-toast";
 import { FiArrowLeft } from "react-icons/fi";
@@ -62,7 +63,18 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-100 to-primary-200 items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-100 to-primary-200 items-center justify-center p-12 relative">
+        <Link
+          to="/"
+          className="absolute top-8 left-8 flex items-center gap-3 text-primary-700 no-underline group"
+        >
+          <div className="bg-white/80 backdrop-blur-sm p-2 rounded-xl shadow-xs transition-transform group-hover:scale-105">
+            <Logo size={36} />
+          </div>
+          <span className="text-2xl font-bold tracking-tight text-primary-800">
+            Cognon
+          </span>
+        </Link>
         <div className="text-center">
           <div className="mb-8">
             <svg
@@ -195,7 +207,8 @@ const ForgotPassword = () => {
 
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
-          <div className="lg:hidden text-center mb-8">
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
+            <Logo size={40} />
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
 

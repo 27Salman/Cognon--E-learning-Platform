@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { signupUser, clearError } from "../../store/slices/authSlice";
 import Input from "../../components/common/Input";
+import Logo from "../../components/common/Logo";
 import {
   validateEmail,
   validatePhone,
@@ -166,8 +167,17 @@ const Signup = () => {
     <div className="min-h-screen flex">
       {/* Left Side - Dynamic Illustration */}
       <div
-        className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 transition-all duration-500`}
+        className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentContent.gradient} items-center justify-center p-12 relative transition-all duration-500`}
       >
+        <Link
+          to="/"
+          className="absolute top-8 left-8 flex items-center gap-3 text-white no-underline group"
+        >
+          <div className="bg-white/10 backdrop-blur-sm p-2 rounded-xl border border-white/20 transition-transform group-hover:scale-105">
+            <Logo size={36} />
+          </div>
+          <span className="text-2xl font-bold tracking-tight">Cognon</span>
+        </Link>
         <div className="text-center text-white">
           <div className="mb-8">
             <svg
@@ -211,7 +221,8 @@ const Signup = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
           {/* Logo - Mobile */}
-          <div className="lg:hidden text-center mb-8">
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
+            <Logo size={40} />
             <h1 className="text-3xl font-bold text-primary-600">Cognon</h1>
           </div>
 
